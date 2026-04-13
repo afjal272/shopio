@@ -10,6 +10,7 @@ export function parseQuery(query: string): ParsedQuery {
 
   if (q.includes("gaming")) intent.push("gaming")
   if (q.includes("camera")) intent.push("camera")
+  if (q.includes("battery")) intent.push("battery")
 
   return {
     category: "smartphone",

@@ -24,6 +24,16 @@ export function scoreProduct(
       score += batteryScore * 10
     }
 
+    if (i === "battery") {
+  score += batteryScore * 50
+}
+
+
+// 🔥 penalty for weak specs
+if ((product.specs.ram || 0) < 6) {
+  score -= 10
+}
+
     if (i === "camera") {
       score += ratingScore * 50
     }
