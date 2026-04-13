@@ -80,5 +80,18 @@ export const products: Product[] = [
     rating: 4.2,
     specs: { ram: 8, processorScore: 7, battery: 5000 },
     tags: []
+  }, // ✅ THIS COMMA WAS MISSING
+
+  {
+    id: "11",
+    title: "Redmi Note 10 Pro",
+    price: 18000,
+    rating: 4.3,
+    specs: {
+      ram: 6,
+      processorScore: 7,
+      battery: 5000
+    },
+    tags: ["camera"]
   }
 ]

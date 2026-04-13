@@ -17,12 +17,13 @@ export function runEngine(query: string, products: Product[]) {
 
   const best = ranked[0]
 
-  // 🔥 FIX: proper empty handling
+  // 🔥 EMPTY CASE
   if (!best) {
     return {
       best: {
         title: "No suitable product found",
         score: 0,
+        confidence: 0,
         explanation: "No products match your budget or requirements"
       },
       top3: [],
@@ -33,7 +34,10 @@ export function runEngine(query: string, products: Product[]) {
   return {
     best: {
       ...best,
-      explanation: generateExplanation(best, parsed.intent)
+      explanation: generateExplanation(best, parsed.intent),
+
+      // 🔥 NEW: confidence score
+      confidence: Math.min(100, best.score)
     },
     top3: ranked.slice(0, 3),
     parsed

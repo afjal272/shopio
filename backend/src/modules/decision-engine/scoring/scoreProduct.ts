@@ -69,5 +69,5 @@ export function scoreProduct(
   }
 
   // 🔥 FINAL SCORE (NO HARD CAP)
-  return Math.round(score)
+  return Math.round(score / 1.2)
 }
