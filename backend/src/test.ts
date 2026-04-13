@@ -6,6 +6,12 @@ const queries = [
   "camera phone under 25000",
   "best battery phone under 20000",
   "gaming phone under 15000",
+
+  // 🔥 NEW TEST CASES
+  "best phone under 12000 for gaming",
+  "camera phone under 18000",
+  "best phone under 30000 for gaming and camera",
+  
 ]
 
 queries.forEach((query) => {

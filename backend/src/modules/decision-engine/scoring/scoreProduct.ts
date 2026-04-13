@@ -54,5 +54,5 @@ export function scoreProduct(
     }
   }
 
-  return Math.round(score)
+  return Math.min(Math.round(score), 100)
 }
