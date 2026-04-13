@@ -9,7 +9,6 @@ export function runEngine(query: string, products: Product[]) {
 
   const filtered = applyFilters(products, parsed)
 
-  // 🔥 FIX: budget pass karo
   const ranked = rankProducts(
     filtered,
     parsed.intent,
@@ -18,10 +17,14 @@ export function runEngine(query: string, products: Product[]) {
 
   const best = ranked[0]
 
-  // 🔥 safety (empty result case)
+  // 🔥 FIX: proper empty handling
   if (!best) {
     return {
-      best: null,
+      best: {
+        title: "No suitable product found",
+        score: 0,
+        explanation: "No products match your budget or requirements"
+      },
       top3: [],
       parsed
     }

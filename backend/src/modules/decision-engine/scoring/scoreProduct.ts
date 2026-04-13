@@ -17,7 +17,7 @@ export function scoreProduct(
   const batteryScore = normalize(product.specs.battery || 0, 6000)
   const ratingScore = normalize(product.rating, 5)
 
-  // 🔥 MULTI-INTENT LOGIC
+  // 🔥 MULTI-INTENT WEIGHTING
   intent.forEach((i) => {
     const weight = 1 / intent.length
 
@@ -33,6 +33,19 @@ export function scoreProduct(
       score += batteryScore * 70 * weight
     }
   })
+
+  // 🔥 TAG-BASED BOOST (IMPORTANT)
+  if (intent.includes("gaming") && product.tags.includes("gaming")) {
+    score += 10
+  }
+
+  if (intent.includes("camera") && product.tags.includes("camera")) {
+    score += 10
+  }
+
+  if (intent.includes("battery") && product.tags.includes("battery")) {
+    score += 10
+  }
 
   // 🔥 LOW-END PENALTY
   if ((product.specs.ram || 0) < 6) {
@@ -54,5 +67,6 @@ export function scoreProduct(
     }
   }
 
+  // 🔥 FINAL NORMALIZED SCORE
   return Math.min(Math.round(score), 100)
 }
