@@ -1,6 +1,10 @@
 import { Product } from "../types"
 
 export function generateExplanation(product: Product, intent: string[]) {
+  if (intent.length > 1) {
+    return `Balanced choice for ${intent.join(" & ")} with solid overall performance`
+  }
+
   if (intent.includes("gaming")) {
     if ((product.specs.ram || 0) < 6) {
       return `Decent for light gaming but limited by ${product.specs.ram}GB RAM`
