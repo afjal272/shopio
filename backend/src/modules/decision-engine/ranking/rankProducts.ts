@@ -7,9 +7,15 @@ export function rankProducts(
   budget: number | null
 ) {
   return products
-    .map(p => ({
+    .map((p) => ({
       ...p,
       score: scoreProduct(p, intent, budget)
     }))
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => {
+      // 🔥 tie-breaker
+      if (b.score === a.score) {
+        return b.rating - a.rating
+      }
+      return b.score - a.score
+    })
 }

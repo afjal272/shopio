@@ -26,7 +26,12 @@ export function scoreProduct(
     }
 
     if (i === "camera") {
-      score += ratingScore * 50 * weight
+      score += ratingScore * 40 * weight
+
+      // 🔥 strong boost for actual camera phones
+      if (product.tags.includes("camera")) {
+        score += 20
+      }
     }
 
     if (i === "battery") {
@@ -34,12 +39,8 @@ export function scoreProduct(
     }
   })
 
-  // 🔥 TAG-BASED BOOST (IMPORTANT)
+  // 🔥 TAG-BASED BOOST
   if (intent.includes("gaming") && product.tags.includes("gaming")) {
-    score += 10
-  }
-
-  if (intent.includes("camera") && product.tags.includes("camera")) {
     score += 10
   }
 
@@ -67,6 +68,6 @@ export function scoreProduct(
     }
   }
 
-  // 🔥 FINAL NORMALIZED SCORE
-  return Math.min(Math.round(score), 100)
+  // 🔥 FINAL SCORE (NO HARD CAP)
+  return Math.round(score)
 }
