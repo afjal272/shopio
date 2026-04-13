@@ -5,7 +5,11 @@ function normalize(value: number, max: number) {
   return value / max
 }
 
-export function scoreProduct(product: Product, intent: string[]) {
+export function scoreProduct(
+  product: Product,
+  intent: string[],
+  budget: number | null
+) {
   let score = 0
 
   const ramScore = normalize(product.specs.ram || 0, 16)
@@ -27,6 +31,20 @@ export function scoreProduct(product: Product, intent: string[]) {
 
   // base trust
   score += ratingScore * 20
+
+  // 🔥 NEW: PRICE LOGIC
+  if (budget) {
+    const priceDiff = budget - product.price
+
+    if (priceDiff >= 0) {
+      // closer to budget = better utilization
+      const utilization = product.price / budget
+      score += utilization * 20
+    } else {
+      // over budget = penalty
+      score -= 20
+    }
+  }
 
   return Math.round(score)
 }
