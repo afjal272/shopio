@@ -1,91 +1,72 @@
-# 🚀 Shopio — AI Shopping Decision Engine
+# 🤖 Shopio — AI Shopping Decision Engine
 
-Shopio is a smart decision engine that tells users exactly **what to buy**, instead of overwhelming them with endless comparisons.
-
-Unlike traditional eCommerce platforms that show options, Shopio delivers **clear, confident, and explainable recommendations**.
+Shopio is a backend-driven system that recommends the **best product for a user query**, instead of showing endless options.
 
 ---
 
-## 🧠 What Problem Does It Solve?
+## 🔗 Example Query
 
-Modern shoppers face:
-- Too many options  
-- Confusing reviews  
-- Time-consuming comparisons  
-
-👉 Shopio eliminates decision fatigue by giving a **final answer**, not just choices.
-
----
-
-## ⚙️ How It Works
-
-User Query → Parsing → Filtering → Scoring → Ranking → Explanation → Final Recommendation  
-
-### Example:
-Input:  
+**Input:**  
 "Best phone under 20k for gaming"
 
-Output:
-- 🥇 Best Choice: iQOO Z6  
-- 🥈 Alternatives: Samsung M34, Realme Narzo  
-- 💡 Reason: Highest performance score for gaming with strong battery backup  
+**Output:**  
+- Best: iQOO Z6  
+- Alternatives: Samsung M34, Realme Narzo  
+- Reason: High performance score with strong battery backup  
 
 ---
 
-## 🚀 Key Features
+## 🚀 Core Features
 
-- 🔍 Intelligent Query Parsing  
-- 🎯 Intent-based Product Scoring  
-- 📊 Ranking Algorithm (Top 3 + Best Pick)  
-- 💬 Clear Explanation for Trust  
-- ⚡ Fast & Minimal Decision Flow  
+- Query parsing (budget + use-case extraction)  
+- Intent-based filtering  
+- Product scoring system  
+- Ranking algorithm (Top 3 + Best pick)  
+- Explanation generation for recommendation  
 
 ---
 
-## 🛠 Tech Stack
+## ⚙️ Tech Stack
 
-- Backend: Node.js, TypeScript  
-- Architecture: Modular Decision Engine  
-- Core Modules:
-  - Parser  
-  - Filters  
-  - Scoring Engine  
-  - Ranking System  
+- Node.js  
+- TypeScript  
+
+---
+
+## 🧠 Architecture
+
+User Query → Parsing → Filtering → Scoring → Ranking → Recommendation  
 
 ---
 
 ## 📂 Project Structure
 
 backend/  
- └── src/modules/decision-engine/  
-     ├── parser/  
-     ├── filters/  
-     ├── scoring/  
-     ├── ranking/  
-     ├── engine.ts  
+└── src/modules/decision-engine/  
+  ├── parser/  
+  ├── filters/  
+  ├── scoring/  
+  ├── ranking/  
+  ├── engine.ts  
 
 ---
 
-## 🎯 Vision
+## 💡 Highlights
 
-To build a system where users no longer ask:  
-"Which one should I buy?"
-
-Instead, they get:  
-"This is the best choice. Buy this."
+- Decision-focused system (not just comparison)  
+- Modular architecture  
+- Explainable recommendations  
 
 ---
 
-## 💰 Future Scope
+## 📈 Future Improvements
 
-- Real-time product data (Amazon / Flipkart APIs)  
-- Price tracking & prediction  
+- Real-time product data integration  
+- Price tracking  
 - Personalized recommendations  
-- Affiliate monetization system  
 
 ---
 
 ## 👨‍💻 Author
 
-**Md Afjal Ali**  
-Building real-world scalable systems 🚀
+Md Afjal Ali
