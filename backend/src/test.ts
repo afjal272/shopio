@@ -11,7 +11,7 @@ const queries = [
   "best phone under 12000 for gaming",
   "camera phone under 18000",
   "best phone under 30000 for gaming and camera",
-  
+
 ]
 
 queries.forEach((query) => {
@@ -22,6 +22,7 @@ queries.forEach((query) => {
 
   console.log("BEST:", result.best?.title)
   console.log("SCORE:", result.best?.score)
+  console.log("CONFIDENCE:", result.best?.confidence)
   console.log("WHY:", result.best?.explanation)
 
   console.log("TOP 3:")
