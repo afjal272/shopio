@@ -4,6 +4,7 @@ import Hero from "@/components/Hero"
 import Features from "@/components/Features"
 import HowItWorks from "@/components/HowItWorks"
 import Trust from "@/components/Trust"
+import CTA from "@/components/CTA"
 import Results from "@/features/search/components/Results"
 import { useSearch } from "@/features/search/hooks/useSearch"
 
@@ -24,6 +25,9 @@ export default function Home() {
 
       {/* TRUST */}
       <Trust />
+
+      {/* CTA */}
+      <CTA />
 
       {/* RESULTS SECTION (IMPORTANT FIX) */}
       {(loading || data) && (
