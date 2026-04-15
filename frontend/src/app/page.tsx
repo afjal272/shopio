@@ -8,18 +8,32 @@ export default function Home() {
   const { search, loading, data } = useSearch()
 
   return (
-   <div className="min-h-screen bg-black text-white flex flex-col items-center pt-24 px-4">
-      
-      <h1 className="text-3xl font-bold">Shopio AI</h1>
+    <div className="min-h-screen flex flex-col items-center pt-24 px-4">
+
+      {/* HERO */}
+      <div className="text-center">
+        <h1 className="text-4xl font-bold">Shopio AI</h1>
+        <p className="text-gray-500 mt-2">
+          Find the best products instantly
+        </p>
+      </div>
 
       {/* Search */}
-      <SearchBar onSearch={search} />
+      <div className="mt-6 w-full max-w-xl">
+        <SearchBar onSearch={search} />
+      </div>
 
       {/* Loading */}
-      {loading && <p className="text-gray-400">Loading...</p>}
+      {loading && (
+        <p className="text-gray-400 mt-6">Loading...</p>
+      )}
 
       {/* Results */}
-      {data && <Results data={data} />}
+      {data && (
+        <div className="mt-10 w-full max-w-2xl">
+          <Results data={data} />
+        </div>
+      )}
 
     </div>
   )
