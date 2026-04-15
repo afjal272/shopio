@@ -8,7 +8,7 @@ export default function Home() {
   const { search, loading, data } = useSearch()
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 bg-black text-white">
+   <div className="min-h-screen bg-black text-white flex flex-col items-center pt-24 px-4">
       
       <h1 className="text-3xl font-bold">Shopio AI</h1>
 
