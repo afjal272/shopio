@@ -2,6 +2,7 @@
 
 import Hero from "@/components/Hero"
 import Features from "@/components/Features"
+import HowItWorks from "@/components/HowItWorks"
 import Results from "@/features/search/components/Results"
 import { useSearch } from "@/features/search/hooks/useSearch"
 
@@ -16,6 +17,9 @@ export default function Home() {
 
       {/* FEATURES */}
       <Features />
+
+      {/* HOW IT WORKS */}
+      <HowItWorks />
 
       {/* RESULTS */}
       <div className="max-w-3xl mx-auto px-4 pb-16">
