@@ -8,7 +8,7 @@ type Props = {
 
 export default function Hero({ onSearch }: Props) {
   return (
-    <section className="w-full min-h-[85vh] flex items-center justify-center px-4">
+    <section className="w-full min-h-[85vh] flex items-center justify-center px-4 bg-white">
 
       <div className="max-w-3xl mx-auto text-center">
 
@@ -18,7 +18,7 @@ export default function Hero({ onSearch }: Props) {
         </div>
 
         {/* Heading */}
-        <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight">
+        <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight text-black">
           Stop comparing. <br />
           <span className="text-gray-400">Start deciding.</span>
         </h1>
