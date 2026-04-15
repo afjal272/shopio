@@ -31,42 +31,56 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 bg-black text-white">
       <h1 className="text-3xl font-bold">Shopio AI</h1>
 
       {/* Search */}
       <div className="flex gap-2 w-full max-w-md">
         <input
-          className="border px-4 py-2 rounded w-full"
+          className="border border-zinc-700 bg-zinc-900 px-4 py-2 rounded w-full outline-none"
           placeholder="e.g. best phone under 20000 for gaming"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <button
           onClick={handleSearch}
-          className="bg-black text-white px-4 py-2 rounded"
+          className="bg-white text-black px-4 py-2 rounded font-medium"
         >
           Search
         </button>
       </div>
 
-      {loading && <p>Loading...</p>}
+      {loading && <p className="text-gray-400">Loading...</p>}
+
+      {/* NO RESULT */}
+      {result && result.best?.score === 0 && (
+        <div className="text-red-400 text-sm">
+          No suitable product found
+        </div>
+      )}
 
       {/* BEST PRODUCT */}
-      {result && result.best && (
-        <div className="mt-6 border p-4 rounded w-full max-w-md bg-zinc-900">
-          <h2 className="text-xl font-semibold text-green-400">
-            ⭐ Best Choice
-          </h2>
+      {result && result.best && result.best.score > 0 && (
+        <div className="mt-6 border border-zinc-700 p-5 rounded w-full max-w-md bg-zinc-900">
+          <h2 className="text-green-400 font-bold">🏆 Best Choice</h2>
 
-          <h3 className="text-lg font-bold mt-1">
+          <h3 className="text-xl font-bold mt-1">
             {result.best.title}
           </h3>
 
-          <p>Score: {result.best.score}</p>
-          <p>Confidence: {result.best.confidence}</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Score: {result.best.score} / 100
+          </p>
 
-          <p className="mt-2 text-sm text-gray-400">
+          {/* Score bar */}
+          <div className="w-full bg-zinc-700 h-2 rounded mt-2">
+            <div
+              className="bg-green-500 h-2 rounded"
+              style={{ width: `${result.best.score}%` }}
+            />
+          </div>
+
+          <p className="mt-3 text-sm text-gray-300">
             {result.best.explanation}
           </p>
         </div>
@@ -80,15 +94,27 @@ export default function Home() {
           </h3>
 
           <div className="flex flex-col gap-3">
-            {result.top3.map((item: any) => (
+            {result.top3.map((item: any, index: number) => (
               <div
                 key={item.id}
-                className="border p-3 rounded bg-zinc-800"
+                className="border border-zinc-700 p-4 rounded bg-zinc-900"
               >
-                <p className="font-medium">{item.title}</p>
-                <p className="text-sm text-gray-400">
-                  Score: {item.score}
-                </p>
+                <div className="flex justify-between items-center">
+                  <p className="font-semibold">
+                    #{index + 1} {item.title}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {item.score}/100
+                  </p>
+                </div>
+
+                {/* Score bar */}
+                <div className="w-full bg-zinc-700 h-2 rounded mt-2">
+                  <div
+                    className="bg-green-500 h-2 rounded"
+                    style={{ width: `${item.score}%` }}
+                  />
+                </div>
               </div>
             ))}
           </div>
