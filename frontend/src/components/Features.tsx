@@ -18,40 +18,46 @@ export default function Features() {
   ]
 
   return (
-    <section className="w-full py-20 bg-white">
+    <section className="w-full py-24 bg-gray-50">
       <div className="max-w-6xl mx-auto px-6">
 
         {/* Heading */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-14">
           <h2 className="text-3xl font-bold text-black">
             Why Shopio?
           </h2>
-          <p className="text-gray-500 mt-3">
+          <p className="text-gray-500 mt-2">
             Stop guessing. Start deciding.
           </p>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* OUTER BOX */}
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
 
-          {features.map((f, i) => (
-            <div
-              key={i}
-              className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition"
-            >
-              <div className="text-3xl mb-4">{f.icon}</div>
+          {/* Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-              <h3 className="text-lg font-semibold text-black mb-2">
-                {f.title}
-              </h3>
+            {features.map((f, i) => (
+              <div
+                key={i}
+                className="p-6 rounded-xl bg-gray-50 hover:bg-white hover:shadow-md transition border border-transparent hover:border-gray-200"
+              >
+                <div className="text-3xl mb-4">{f.icon}</div>
 
-              <p className="text-gray-600 text-sm">
-                {f.desc}
-              </p>
-            </div>
-          ))}
+                <h3 className="text-lg font-semibold text-black mb-2">
+                  {f.title}
+                </h3>
+
+                <p className="text-gray-600 text-sm">
+                  {f.desc}
+                </p>
+              </div>
+            ))}
+
+          </div>
 
         </div>
+
       </div>
     </section>
   )
