@@ -1,17 +1,24 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function SearchBar() {
-  const [query, setQuery] = useState("")
   const router = useRouter()
+  const params = useSearchParams()
+
+  const [query, setQuery] = useState("")
+
+  // 🔥 sync URL → input
+  useEffect(() => {
+    const q = params.get("q")
+    if (q) setQuery(q)
+  }, [params])
 
   const handleSearch = () => {
     if (!query.trim()) return
 
-    // 🔥 REDIRECT HERE
-    router.push(`/search?q=${query}`)
+    router.push(`/search?q=${encodeURIComponent(query)}`)
   }
 
   return (
@@ -22,6 +29,7 @@ export default function SearchBar() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
+
       <button
         onClick={handleSearch}
         className="bg-black text-white px-4 py-2 rounded"

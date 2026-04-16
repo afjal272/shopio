@@ -3,35 +3,43 @@ type Props = {
   index?: number
   highlight?: boolean
 }
-
-export default function ResultCard({ item, index, highlight }: Props) {
+export default function ResultCard({ item, highlight, index }: any) {
   return (
     <div
-      className={`border border-zinc-700 p-4 rounded ${
-        highlight ? "bg-zinc-900" : "bg-zinc-800"
+      className={`border rounded-xl p-5 bg-white shadow-sm transition ${
+        highlight ? "border-black shadow-md" : "border-gray-200"
       }`}
     >
+      {/* Title + Rank */}
       <div className="flex justify-between items-center">
-        <p className="font-semibold">
+        <h3 className="font-semibold text-black">
           {index !== undefined && `#${index + 1} `}
           {item.title}
-        </p>
+        </h3>
 
-        <p className="text-sm text-gray-400">
+        <span className="text-sm text-gray-500">
           {item.score}/100
-        </p>
+        </span>
       </div>
 
       {/* Score bar */}
-      <div className="w-full bg-zinc-700 h-2 rounded mt-2">
+      <div className="w-full bg-gray-200 h-2 rounded mt-2">
         <div
-          className="bg-green-500 h-2 rounded"
+          className="bg-black h-2 rounded"
           style={{ width: `${item.score}%` }}
         />
       </div>
 
-      {highlight && (
-        <p className="mt-3 text-sm text-gray-300">
+      {/* 🔥 Confidence */}
+      {item.confidence && (
+        <p className="text-xs text-gray-500 mt-2">
+          Confidence: {item.confidence}%
+        </p>
+      )}
+
+      {/* 🔥 Explanation */}
+      {item.explanation && (
+        <p className="text-sm text-gray-600 mt-3">
           {item.explanation}
         </p>
       )}
