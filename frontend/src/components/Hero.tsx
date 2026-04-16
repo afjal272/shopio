@@ -2,11 +2,7 @@
 
 import SearchBar from "@/features/search/components/SearchBar"
 
-type Props = {
-  onSearch: (query: string) => void
-}
-
-export default function Hero({ onSearch }: Props) {
+export default function Hero() {
   return (
     <section className="w-full min-h-[85vh] flex items-center justify-center px-4 bg-white">
 
@@ -32,7 +28,7 @@ export default function Hero({ onSearch }: Props) {
         {/* Search */}
         <div className="mt-10 flex justify-center">
           <div className="w-full max-w-xl">
-            <SearchBar onSearch={onSearch} />
+            <SearchBar />
           </div>
         </div>
 

@@ -1,9 +1,18 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
-export default function SearchBar({ onSearch }: any) {
+export default function SearchBar() {
   const [query, setQuery] = useState("")
+  const router = useRouter()
+
+  const handleSearch = () => {
+    if (!query.trim()) return
+
+    // 🔥 REDIRECT HERE
+    router.push(`/search?q=${query}`)
+  }
 
   return (
     <div className="flex gap-2 w-full max-w-md">
@@ -14,7 +23,7 @@ export default function SearchBar({ onSearch }: any) {
         onChange={(e) => setQuery(e.target.value)}
       />
       <button
-        onClick={() => onSearch(query)}
+        onClick={handleSearch}
         className="bg-black text-white px-4 py-2 rounded"
       >
         Search
