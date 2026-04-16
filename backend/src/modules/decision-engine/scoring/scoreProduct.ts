@@ -17,7 +17,7 @@ export function scoreProduct(
   const batteryScore = normalize(product.specs.battery || 0, 6000)
   const ratingScore = normalize(product.rating, 5)
 
-  // 🔥 MULTI-INTENT WEIGHTING
+  // 🔥 MULTI-INTENT LOGIC
   intent.forEach((i) => {
     const weight = 1 / intent.length
 
@@ -26,12 +26,15 @@ export function scoreProduct(
     }
 
     if (i === "camera") {
-      score += ratingScore * 40 * weight
+      score += ratingScore * 30 * weight
 
-      // 🔥 strong boost for actual camera phones
+      // camera tag boost
       if (product.tags.includes("camera")) {
-        score += 20
+        score += 25
       }
+
+      // processor matters for image processing
+      score += processorScore * 10 * weight
     }
 
     if (i === "battery") {
@@ -39,7 +42,7 @@ export function scoreProduct(
     }
   })
 
-  // 🔥 TAG-BASED BOOST
+  // 🔥 TAG BOOST
   if (intent.includes("gaming") && product.tags.includes("gaming")) {
     score += 10
   }
@@ -48,26 +51,27 @@ export function scoreProduct(
     score += 10
   }
 
-  // 🔥 LOW-END PENALTY
+  // 🔥 LOW-END PENALTY (softened)
   if ((product.specs.ram || 0) < 6) {
-    score -= 10
+    score -= 5
   }
 
-  // base trust
+  // 🔥 BASE TRUST (rating)
   score += ratingScore * 20
 
-  // 🔥 PRICE LOGIC
+  // 🔥 PRICE LOGIC (fixed)
   if (budget) {
-    const priceDiff = budget - product.price
+    const utilization = product.price / budget
 
-    if (priceDiff >= 0) {
-      const utilization = product.price / budget
-      score += utilization * 20
+    if (utilization >= 0.7 && utilization <= 1) {
+      score += 20
+    } else if (utilization < 0.7) {
+      score += 10
     } else {
-      score -= 20
+      score -= 15
     }
   }
 
-  // 🔥 FINAL SCORE (NO HARD CAP)
-  return Math.round(score / 1.2)
+  // 🔥 FINAL NORMALIZED SCORE (0–100)
+  return Math.min(100, Math.round(score))
 }

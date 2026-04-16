@@ -36,8 +36,8 @@ export function runEngine(query: string, products: Product[]) {
       ...best,
       explanation: generateExplanation(best, parsed.intent),
 
-      // 🔥 NEW: confidence score
-      confidence: Math.min(100, best.score)
+      // 🔥 FIXED CONFIDENCE
+      confidence: Math.min(100, Math.round(best.score))
     },
     top3: ranked.slice(0, 3),
     parsed
