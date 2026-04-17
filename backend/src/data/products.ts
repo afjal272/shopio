@@ -7,6 +7,7 @@ export const products: Product[] = [
     price: 18000,
     rating: 4.3,
     specs: { ram: 8, processorScore: 8, battery: 5000 },
+    image: "https://via.placeholder.com/150",
     tags: ["gaming"]
   },
   {
@@ -15,6 +16,7 @@ export const products: Product[] = [
     price: 17000,
     rating: 4.2,
     specs: { ram: 6, processorScore: 7, battery: 5000 },
+    image: "https://via.placeholder.com/150",
     tags: []
   },
   {
@@ -23,6 +25,7 @@ export const products: Product[] = [
     price: 16000,
     rating: 4.1,
     specs: { ram: 6, processorScore: 6, battery: 5000 },
+    image: "https://via.placeholder.com/150",
     tags: []
   },
   {
@@ -31,6 +34,7 @@ export const products: Product[] = [
     price: 19000,
     rating: 4.4,
     specs: { ram: 8, processorScore: 7, battery: 6000 },
+    image: "https://via.placeholder.com/150",
     tags: ["battery"]
   },
   {
@@ -39,6 +43,7 @@ export const products: Product[] = [
     price: 21000,
     rating: 4.5,
     specs: { ram: 12, processorScore: 9, battery: 5000 },
+    image: "https://via.placeholder.com/150",
     tags: ["gaming"]
   },
   {
@@ -47,6 +52,7 @@ export const products: Product[] = [
     price: 20000,
     rating: 4.3,
     specs: { ram: 8, processorScore: 8, battery: 5000 },
+    image: "https://via.placeholder.com/150",
     tags: ["gaming"]
   },
   {
@@ -55,6 +61,7 @@ export const products: Product[] = [
     price: 14000,
     rating: 4.0,
     specs: { ram: 4, processorScore: 5, battery: 5000 },
+    image: "https://via.placeholder.com/150",
     tags: []
   },
   {
@@ -63,6 +70,7 @@ export const products: Product[] = [
     price: 23000,
     rating: 4.4,
     specs: { ram: 8, processorScore: 8, battery: 5000 },
+    image: "https://via.placeholder.com/150",
     tags: ["camera"]
   },
   {
@@ -71,6 +79,7 @@ export const products: Product[] = [
     price: 25000,
     rating: 4.5,
     specs: { ram: 8, processorScore: 8, battery: 5000 },
+    image: "https://via.placeholder.com/150",
     tags: ["camera"]
   },
   {
@@ -79,14 +88,15 @@ export const products: Product[] = [
     price: 18000,
     rating: 4.2,
     specs: { ram: 8, processorScore: 7, battery: 5000 },
+    image: "https://via.placeholder.com/150",
     tags: []
-  }, // ✅ THIS COMMA WAS MISSING
-
+  },
   {
     id: "11",
     title: "Redmi Note 10 Pro",
     price: 18000,
     rating: 4.3,
+    image: "https://via.placeholder.com/150", // 🔥 FIXED POSITION
     specs: {
       ram: 6,
       processorScore: 7,

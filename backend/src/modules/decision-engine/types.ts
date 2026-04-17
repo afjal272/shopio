@@ -17,4 +17,5 @@ export type Product = {
   }
 
   tags: string[]
+  image?: string
 }
