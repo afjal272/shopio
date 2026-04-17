@@ -1,7 +1,7 @@
 import ResultCard from "./ResultCard"
 
 export default function Results({ data }: any) {
-  const { best, top3, parsed } = data
+  const { best, top3, parsed, notRecommended } = data
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -49,7 +49,7 @@ export default function Results({ data }: any) {
           <div className="flex flex-col gap-4">
             {top3.map((item: any, index: number) => (
               <ResultCard
-                key={item.id}
+                key={item.id + index} // 🔥 FIXED KEY
                 item={item}
                 index={index}
               />
@@ -57,6 +57,27 @@ export default function Results({ data }: any) {
           </div>
         </div>
       )}
+
+      {/* 🔥 NEW: WHY NOT THESE */}
+      {notRecommended?.length > 0 && (
+        <div className="mt-12">
+          <h3 className="text-lg font-semibold text-red-500 mb-4">
+            Why not these?
+          </h3>
+
+          <div className="flex flex-col gap-2">
+            {notRecommended.map((item: any, index: number) => (
+              <div
+                key={item.id + index}
+                className="text-sm text-gray-600 border border-gray-200 rounded-lg p-3 bg-gray-50"
+              >
+                ❌ <span className="font-medium text-black">{item.title}</span> — {item.reason}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

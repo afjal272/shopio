@@ -2,6 +2,7 @@ import { parseQuery } from "./parser/queryParser"
 import { applyFilters } from "./filters/applyFilters"
 import { rankProducts } from "./ranking/rankProducts"
 import { generateExplanation } from "./explanation/generateExplanation"
+import { getRejectionReason } from "./explanation/getRejectionReason"
 import { Product } from "./types"
 
 export function runEngine(query: string, products: Product[]) {
@@ -15,10 +16,8 @@ export function runEngine(query: string, products: Product[]) {
     parsed.budget
   )
 
-  // ✅ SAFE BEST
   const best = ranked.length > 0 ? ranked[0] : null
 
-  // 🔥 EMPTY CASE (FULLY SAFE)
   if (!best || ranked.length === 0) {
     return {
       best: {
@@ -28,23 +27,30 @@ export function runEngine(query: string, products: Product[]) {
         explanation: "No products match your budget or requirements"
       },
       top3: [],
+      notRecommended: [], // 🔥 IMPORTANT
       parsed
     }
   }
 
   return {
-    // ✅ BEST (fully enriched)
+    // ✅ BEST
     best: {
       ...best,
       explanation: generateExplanation(best, parsed.intent),
       confidence: Math.min(100, Math.round(best.score))
     },
 
-    // ✅ TOP 3 (safe + enriched)
+    // ✅ TOP 3
     top3: ranked.slice(0, 3).map((p) => ({
       ...p,
       explanation: generateExplanation(p, parsed.intent),
       confidence: Math.min(100, Math.round(p.score))
+    })),
+
+    // 🔥 NEW (YOU MISSED THIS)
+    notRecommended: ranked.slice(3, 6).map((p) => ({
+      ...p,
+      reason: getRejectionReason(p, parsed.intent, parsed.budget)
     })),
 
     parsed
