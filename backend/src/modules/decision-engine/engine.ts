@@ -15,10 +15,11 @@ export function runEngine(query: string, products: Product[]) {
     parsed.budget
   )
 
-  const best = ranked[0]
+  // ✅ SAFE BEST
+  const best = ranked.length > 0 ? ranked[0] : null
 
-  // 🔥 EMPTY CASE
-  if (!best) {
+  // 🔥 EMPTY CASE (FULLY SAFE)
+  if (!best || ranked.length === 0) {
     return {
       best: {
         title: "No suitable product found",
@@ -39,7 +40,7 @@ export function runEngine(query: string, products: Product[]) {
       confidence: Math.min(100, Math.round(best.score))
     },
 
-    // ✅ TOP 3 (FIXED — THIS WAS YOUR BUG)
+    // ✅ TOP 3 (safe + enriched)
     top3: ranked.slice(0, 3).map((p) => ({
       ...p,
       explanation: generateExplanation(p, parsed.intent),
