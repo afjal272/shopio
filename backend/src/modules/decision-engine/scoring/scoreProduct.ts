@@ -17,7 +17,6 @@ export function scoreProduct(
   const batteryScore = normalize(product.specs.battery || 0, 6000)
   const ratingScore = normalize(product.rating, 5)
 
-  // 🔥 MULTI-INTENT
   intent.forEach((i) => {
     const weight = 1 / intent.length
 
@@ -33,18 +32,17 @@ export function scoreProduct(
       score += ratingScore * 30 * weight
 
       if (product.tags.includes("camera")) {
-        score += 15 // 🔻 reduced from 25 (overboost fix)
+        score += 15
       }
 
       score += processorScore * 10 * weight
     }
 
     if (i === "battery") {
-      score += batteryScore * 50 * weight // 🔻 reduced from 70
+      score += batteryScore * 50 * weight
     }
   })
 
-  // 🔥 TAG BOOST (controlled)
   if (intent.includes("gaming") && product.tags.includes("gaming")) {
     score += 5
   }
@@ -53,32 +51,28 @@ export function scoreProduct(
     score += 5
   }
 
-  // 🔥 LOW-END PENALTY
   if ((product.specs.ram || 0) < 6) {
     score -= 8
   }
 
-  // 🔥 BASE TRUST
   score += ratingScore * 15
 
-  // 🔥 PRICE LOGIC (better spread)
   if (budget) {
     const utilization = product.price / budget
 
-    if (utilization >= 0.8 && utilization <= 1) {
-      score += 15
-    } else if (utilization >= 0.6 && utilization < 0.8) {
-      score += 10
-    } else if (utilization < 0.6) {
-      score += 5
-    } else {
-      score -= 20
-    }
+    if (utilization >= 0.8 && utilization <= 1) score += 15
+    else if (utilization >= 0.6) score += 10
+    else if (utilization < 0.6) score += 5
+    else score -= 20
   }
 
-  // 🔥 FINAL NORMALIZATION (IMPORTANT)
-  const finalScore = Math.round(score)
-
-  // clamp between 20–100 (avoid useless low noise)
-  return Math.max(20, Math.min(100, finalScore))
+  return {
+    total: Math.min(100, Math.round(score)),
+    breakdown: {
+      ram: Math.round(ramScore * 100),
+      processor: Math.round(processorScore * 100),
+      battery: Math.round(batteryScore * 100),
+      rating: Math.round(ratingScore * 100)
+    }
+  }
 }

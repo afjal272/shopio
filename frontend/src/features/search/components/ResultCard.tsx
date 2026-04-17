@@ -3,6 +3,7 @@ type Props = {
   index?: number
   highlight?: boolean
 }
+
 export default function ResultCard({ item, highlight, index }: any) {
   return (
     <div
@@ -31,7 +32,7 @@ export default function ResultCard({ item, highlight, index }: any) {
       </div>
 
       {/* 🔥 Confidence */}
-      {item.confidence && (
+      {item.confidence !== undefined && (
         <p className="text-xs text-gray-500 mt-2">
           Confidence: {item.confidence}%
         </p>
@@ -42,6 +43,27 @@ export default function ResultCard({ item, highlight, index }: any) {
         <p className="text-sm text-gray-600 mt-3">
           {item.explanation}
         </p>
+      )}
+
+      {/* 🔥 NEW: Breakdown */}
+      {item.breakdown && (
+        <div className="mt-4 space-y-2">
+          {Object.entries(item.breakdown).map(([key, value]: any) => (
+            <div key={key}>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span className="capitalize">{key}</span>
+                <span>{value}%</span>
+              </div>
+
+              <div className="w-full bg-gray-200 h-1 rounded">
+                <div
+                  className="bg-black h-1 rounded"
+                  style={{ width: `${value}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
