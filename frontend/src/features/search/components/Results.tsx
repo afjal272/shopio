@@ -1,7 +1,7 @@
 import ResultCard from "./ResultCard"
 
 export default function Results({ data }: any) {
-  const { best, top3, parsed, notRecommended } = data
+  const { best, top3, parsed, notRecommended, comparison } = data
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -39,6 +39,21 @@ export default function Results({ data }: any) {
         </div>
       )}
 
+      {/* 🔥 NEW: COMPARISON */}
+      {comparison?.length > 0 && (
+        <div className="mt-10">
+          <h3 className="text-lg font-semibold text-blue-600 mb-4">
+            Why this is better?
+          </h3>
+
+          <ul className="text-sm text-gray-700 space-y-2">
+            {comparison.map((point: string, i: number) => (
+              <li key={i}>✔ {point}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ✅ TOP 3 */}
       {top3?.length > 0 && (
         <div className="mt-10">
@@ -49,7 +64,7 @@ export default function Results({ data }: any) {
           <div className="flex flex-col gap-4">
             {top3.map((item: any, index: number) => (
               <ResultCard
-                key={item.id + index} // 🔥 FIXED KEY
+                key={item.id + index}
                 item={item}
                 index={index}
               />
@@ -58,7 +73,7 @@ export default function Results({ data }: any) {
         </div>
       )}
 
-      {/* 🔥 NEW: WHY NOT THESE */}
+      {/* 🔥 WHY NOT THESE */}
       {notRecommended?.length > 0 && (
         <div className="mt-12">
           <h3 className="text-lg font-semibold text-red-500 mb-4">

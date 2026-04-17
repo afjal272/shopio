@@ -3,6 +3,7 @@ import { applyFilters } from "./filters/applyFilters"
 import { rankProducts } from "./ranking/rankProducts"
 import { generateExplanation } from "./explanation/generateExplanation"
 import { getRejectionReason } from "./explanation/getRejectionReason"
+import { compareProducts } from "./comparison/compareProducts"
 import { Product } from "./types"
 
 export function runEngine(query: string, products: Product[]) {
@@ -27,7 +28,8 @@ export function runEngine(query: string, products: Product[]) {
         explanation: "No products match your budget or requirements"
       },
       top3: [],
-      notRecommended: [], // 🔥 IMPORTANT
+      notRecommended: [],
+      comparison: [], // 🔥 add this
       parsed
     }
   }
@@ -47,11 +49,17 @@ export function runEngine(query: string, products: Product[]) {
       confidence: Math.min(100, Math.round(p.score))
     })),
 
-    // 🔥 NEW (YOU MISSED THIS)
+    // ✅ NOT RECOMMENDED
     notRecommended: ranked.slice(3, 6).map((p) => ({
       ...p,
       reason: getRejectionReason(p, parsed.intent, parsed.budget)
     })),
+
+    // 🔥 NEW: COMPARISON (YOU MISSED THIS)
+    comparison:
+      ranked.length > 1
+        ? compareProducts(ranked[0], ranked[1])
+        : [],
 
     parsed
   }
