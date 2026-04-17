@@ -32,14 +32,20 @@ export function runEngine(query: string, products: Product[]) {
   }
 
   return {
+    // ✅ BEST (fully enriched)
     best: {
       ...best,
       explanation: generateExplanation(best, parsed.intent),
-
-      // 🔥 FIXED CONFIDENCE
       confidence: Math.min(100, Math.round(best.score))
     },
-    top3: ranked.slice(0, 3),
+
+    // ✅ TOP 3 (FIXED — THIS WAS YOUR BUG)
+    top3: ranked.slice(0, 3).map((p) => ({
+      ...p,
+      explanation: generateExplanation(p, parsed.intent),
+      confidence: Math.min(100, Math.round(p.score))
+    })),
+
     parsed
   }
 }

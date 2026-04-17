@@ -17,61 +17,68 @@ export function scoreProduct(
   const batteryScore = normalize(product.specs.battery || 0, 6000)
   const ratingScore = normalize(product.rating, 5)
 
-  // 🔥 MULTI-INTENT LOGIC
+  // 🔥 MULTI-INTENT
   intent.forEach((i) => {
     const weight = 1 / intent.length
 
     if (i === "gaming") {
-      score += (ramScore * 30 + processorScore * 40 + batteryScore * 10) * weight
+      score += (ramScore * 25 + processorScore * 35 + batteryScore * 10) * weight
+    }
+
+    if (i === "balanced") {
+      score += (ramScore * 20 + processorScore * 20 + batteryScore * 15 + ratingScore * 25) * weight
     }
 
     if (i === "camera") {
       score += ratingScore * 30 * weight
 
-      // camera tag boost
       if (product.tags.includes("camera")) {
-        score += 25
+        score += 15 // 🔻 reduced from 25 (overboost fix)
       }
 
-      // processor matters for image processing
       score += processorScore * 10 * weight
     }
 
     if (i === "battery") {
-      score += batteryScore * 70 * weight
+      score += batteryScore * 50 * weight // 🔻 reduced from 70
     }
   })
 
-  // 🔥 TAG BOOST
+  // 🔥 TAG BOOST (controlled)
   if (intent.includes("gaming") && product.tags.includes("gaming")) {
-    score += 10
+    score += 5
   }
 
   if (intent.includes("battery") && product.tags.includes("battery")) {
-    score += 10
+    score += 5
   }
 
-  // 🔥 LOW-END PENALTY (softened)
+  // 🔥 LOW-END PENALTY
   if ((product.specs.ram || 0) < 6) {
-    score -= 5
+    score -= 8
   }
 
-  // 🔥 BASE TRUST (rating)
-  score += ratingScore * 20
+  // 🔥 BASE TRUST
+  score += ratingScore * 15
 
-  // 🔥 PRICE LOGIC (fixed)
+  // 🔥 PRICE LOGIC (better spread)
   if (budget) {
     const utilization = product.price / budget
 
-    if (utilization >= 0.7 && utilization <= 1) {
-      score += 20
-    } else if (utilization < 0.7) {
+    if (utilization >= 0.8 && utilization <= 1) {
+      score += 15
+    } else if (utilization >= 0.6 && utilization < 0.8) {
       score += 10
+    } else if (utilization < 0.6) {
+      score += 5
     } else {
-      score -= 15
+      score -= 20
     }
   }
 
-  // 🔥 FINAL NORMALIZED SCORE (0–100)
-  return Math.min(100, Math.round(score))
+  // 🔥 FINAL NORMALIZATION (IMPORTANT)
+  const finalScore = Math.round(score)
+
+  // clamp between 20–100 (avoid useless low noise)
+  return Math.max(20, Math.min(100, finalScore))
 }
