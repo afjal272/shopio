@@ -8,7 +8,8 @@ export const products: Product[] = [
     rating: 4.3,
     specs: { ram: 8, processorScore: 8, battery: 5000 },
     image: "https://via.placeholder.com/150",
-    tags: ["gaming"]
+    tags: ["gaming"],
+    reviewsCount: 1500
   },
   {
     id: "2",
@@ -17,7 +18,8 @@ export const products: Product[] = [
     rating: 4.2,
     specs: { ram: 6, processorScore: 7, battery: 5000 },
     image: "https://via.placeholder.com/150",
-    tags: []
+    tags: [],
+    reviewsCount: 900
   },
   {
     id: "3",
@@ -26,7 +28,8 @@ export const products: Product[] = [
     rating: 4.1,
     specs: { ram: 6, processorScore: 6, battery: 5000 },
     image: "https://via.placeholder.com/150",
-    tags: []
+    tags: [],
+    reviewsCount: 600
   },
   {
     id: "4",
@@ -35,7 +38,8 @@ export const products: Product[] = [
     rating: 4.4,
     specs: { ram: 8, processorScore: 7, battery: 6000 },
     image: "https://via.placeholder.com/150",
-    tags: ["battery"]
+    tags: ["battery"],
+    reviewsCount: 2000
   },
   {
     id: "5",
@@ -44,7 +48,8 @@ export const products: Product[] = [
     rating: 4.5,
     specs: { ram: 12, processorScore: 9, battery: 5000 },
     image: "https://via.placeholder.com/150",
-    tags: ["gaming"]
+    tags: ["gaming"],
+    reviewsCount: 1800
   },
   {
     id: "6",
@@ -53,7 +58,8 @@ export const products: Product[] = [
     rating: 4.3,
     specs: { ram: 8, processorScore: 8, battery: 5000 },
     image: "https://via.placeholder.com/150",
-    tags: ["gaming"]
+    tags: ["gaming"],
+    reviewsCount: 1400
   },
   {
     id: "7",
@@ -62,7 +68,8 @@ export const products: Product[] = [
     rating: 4.0,
     specs: { ram: 4, processorScore: 5, battery: 5000 },
     image: "https://via.placeholder.com/150",
-    tags: []
+    tags: [],
+    reviewsCount: 300
   },
   {
     id: "8",
@@ -71,7 +78,8 @@ export const products: Product[] = [
     rating: 4.4,
     specs: { ram: 8, processorScore: 8, battery: 5000 },
     image: "https://via.placeholder.com/150",
-    tags: ["camera"]
+    tags: ["camera"],
+    reviewsCount: 1200
   },
   {
     id: "9",
@@ -80,7 +88,8 @@ export const products: Product[] = [
     rating: 4.5,
     specs: { ram: 8, processorScore: 8, battery: 5000 },
     image: "https://via.placeholder.com/150",
-    tags: ["camera"]
+    tags: ["camera"],
+    reviewsCount: 1700
   },
   {
     id: "10",
@@ -89,19 +98,21 @@ export const products: Product[] = [
     rating: 4.2,
     specs: { ram: 8, processorScore: 7, battery: 5000 },
     image: "https://via.placeholder.com/150",
-    tags: []
+    tags: [],
+    reviewsCount: 800
   },
   {
     id: "11",
     title: "Redmi Note 10 Pro",
     price: 18000,
     rating: 4.3,
-    image: "https://via.placeholder.com/150", // 🔥 FIXED POSITION
+    image: "https://via.placeholder.com/150",
     specs: {
       ram: 6,
       processorScore: 7,
       battery: 5000
     },
-    tags: ["camera"]
+    tags: ["camera"],
+    reviewsCount: 1100
   }
 ]
