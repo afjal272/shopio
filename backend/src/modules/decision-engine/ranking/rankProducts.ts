@@ -12,14 +12,30 @@ export function rankProducts(
 
       return {
         ...p,
-        score: result.total,        // ✅ FIX
-        breakdown: result.breakdown // ✅ NEW
+        score: result.total,
+        breakdown: result.breakdown
       }
     })
     .sort((a, b) => {
-      if (b.score === a.score) {
+      // 🔥 1. PRIMARY: SCORE
+      if (b.score !== a.score) {
+        return b.score - a.score
+      }
+
+      // 🔥 2. TRUST (reviews)
+      const reviewsA = a.reviewsCount || 0
+      const reviewsB = b.reviewsCount || 0
+
+      if (reviewsB !== reviewsA) {
+        return reviewsB - reviewsA
+      }
+
+      // 🔥 3. RATING
+      if (b.rating !== a.rating) {
         return b.rating - a.rating
       }
-      return b.score - a.score
+
+      // 🔥 4. VALUE FOR MONEY (lower price wins if similar)
+      return a.price - b.price
     })
 }
