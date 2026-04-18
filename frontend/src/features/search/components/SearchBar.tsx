@@ -9,7 +9,6 @@ export default function SearchBar() {
 
   const [query, setQuery] = useState("")
 
-  // 🔥 sync URL → input
   useEffect(() => {
     const q = params.get("q")
     if (q) setQuery(q)
@@ -17,14 +16,13 @@ export default function SearchBar() {
 
   const handleSearch = () => {
     if (!query.trim()) return
-
     router.push(`/search?q=${encodeURIComponent(query)}`)
   }
 
   return (
-    <div className="flex gap-2 w-full max-w-md">
+    <div className="flex items-center gap-2 w-full">
       <input
-        className="border px-4 py-2 rounded w-full"
+        className="flex-1 border px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-black/20"
         placeholder="e.g. best phone under 20000 for gaming"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -32,7 +30,7 @@ export default function SearchBar() {
 
       <button
         onClick={handleSearch}
-        className="bg-black text-white px-4 py-2 rounded"
+        className="bg-black text-white px-5 py-3 rounded-lg hover:opacity-90 transition"
       >
         Search
       </button>
