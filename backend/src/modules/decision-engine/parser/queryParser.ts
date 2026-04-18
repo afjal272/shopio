@@ -3,7 +3,7 @@ import { ParsedQuery } from "../types"
 export function parseQuery(query: string): ParsedQuery {
   const q = query.toLowerCase()
 
-  // 💰 Budget extract (handles: under 20000, below 20k, etc)
+  // 💰 Budget extract (under 20000, below 20k, 20k, etc)
   const budgetMatch =
     q.match(/under\s?(\d+)/) ||
     q.match(/below\s?(\d+)/) ||
@@ -18,42 +18,32 @@ export function parseQuery(query: string): ParsedQuery {
 
   const intent: string[] = []
 
-  // 🎮 GAMING
-  if (
-    q.includes("gaming") ||
-    q.includes("game") ||
-    q.includes("pubg") ||
-    q.includes("bgmi")
-  ) {
-    intent.push("gaming")
+  // 🔥 INTENT MAP (SCALABLE SYSTEM)
+  const intentMap: Record<string, string[]> = {
+    gaming: ["gaming", "game", "pubg", "bgmi", "fps"],
+    camera: ["camera", "photo", "photography", "video"],
+    battery: ["battery", "backup", "long lasting", "power"],
+    performance: ["fast", "performance", "smooth"]
   }
 
-  // 📸 CAMERA
-  if (
-    q.includes("camera") ||
-    q.includes("photo") ||
-    q.includes("photography")
-  ) {
-    intent.push("camera")
-  }
+  // 🔍 DETECT INTENTS
+  Object.entries(intentMap).forEach(([key, keywords]) => {
+    if (keywords.some((word) => q.includes(word))) {
+      intent.push(key)
+    }
+  })
 
-  // 🔋 BATTERY
-  if (
-    q.includes("battery") ||
-    q.includes("backup") ||
-    q.includes("long lasting")
-  ) {
-    intent.push("battery")
-  }
+  // 🔥 REMOVE DUPLICATES (safety)
+  const uniqueIntent = [...new Set(intent)]
 
-  // ⚡ DEFAULT INTENT (IMPORTANT FIX)
-  if (intent.length === 0) {
-    intent.push("balanced")
+  // ⚡ DEFAULT INTENT
+  if (uniqueIntent.length === 0) {
+    uniqueIntent.push("balanced")
   }
 
   return {
     category: "smartphone",
     budget,
-    intent
+    intent: uniqueIntent
   }
 }
