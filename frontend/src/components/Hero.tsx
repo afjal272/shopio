@@ -6,10 +6,10 @@ export default function Hero() {
   return (
     <section className="w-full min-h-[85vh] flex items-center justify-center px-4 bg-white">
 
-      <div className="max-w-3xl mx-auto text-center">
+      <div className="w-full max-w-3xl mx-auto text-center">
 
         {/* Badge */}
-        <div className="inline-block mb-6 px-4 py-1 text-sm bg-gray-100 rounded-full text-gray-600">
+        <div className="inline-block mb-5 px-4 py-1 text-sm bg-gray-100 rounded-full text-gray-600">
           AI-powered product search
         </div>
 
@@ -20,16 +20,14 @@ export default function Hero() {
         </h1>
 
         {/* Subtext */}
-        <p className="mt-6 text-lg text-gray-600 max-w-2xl mx-auto">
+        <p className="mt-5 text-lg text-gray-600 max-w-xl mx-auto">
           Shopio finds the best product for you based on your needs,
           budget and usage — instantly.
         </p>
 
         {/* Search */}
-        <div className="mt-10 flex justify-center">
-          <div className="w-full max-w-xl">
-            <SearchBar />
-          </div>
+        <div className="mt-8 w-full max-w-md mx-auto">
+          <SearchBar />
         </div>
 
       </div>
