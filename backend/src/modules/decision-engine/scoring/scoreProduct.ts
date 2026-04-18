@@ -17,45 +17,47 @@ export function scoreProduct(
   const batteryScore = normalize(product.specs.battery || 0, 6000)
   const ratingScore = normalize(product.rating, 5)
 
-  intent.forEach((i) => {
-    const weight = 1 / intent.length
+  const weights: any = {
+    gaming: { ram: 0.3, processor: 0.4, battery: 0.1, rating: 0.2 },
+    camera: { ram: 0.1, processor: 0.2, battery: 0.1, rating: 0.6 },
+    battery: { ram: 0.1, processor: 0.1, battery: 0.6, rating: 0.2 },
+    balanced: { ram: 0.25, processor: 0.25, battery: 0.2, rating: 0.3 }
+  }
 
-    if (i === "gaming") {
-      score += (ramScore * 25 + processorScore * 35 + batteryScore * 10) * weight
-    }
+  intent.forEach((i, index) => {
+    const w = weights[i] || weights["balanced"]
 
-    if (i === "balanced") {
-      score += (ramScore * 20 + processorScore * 20 + batteryScore * 15 + ratingScore * 25) * weight
-    }
+    const priorityWeight =
+      index === 0 ? 0.6 : 0.4 / Math.max(1, intent.length - 1)
 
-    if (i === "camera") {
-      score += ratingScore * 30 * weight
-
-      if (product.tags.includes("camera")) {
-        score += 15
-      }
-
-      score += processorScore * 10 * weight
-    }
-
-    if (i === "battery") {
-      score += batteryScore * 50 * weight
-    }
+    score +=
+      (ramScore * w.ram +
+        processorScore * w.processor +
+        batteryScore * w.battery +
+        ratingScore * w.rating) *
+      100 *
+      priorityWeight
   })
 
-  if (intent.includes("gaming") && product.tags.includes("gaming")) {
-    score += 5
+  if (intent.includes("gaming") && product.tags.includes("gaming")) score += 5
+  if (intent.includes("battery") && product.tags.includes("battery")) score += 5
+
+  if ((product.specs.ram || 0) < 6) score -= 8
+
+  if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) {
+    score -= 15
   }
 
-  if (intent.includes("battery") && product.tags.includes("battery")) {
-    score += 5
-  }
+  if (product.rating < 4) score -= 10
 
-  if ((product.specs.ram || 0) < 6) {
-    score -= 8
-  }
+  const reviews = product.reviewsCount || 100
+  const trustScore = Math.log10(reviews + 1) * ratingScore
+  score += trustScore * 20
 
-  score += ratingScore * 15
+  const valueScore =
+    ((product.specs.processorScore || 0) + (product.specs.ram || 0)) /
+    product.price
+  score += valueScore * 1000
 
   if (budget) {
     const utilization = product.price / budget
