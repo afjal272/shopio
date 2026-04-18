@@ -8,22 +8,46 @@ export function getRejectionReason(
   const ram = product.specs.ram || 0
   const battery = product.specs.battery || 0
   const processor = product.specs.processorScore || 0
+  const rating = product.rating
+  const reviews = product.reviewsCount || 0
 
+  const reasons: string[] = []
+
+  // 💰 BUDGET
   if (budget && product.price > budget) {
-    return `Above your budget`
+    reasons.push(`price exceeds your budget (₹${product.price})`)
   }
 
-  if (intent.includes("gaming") && ram < 6) {
-    return `Not suitable for gaming due to low RAM (${ram}GB)`
+  // 🎮 GAMING
+  if (intent.includes("gaming")) {
+    if (ram < 6) {
+      reasons.push(`low RAM (${ram}GB) for gaming`)
+    }
+    if (processor < 6) {
+      reasons.push(`weak processor (${processor}/10)`)
+    }
   }
 
+  // 🔋 BATTERY
   if (intent.includes("battery") && battery < 5000) {
-    return `Battery capacity is lower than expected (${battery}mAh)`
+    reasons.push(`battery is lower (${battery}mAh)`)
   }
 
-  if (intent.includes("camera") && product.rating < 4.2) {
-    return `Camera performance is average`
+  // 📸 CAMERA
+  if (intent.includes("camera") && rating < 4.2) {
+    reasons.push(`average camera performance (${rating}⭐)`)
   }
 
-  return `Less optimal compared to top choices`
+  // 🔥 TRUST
+  if (reviews < 200) {
+    reasons.push(`low user trust (${reviews} reviews)`)
+  }
+
+  // 🔥 FALLBACK
+  if (reasons.length === 0) {
+    return `Less competitive compared to better-ranked options`
+  }
+
+  // 🔥 CLEAN OUTPUT (max 2 reasons)
+  return reasons.slice(0, 2).join(", ")
 }
