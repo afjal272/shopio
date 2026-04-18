@@ -3,25 +3,56 @@ import { Product } from "../types"
 export function compareProducts(a: Product, b: Product) {
   const result: string[] = []
 
-  if ((a.specs.ram || 0) > (b.specs.ram || 0)) {
-    result.push(`${a.title} has more RAM (${a.specs.ram}GB vs ${b.specs.ram}GB)`)
+  const aRam = a.specs.ram || 0
+  const bRam = b.specs.ram || 0
+
+  const aProcessor = a.specs.processorScore || 0
+  const bProcessor = b.specs.processorScore || 0
+
+  const aBattery = a.specs.battery || 0
+  const bBattery = b.specs.battery || 0
+
+  const aReviews = a.reviewsCount || 0
+  const bReviews = b.reviewsCount || 0
+
+  // 🔥 RAM
+  if (aRam > bRam) {
+    result.push(`${a.title} offers better multitasking with ${aRam}GB RAM vs ${bRam}GB`)
   }
 
-  if ((a.specs.processorScore || 0) > (b.specs.processorScore || 0)) {
-    result.push(`${a.title} has a stronger processor`)
+  // 🔥 PROCESSOR
+  if (aProcessor > bProcessor) {
+    result.push(`${a.title} has a stronger processor (${aProcessor}/10 vs ${bProcessor}/10)`)
   }
 
-  if ((a.specs.battery || 0) > (b.specs.battery || 0)) {
-    result.push(`${a.title} has better battery (${a.specs.battery}mAh)`)
+  // 🔥 BATTERY
+  if (aBattery > bBattery) {
+    result.push(`${a.title} provides longer battery life (${aBattery}mAh vs ${bBattery}mAh)`)
   }
 
+  // 🔥 RATING
   if (a.rating > b.rating) {
-    result.push(`${a.title} has higher rating (${a.rating})`)
+    result.push(`${a.title} is rated higher by users (${a.rating}⭐ vs ${b.rating}⭐)`)
   }
 
-  if (a.price < b.price) {
-    result.push(`${a.title} is more value for money`)
+  // 🔥 TRUST (REVIEWS)
+  if (aReviews > bReviews) {
+    result.push(`${a.title} is more trusted with ${aReviews}+ reviews`)
   }
 
-  return result
+  // 🔥 VALUE FOR MONEY
+  const aValue = (aProcessor + aRam) / a.price
+  const bValue = (bProcessor + bRam) / b.price
+
+  if (aValue > bValue) {
+    result.push(`${a.title} offers better value for money`)
+  }
+
+  // 🔥 FALLBACK (VERY IMPORTANT)
+  if (result.length === 0) {
+    result.push(`${a.title} performs similarly but is still a solid overall choice`)
+  }
+
+  // 🔥 LIMIT (clean output)
+  return result.slice(0, 3)
 }
