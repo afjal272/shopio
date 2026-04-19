@@ -1,23 +1,29 @@
 import { Product } from "../types"
 
+export type IntentType = "gaming" | "camera" | "battery" | "balanced"
+
 function normalize(value: number, max: number) {
-  if (!value) return 0
+  if (!value || max === 0) return 0
   return value / max
 }
 
 export function scoreProduct(
   product: Product,
-  intent: string[],
+  intent: IntentType[],
   budget: number | null
 ) {
   let score = 0
+  let maxScore = 0
 
   const ramScore = normalize(product.specs.ram || 0, 16)
   const processorScore = normalize(product.specs.processorScore || 0, 10)
   const batteryScore = normalize(product.specs.battery || 0, 6000)
   const ratingScore = normalize(product.rating, 5)
 
-  const weights: any = {
+  const weights: Record<
+    IntentType,
+    { ram: number; processor: number; battery: number; rating: number }
+  > = {
     gaming: { ram: 0.3, processor: 0.4, battery: 0.1, rating: 0.2 },
     camera: { ram: 0.1, processor: 0.2, battery: 0.1, rating: 0.6 },
     battery: { ram: 0.1, processor: 0.1, battery: 0.6, rating: 0.2 },
@@ -25,51 +31,89 @@ export function scoreProduct(
   }
 
   intent.forEach((i, index) => {
-    const w = weights[i] || weights["balanced"]
+    const w = weights[i]
 
     const priorityWeight =
       index === 0 ? 0.6 : 0.4 / Math.max(1, intent.length - 1)
 
-    score +=
-      (ramScore * w.ram +
-        processorScore * w.processor +
-        batteryScore * w.battery +
-        ratingScore * w.rating) *
-      100 *
-      priorityWeight
+    const partScore =
+      ramScore * w.ram +
+      processorScore * w.processor +
+      batteryScore * w.battery +
+      ratingScore * w.rating
+
+    score += partScore * priorityWeight
+    maxScore += 1 * priorityWeight
   })
 
-  if (intent.includes("gaming") && product.tags.includes("gaming")) score += 5
-  if (intent.includes("battery") && product.tags.includes("battery")) score += 5
-
-  if ((product.specs.ram || 0) < 6) score -= 8
-
-  if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) {
-    score -= 15
+  // 🔥 TAG BOOST
+  if (intent.includes("gaming") && product.tags.includes("gaming")) {
+    score += 0.05
+    maxScore += 0.05
   }
 
-  if (product.rating < 4) score -= 10
+  if (intent.includes("battery") && product.tags.includes("battery")) {
+    score += 0.05
+    maxScore += 0.05
+  }
 
-  const reviews = product.reviewsCount || 100
+  // 🔻 PENALTIES
+  if ((product.specs.ram || 0) < 6) score -= 0.1
+
+  if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) {
+    score -= 0.15
+  }
+
+  if (product.rating < 4) score -= 0.1
+
+  // 🔥 TRUST SCORE
+  const reviews =
+    (product as Product & { reviewsCount?: number }).reviewsCount || 100
+
   const trustScore = Math.log10(reviews + 1) * ratingScore
-  score += trustScore * 20
+  score += trustScore * 0.2
+  maxScore += 0.2
 
-  const valueScore =
+  // 🔥 VALUE SCORE (SAFE + CONTROLLED)
+  const rawValue =
     ((product.specs.processorScore || 0) + (product.specs.ram || 0)) /
-    product.price
-  score += valueScore * 1000
+    Math.max(product.price, 1)
 
+  const valueScore = Math.min(rawValue, 0.002)
+
+  score += valueScore * 8   // 🔻 reduced from 10 (more realistic)
+  maxScore += 8
+
+  // 🔥 PRICE LOGIC
   if (budget) {
     const utilization = product.price / budget
 
-    if (utilization >= 0.8 && utilization <= 1) score += 15
-    else if (utilization >= 0.6) score += 10
-    else if (utilization < 0.6) score += 5
-    else score -= 20
+    if (utilization >= 0.8 && utilization <= 1) score += 0.15
+    else if (utilization >= 0.6) score += 0.1
+    else if (utilization < 0.6) score += 0.05
+    else score -= 0.2
+
+    maxScore += 0.2
   }
 
+  // 🔥 SAFETY (division fix)
+  if (maxScore === 0) {
+    return {
+      total: 0,
+      breakdown: {
+        ram: 0,
+        processor: 0,
+        battery: 0,
+        rating: 0
+      }
+    }
+  }
+
+  // 🔥 FINAL NORMALIZATION
+  const finalScore = (score / maxScore) * 100
+
   return {
-    total: Math.min(100, Math.round(score)),
+    total: Math.max(0, Math.min(100, Math.round(finalScore))),
     breakdown: {
       ram: Math.round(ramScore * 100),
       processor: Math.round(processorScore * 100),
