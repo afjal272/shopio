@@ -33,11 +33,7 @@ export function scoreProduct(
 
   if (intent.length === 1) {
     const w = W[intent[0]]
-    core =
-      ram * w.ram +
-      cpu * w.cpu +
-      batt * w.batt +
-      rating * w.rating
+    core = ram * w.ram + cpu * w.cpu + batt * w.batt + rating * w.rating
   } else {
     intent.forEach((i, idx) => {
       const w = W[i]
@@ -55,57 +51,54 @@ export function scoreProduct(
   // ---------- ADJUSTMENTS ----------
   let adj = 0
 
-  // 🔥 TAG BOOST
-  if (intent.includes("gaming") && product.tags.includes("gaming")) adj += 0.05
-  if (intent.includes("battery") && product.tags.includes("battery")) adj += 0.05
-  if (intent.includes("camera") && product.tags.includes("camera")) adj += 0.05
+  // TAG BOOST
+  if (intent.includes("gaming") && product.tags.includes("gaming")) adj += 0.04
+  if (intent.includes("battery") && product.tags.includes("battery")) adj += 0.04
+  if (intent.includes("camera") && product.tags.includes("camera")) adj += 0.04
 
-  // 🔥 BRAND BOOST (NEW)
+  // BRAND BOOST (SAFE)
   const brandMap: Record<string, number> = {
-    samsung: 0.08,
-    apple: 0.1,
-    iqoo: 0.05,
-    realme: 0.04,
-    redmi: 0.04,
-    poco: 0.05
+    samsung: 0.06,
+    apple: 0.08,
+    iqoo: 0.04,
+    realme: 0.03,
+    redmi: 0.03,
+    poco: 0.04
   }
 
-  const brandBoost =
-    brandMap[product.brand?.toLowerCase() || ""] || 0
+  const brand = (product as any).brand?.toLowerCase?.() || ""
+  adj += brandMap[brand] || 0
 
-  adj += brandBoost
+  // PENALTIES
+  if ((product.specs.ram || 0) < 6) adj -= 0.07
+  if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.09
+  if (product.rating < 4) adj -= 0.05
 
-  // 🔻 PENALTIES
-  if ((product.specs.ram || 0) < 6) adj -= 0.08
-  if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.1
-  if (product.rating < 4) adj -= 0.06
-
-  // 🔥 TRUST IMPROVED
+  // TRUST
   const reviews = product.reviewsCount ?? 100
-  const trust = Math.min(1, Math.log10(reviews + 1) / 2.5)
-  adj += trust * 0.12
+  const trust = Math.min(1, Math.log10(reviews + 1) / 2.8)
+  adj += trust * 0.08
 
-  // 🔥 VALUE FIXED
+  // VALUE
   const rawValue =
     ((product.specs.processorScore || 0) + (product.specs.ram || 0)) /
     Math.max(product.price, 1)
 
-  const value = Math.min(rawValue * 4, 0.08)
-  adj += value
+  adj += Math.min(rawValue * 3, 0.06)
 
-  // 🔥 PRICE FIT
+  // PRICE FIT
   if (budget) {
     const u = product.price / budget
-    if (u > 1) adj -= 0.15
-    else if (u >= 0.8) adj += 0.08
-    else if (u >= 0.6) adj += 0.05
-    else adj += 0.03
+    if (u > 1) adj -= 0.12
+    else if (u >= 0.8) adj += 0.06
+    else if (u >= 0.6) adj += 0.04
+    else adj += 0.02
   }
 
-  // clamp
-  adj = Math.max(-0.3, Math.min(0.3, adj))
+  // 🔥 CRITICAL FIX
+  adj = Math.max(-0.15, Math.min(0.15, adj))
 
-  const final01 = Math.max(0, Math.min(1, core + adj))
+  const final01 = Math.max(0, Math.min(1, core * 0.85 + adj))
   const total = Math.round(final01 * 100)
 
   return {
