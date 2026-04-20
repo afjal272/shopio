@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
-    /* Core */
     "target": "ES2020",
-    "module": "CommonJS",
-    "moduleResolution": "node",
+
+    /* 🔥 Modern setup */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
 
     /* Paths */
     "rootDir": "./src",
@@ -11,18 +12,14 @@
 
     /* Strictness */
     "strict": true,
-    "noImplicitAny": true,
 
     /* Interop */
     "esModuleInterop": true,
     "resolveJsonModule": true,
 
-    /* Dev Experience */
+    /* Dev */
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-
-    /* Fix for your error */
-    "verbatimModuleSyntax": false
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
