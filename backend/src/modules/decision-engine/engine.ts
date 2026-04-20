@@ -19,34 +19,52 @@ export function runEngine(query: string, products: Product[]) {
 
   const best = ranked.length > 0 ? ranked[0] : null
 
-  if (!best || ranked.length === 0) {
+  // 🔥 SAFETY RESPONSE
+  if (!best) {
     return {
       best: {
+        id: "none",
         title: "No suitable product found",
+        price: 0,
+        rating: 0,
+        image: "",
         score: 0,
         confidence: 0,
-        explanation: "No products match your budget or requirements"
+        explanation: "No products match your budget or requirements",
+        tags: [],
+        breakdown: {
+          ram: 0,
+          processor: 0,
+          battery: 0,
+          rating: 0
+        }
       },
       top3: [],
       notRecommended: [],
-      comparison: [], // 🔥 add this
+      comparison: [],
       parsed
     }
   }
+
+  // 🔥 COMPARISON SAFE
+  const comparison =
+    ranked.length > 1
+      ? compareProducts(ranked[0], ranked[1])
+      : []
 
   return {
     // ✅ BEST
     best: {
       ...best,
       explanation: generateExplanation(best, parsed.intent),
-      confidence: Math.min(100, Math.round(best.score))
+      confidence: Math.min(100, Math.round(best.score || 0))
     },
 
     // ✅ TOP 3
     top3: ranked.slice(0, 3).map((p) => ({
       ...p,
       explanation: generateExplanation(p, parsed.intent),
-      confidence: Math.min(100, Math.round(p.score))
+      confidence: Math.min(100, Math.round(p.score || 0))
     })),
 
     // ✅ NOT RECOMMENDED
@@ -55,11 +73,8 @@ export function runEngine(query: string, products: Product[]) {
       reason: getRejectionReason(p, parsed.intent, parsed.budget)
     })),
 
-    // 🔥 NEW: COMPARISON (YOU MISSED THIS)
-    comparison:
-      ranked.length > 1
-        ? compareProducts(ranked[0], ranked[1])
-        : [],
+    // 🔥 COMPARISON
+    comparison,
 
     parsed
   }
