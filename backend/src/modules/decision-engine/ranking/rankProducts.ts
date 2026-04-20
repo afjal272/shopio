@@ -1,9 +1,9 @@
-import { Product } from "../types"
+import { Product, IntentType } from "../types"
 import { scoreProduct } from "../scoring/scoreProduct"
 
 export function rankProducts(
   products: Product[],
-  intent: string[],
+  intent: IntentType[],   // ✅ FIXED
   budget: number | null
 ) {
   return products
@@ -18,8 +18,8 @@ export function rankProducts(
     })
     .sort((a, b) => {
       // 🔥 1. PRIMARY: SCORE
-      if (b.score !== a.score) {
-        return b.score - a.score
+      if ((b.score ?? 0) !== (a.score ?? 0)) {
+        return (b.score ?? 0) - (a.score ?? 0)
       }
 
       // 🔥 2. TRUST (reviews)
@@ -35,7 +35,7 @@ export function rankProducts(
         return b.rating - a.rating
       }
 
-      // 🔥 4. VALUE FOR MONEY (lower price wins if similar)
+      // 🔥 4. VALUE FOR MONEY
       return a.price - b.price
     })
 }
