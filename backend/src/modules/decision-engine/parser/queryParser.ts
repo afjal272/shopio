@@ -3,33 +3,43 @@ import { ParsedQuery, IntentType } from "../types"
 export function parseQuery(query: string): ParsedQuery {
   const q = query.toLowerCase()
 
-  // 💰 Budget extract
+  // 🔥 IMPROVED BUDGET PARSER
   const budgetMatch =
-    q.match(/under\s?(\d+)/) ||
-    q.match(/below\s?(\d+)/) ||
-    q.match(/(\d+)\s?k/)
+    q.match(/under\s?₹?\s?(\d+[kK]?)/) ||
+    q.match(/below\s?₹?\s?(\d+[kK]?)/) ||
+    q.match(/₹\s?(\d+)/) ||
+    q.match(/(\d+[kK])/)
 
   let budget: number | null = null
 
   if (budgetMatch) {
-    const value = Number(budgetMatch[1])
-    budget = q.includes("k") ? value * 1000 : value
+    const raw = budgetMatch[1].toLowerCase()
+
+    if (raw.includes("k")) {
+      budget = Number(raw.replace("k", "")) * 1000
+    } else {
+      budget = Number(raw.replace(/,/g, ""))
+    }
   }
 
   // 🔥 STRICT INTENT TYPE
   const intent: IntentType[] = []
 
-  // 🔥 INTENT MAP (ONLY VALID TYPES)
   const intentMap: Record<IntentType, string[]> = {
-    gaming: ["gaming", "game", "pubg", "bgmi", "fps"],
-    camera: ["camera", "photo", "photography", "video"],
-    battery: ["battery", "backup", "long lasting", "power"],
-    balanced: [] // default
+    gaming: ["gaming", "game", "pubg", "bgmi", "fps", "heavy gaming"],
+    camera: ["camera", "photo", "photography", "video", "selfie"],
+    battery: ["battery", "backup", "long lasting", "power", "long battery"],
+    balanced: []
   }
 
-  // 🔍 DETECT INTENTS
+  // 🔍 SMART MATCH (word boundary)
   Object.entries(intentMap).forEach(([key, keywords]) => {
-    if (keywords.some((word) => q.includes(word))) {
+    if (
+      keywords.some((word) => {
+        const regex = new RegExp(`\\b${word}\\b`, "i")
+        return regex.test(q)
+      })
+    ) {
       intent.push(key as IntentType)
     }
   })
