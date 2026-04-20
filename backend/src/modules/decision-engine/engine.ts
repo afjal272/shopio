@@ -46,10 +46,10 @@ export function runEngine(query: string, products: Product[]) {
     }
   }
 
-  // 🔥 COMPARISON SAFE
+  // 🔥 FIX: PASS INTENT HERE (MOST IMPORTANT CHANGE)
   const comparison =
     ranked.length > 1
-      ? compareProducts(ranked[0], ranked[1])
+      ? compareProducts(ranked[0], ranked[1], parsed.intent)
       : []
 
   return {

@@ -1,6 +1,10 @@
-import { Product } from "../types"
+import { Product, IntentType } from "../types"
 
-export function compareProducts(a: Product, b: Product) {
+export function compareProducts(
+  a: Product,
+  b: Product,
+  intent: IntentType[] = ["balanced"]
+) {
   const result: string[] = []
 
   const aRam = a.specs.ram || 0
@@ -15,44 +19,44 @@ export function compareProducts(a: Product, b: Product) {
   const aReviews = a.reviewsCount || 0
   const bReviews = b.reviewsCount || 0
 
-  // 🔥 RAM
-  if (aRam > bRam) {
-    result.push(`${a.title} offers better multitasking with ${aRam}GB RAM vs ${bRam}GB`)
+  // 🎮 PRIORITY: GAMING
+  if (intent.includes("gaming")) {
+    if (aProcessor > bProcessor) {
+      result.push(`${a.title} delivers smoother gaming due to a stronger processor`)
+    }
+
+    if (aRam > bRam) {
+      result.push(`${a.title} handles multitasking better with ${aRam}GB RAM`)
+    }
   }
 
-  // 🔥 PROCESSOR
-  if (aProcessor > bProcessor) {
-    result.push(`${a.title} has a stronger processor (${aProcessor}/10 vs ${bProcessor}/10)`)
+  // 🔋 PRIORITY: BATTERY
+  if (intent.includes("battery") && aBattery > bBattery) {
+    result.push(`${a.title} lasts longer with its ${aBattery}mAh battery`)
   }
 
-  // 🔥 BATTERY
-  if (aBattery > bBattery) {
-    result.push(`${a.title} provides longer battery life (${aBattery}mAh vs ${bBattery}mAh)`)
+  // 📸 PRIORITY: CAMERA
+  if (intent.includes("camera") && a.rating > b.rating) {
+    result.push(`${a.title} captures better photos based on higher user ratings`)
   }
 
-  // 🔥 RATING
-  if (a.rating > b.rating) {
-    result.push(`${a.title} is rated higher by users (${a.rating}⭐ vs ${b.rating}⭐)`)
-  }
-
-  // 🔥 TRUST (REVIEWS)
+  // 🔥 TRUST
   if (aReviews > bReviews) {
-    result.push(`${a.title} is more trusted with ${aReviews}+ reviews`)
+    result.push(`${a.title} is more trusted with significantly more user reviews`)
   }
 
-  // 🔥 VALUE FOR MONEY
-  const aValue = (aProcessor + aRam) / a.price
-  const bValue = (bProcessor + bRam) / b.price
+  // 🔥 VALUE (IMPROVED)
+  const aValue = (aProcessor * 2 + aRam) / a.price
+  const bValue = (bProcessor * 2 + bRam) / b.price
 
   if (aValue > bValue) {
-    result.push(`${a.title} offers better value for money`)
+    result.push(`${a.title} offers better overall performance for its price`)
   }
 
-  // 🔥 FALLBACK (VERY IMPORTANT)
+  // 🔥 FALLBACK
   if (result.length === 0) {
-    result.push(`${a.title} performs similarly but is still a solid overall choice`)
+    result.push(`${a.title} stands out with a more balanced overall experience`)
   }
 
-  // 🔥 LIMIT (clean output)
   return result.slice(0, 3)
 }
