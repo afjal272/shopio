@@ -3,7 +3,7 @@ import { scoreProduct } from "../scoring/scoreProduct"
 
 export function rankProducts(
   products: Product[],
-  intent: IntentType[],   // ✅ FIXED
+  intent: IntentType[],
   budget: number | null
 ) {
   return products
@@ -12,19 +12,22 @@ export function rankProducts(
 
       return {
         ...p,
-        score: result.total,
+        score: result.total ?? 0, // 🔥 guarantee
         breakdown: result.breakdown
       }
     })
     .sort((a, b) => {
-      // 🔥 1. PRIMARY: SCORE
-      if ((b.score ?? 0) !== (a.score ?? 0)) {
-        return (b.score ?? 0) - (a.score ?? 0)
+      const scoreA = a.score ?? 0
+      const scoreB = b.score ?? 0
+
+      // 🔥 1. SCORE
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA
       }
 
-      // 🔥 2. TRUST (reviews)
-      const reviewsA = a.reviewsCount || 0
-      const reviewsB = b.reviewsCount || 0
+      // 🔥 2. TRUST
+      const reviewsA = a.reviewsCount ?? 0
+      const reviewsB = b.reviewsCount ?? 0
 
       if (reviewsB !== reviewsA) {
         return reviewsB - reviewsA
@@ -35,7 +38,7 @@ export function rankProducts(
         return b.rating - a.rating
       }
 
-      // 🔥 4. VALUE FOR MONEY
+      // 🔥 4. PRICE (value)
       return a.price - b.price
     })
 }
