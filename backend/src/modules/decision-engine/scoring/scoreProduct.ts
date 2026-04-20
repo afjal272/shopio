@@ -29,7 +29,6 @@ export function scoreProduct(
     balanced: { ram: 0.25, cpu: 0.25, batt: 0.20, rating: 0.30 }
   }
 
-  // 🔥 FIX: proper weighting
   let core = 0
 
   if (intent.length === 1) {
@@ -56,25 +55,45 @@ export function scoreProduct(
   // ---------- ADJUSTMENTS ----------
   let adj = 0
 
+  // 🔥 TAG BOOST
   if (intent.includes("gaming") && product.tags.includes("gaming")) adj += 0.05
   if (intent.includes("battery") && product.tags.includes("battery")) adj += 0.05
   if (intent.includes("camera") && product.tags.includes("camera")) adj += 0.05
 
+  // 🔥 BRAND BOOST (NEW)
+  const brandMap: Record<string, number> = {
+    samsung: 0.08,
+    apple: 0.1,
+    iqoo: 0.05,
+    realme: 0.04,
+    redmi: 0.04,
+    poco: 0.05
+  }
+
+  const brandBoost =
+    brandMap[product.brand?.toLowerCase() || ""] || 0
+
+  adj += brandBoost
+
+  // 🔻 PENALTIES
   if ((product.specs.ram || 0) < 6) adj -= 0.08
   if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.1
   if (product.rating < 4) adj -= 0.06
 
+  // 🔥 TRUST IMPROVED
   const reviews = product.reviewsCount ?? 100
-  const trust = Math.min(1, Math.log10(reviews + 1) / 3)
-  adj += trust * 0.08
+  const trust = Math.min(1, Math.log10(reviews + 1) / 2.5)
+  adj += trust * 0.12
 
+  // 🔥 VALUE FIXED
   const rawValue =
     ((product.specs.processorScore || 0) + (product.specs.ram || 0)) /
     Math.max(product.price, 1)
 
-  const value = Math.min(rawValue * 6, 0.1)
+  const value = Math.min(rawValue * 4, 0.08)
   adj += value
 
+  // 🔥 PRICE FIT
   if (budget) {
     const u = product.price / budget
     if (u > 1) adj -= 0.15
@@ -83,7 +102,7 @@ export function scoreProduct(
     else adj += 0.03
   }
 
-  // clamp adjustments
+  // clamp
   adj = Math.max(-0.3, Math.min(0.3, adj))
 
   const final01 = Math.max(0, Math.min(1, core + adj))
