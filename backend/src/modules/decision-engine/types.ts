@@ -1,11 +1,14 @@
 // 🔥 INTENT TYPE (CORE FIX)
 export type IntentType = "gaming" | "camera" | "battery" | "balanced"
 
+// 🔥 CATEGORY TYPE (NEW)
+export type CategoryType = "smartphone"
+
 // 🔥 PARSED QUERY
 export type ParsedQuery = {
-  category: string | null
+  category: CategoryType | null
   budget: number | null
-  intent: IntentType[]   // ✅ FIXED
+  intent: IntentType[]
 }
 
 // 🔥 PRODUCT TYPE
@@ -23,6 +26,9 @@ export type Product = {
 
   tags: string[]
   image?: string
+
+  // 🔥 NEW: BRAND (IMPORTANT FOR SCORING)
+  brand?: string
 
   // 🔥 TRUST SIGNAL
   reviewsCount?: number
