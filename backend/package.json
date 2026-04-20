@@ -4,7 +4,7 @@
   "description": "AI Shopping Decision Engine Backend",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node src/api/server.ts",
+    "dev": "tsx watch src/api/server.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "clean": "rm -rf dist",
@@ -25,7 +25,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.0.0",
     "typescript": "^6.0.2"
   }
 }
