@@ -1,9 +1,9 @@
-import { ParsedQuery } from "../types"
+import { ParsedQuery, IntentType } from "../types"
 
 export function parseQuery(query: string): ParsedQuery {
   const q = query.toLowerCase()
 
-  // 💰 Budget extract (under 20000, below 20k, 20k, etc)
+  // 💰 Budget extract
   const budgetMatch =
     q.match(/under\s?(\d+)/) ||
     q.match(/below\s?(\d+)/) ||
@@ -16,27 +16,28 @@ export function parseQuery(query: string): ParsedQuery {
     budget = q.includes("k") ? value * 1000 : value
   }
 
-  const intent: string[] = []
+  // 🔥 STRICT INTENT TYPE
+  const intent: IntentType[] = []
 
-  // 🔥 INTENT MAP (SCALABLE SYSTEM)
-  const intentMap: Record<string, string[]> = {
+  // 🔥 INTENT MAP (ONLY VALID TYPES)
+  const intentMap: Record<IntentType, string[]> = {
     gaming: ["gaming", "game", "pubg", "bgmi", "fps"],
     camera: ["camera", "photo", "photography", "video"],
     battery: ["battery", "backup", "long lasting", "power"],
-    performance: ["fast", "performance", "smooth"]
+    balanced: [] // default
   }
 
   // 🔍 DETECT INTENTS
   Object.entries(intentMap).forEach(([key, keywords]) => {
     if (keywords.some((word) => q.includes(word))) {
-      intent.push(key)
+      intent.push(key as IntentType)
     }
   })
 
-  // 🔥 REMOVE DUPLICATES (safety)
-  const uniqueIntent = [...new Set(intent)]
+  // 🔥 REMOVE DUPLICATES
+  const uniqueIntent: IntentType[] = [...new Set(intent)]
 
-  // ⚡ DEFAULT INTENT
+  // ⚡ DEFAULT
   if (uniqueIntent.length === 0) {
     uniqueIntent.push("balanced")
   }
