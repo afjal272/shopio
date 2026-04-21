@@ -4,8 +4,8 @@ import { products } from "../../data/products"
 
 export const searchRouter = Router()
 
-searchRouter.post("/", (req, res) => {
-  const { query } = req.body
+searchRouter.get("/", (req, res) => {
+  const query = req.query.q as string
 
   if (!query) {
     return res.status(400).json({
