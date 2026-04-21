@@ -19,7 +19,7 @@ export function runEngine(query: string, products: Product[]) {
 
   const best = ranked.length > 0 ? ranked[0] : null
 
-  // 🔥 SAFETY RESPONSE
+  // SAFETY
   if (!best) {
     return {
       best: {
@@ -46,36 +46,34 @@ export function runEngine(query: string, products: Product[]) {
     }
   }
 
-  // 🔥 FIX: PASS INTENT HERE (MOST IMPORTANT CHANGE)
+  // COMPARISON
   const comparison =
     ranked.length > 1
       ? compareProducts(ranked[0], ranked[1], parsed.intent)
       : []
 
   return {
-    // ✅ BEST
+    // BEST
     best: {
       ...best,
       explanation: generateExplanation(best, parsed.intent),
       confidence: Math.min(100, Math.round(best.score || 0))
     },
 
-    // ✅ TOP 3
-    top3: ranked.slice(0, 3).map((p) => ({
+    // 🔥 FIXED TOP 3 (no duplicate)
+    top3: ranked.slice(1, 4).map((p) => ({
       ...p,
       explanation: generateExplanation(p, parsed.intent),
       confidence: Math.min(100, Math.round(p.score || 0))
     })),
 
-    // ✅ NOT RECOMMENDED
-    notRecommended: ranked.slice(3, 6).map((p) => ({
+    // NOT RECOMMENDED
+    notRecommended: ranked.slice(4, 7).map((p) => ({
       ...p,
       reason: getRejectionReason(p, parsed.intent, parsed.budget)
     })),
 
-    // 🔥 COMPARISON
     comparison,
-
     parsed
   }
 }

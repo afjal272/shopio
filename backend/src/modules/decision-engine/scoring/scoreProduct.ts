@@ -51,12 +51,12 @@ export function scoreProduct(
   // ---------- ADJUSTMENTS ----------
   let adj = 0
 
-  // 🔥 STRONG TAG BOOST
+  // TAG BOOST
   if (intent.includes("gaming") && product.tags.includes("gaming")) adj += 0.08
   if (intent.includes("battery") && product.tags.includes("battery")) adj += 0.08
   if (intent.includes("camera") && product.tags.includes("camera")) adj += 0.08
 
-  // 🔥 BRAND SIGNAL (soft influence)
+  // BRAND
   const brandMap: Record<string, number> = {
     samsung: 0.06,
     apple: 0.10,
@@ -69,24 +69,24 @@ export function scoreProduct(
   const brand = (product as any).brand?.toLowerCase?.() || ""
   adj += brandMap[brand] || 0
 
-  // 🔻 PENALTIES (stronger)
+  // PENALTIES
   if ((product.specs.ram || 0) < 6) adj -= 0.12
   if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.15
   if (product.rating < 4) adj -= 0.08
 
-  // 🔥 TRUST (log scale improved)
+  // TRUST
   const reviews = product.reviewsCount ?? 100
   const trust = Math.min(1, Math.log10(reviews + 1) / 2.3)
   adj += trust * 0.12
 
-  // 🔥 VALUE (price-performance)
+  // VALUE
   const rawValue =
     ((product.specs.processorScore || 0) + (product.specs.ram || 0)) /
     Math.max(product.price, 1)
 
   adj += Math.min(rawValue * 4, 0.08)
 
-  // 🔥 PRICE FIT (more impact)
+  // PRICE FIT
   if (budget) {
     const u = product.price / budget
     if (u > 1) adj -= 0.18
@@ -95,13 +95,23 @@ export function scoreProduct(
     else adj += 0.03
   }
 
+  // 🔥 REAL TIE BREAKER (FINAL FIX)
+  adj += Math.log10((product.reviewsCount || 1)) * 0.02
+  adj += (product.rating || 0) * 0.01
+  adj += (product.specs.processorScore || 0) * 0.002
+
+  // 🔥 PRICE ADVANTAGE (cheap = slight boost)
+  if (budget) {
+    adj += (1 - product.price / budget) * 0.05
+  }
+
   // clamp
   adj = Math.max(-0.25, Math.min(0.25, adj))
 
-  // 🔥 CORE BALANCE
+  // FINAL
   const final01 = Math.max(0, Math.min(1, core * 0.8 + adj))
 
-  // 🔥 NON-LINEAR SCALING (GAME CHANGER)
+  // NON-LINEAR SCALE
   const total = Math.round(Math.pow(final01, 1.4) * 100)
 
   return {
