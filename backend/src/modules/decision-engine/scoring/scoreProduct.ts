@@ -51,55 +51,58 @@ export function scoreProduct(
   // ---------- ADJUSTMENTS ----------
   let adj = 0
 
-  // TAG BOOST
-  if (intent.includes("gaming") && product.tags.includes("gaming")) adj += 0.04
-  if (intent.includes("battery") && product.tags.includes("battery")) adj += 0.04
-  if (intent.includes("camera") && product.tags.includes("camera")) adj += 0.04
+  // 🔥 STRONG TAG BOOST
+  if (intent.includes("gaming") && product.tags.includes("gaming")) adj += 0.08
+  if (intent.includes("battery") && product.tags.includes("battery")) adj += 0.08
+  if (intent.includes("camera") && product.tags.includes("camera")) adj += 0.08
 
-  // BRAND BOOST (SAFE)
+  // 🔥 BRAND SIGNAL (soft influence)
   const brandMap: Record<string, number> = {
     samsung: 0.06,
-    apple: 0.08,
-    iqoo: 0.04,
-    realme: 0.03,
-    redmi: 0.03,
-    poco: 0.04
+    apple: 0.10,
+    iqoo: 0.05,
+    realme: 0.04,
+    redmi: 0.04,
+    poco: 0.05
   }
 
   const brand = (product as any).brand?.toLowerCase?.() || ""
   adj += brandMap[brand] || 0
 
-  // PENALTIES
-  if ((product.specs.ram || 0) < 6) adj -= 0.07
-  if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.09
-  if (product.rating < 4) adj -= 0.05
+  // 🔻 PENALTIES (stronger)
+  if ((product.specs.ram || 0) < 6) adj -= 0.12
+  if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.15
+  if (product.rating < 4) adj -= 0.08
 
-  // TRUST
+  // 🔥 TRUST (log scale improved)
   const reviews = product.reviewsCount ?? 100
-  const trust = Math.min(1, Math.log10(reviews + 1) / 2.8)
-  adj += trust * 0.08
+  const trust = Math.min(1, Math.log10(reviews + 1) / 2.3)
+  adj += trust * 0.12
 
-  // VALUE
+  // 🔥 VALUE (price-performance)
   const rawValue =
     ((product.specs.processorScore || 0) + (product.specs.ram || 0)) /
     Math.max(product.price, 1)
 
-  adj += Math.min(rawValue * 3, 0.06)
+  adj += Math.min(rawValue * 4, 0.08)
 
-  // PRICE FIT
+  // 🔥 PRICE FIT (more impact)
   if (budget) {
     const u = product.price / budget
-    if (u > 1) adj -= 0.12
-    else if (u >= 0.8) adj += 0.06
-    else if (u >= 0.6) adj += 0.04
-    else adj += 0.02
+    if (u > 1) adj -= 0.18
+    else if (u >= 0.8) adj += 0.08
+    else if (u >= 0.6) adj += 0.05
+    else adj += 0.03
   }
 
-  // 🔥 CRITICAL FIX
-  adj = Math.max(-0.15, Math.min(0.15, adj))
+  // clamp
+  adj = Math.max(-0.25, Math.min(0.25, adj))
 
-  const final01 = Math.max(0, Math.min(1, core * 0.85 + adj))
-  const total = Math.round(final01 * 100)
+  // 🔥 CORE BALANCE
+  const final01 = Math.max(0, Math.min(1, core * 0.8 + adj))
+
+  // 🔥 NON-LINEAR SCALING (GAME CHANGER)
+  const total = Math.round(Math.pow(final01, 1.4) * 100)
 
   return {
     total,
