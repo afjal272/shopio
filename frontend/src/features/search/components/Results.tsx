@@ -2,6 +2,9 @@ import ResultCard from "./ResultCard"
 import { SearchResponse } from "@/types/search"
 
 export default function Results({ data }: { data: SearchResponse }) {
+
+   console.log("RESULTS RECEIVED:", data)
+   
   const { best, top3, parsed, notRecommended, comparison } = data
 
   return (

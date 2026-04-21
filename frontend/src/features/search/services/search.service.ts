@@ -1,11 +1,7 @@
 export async function searchProducts(query: string) {
-  const res = await fetch("http://localhost:5000/search", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ query }),
-  })
+  const res = await fetch(
+    `http://localhost:5000/api/search?q=${encodeURIComponent(query)}`
+  )
 
   if (!res.ok) {
     throw new Error("Failed to fetch")

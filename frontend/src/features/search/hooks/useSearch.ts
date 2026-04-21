@@ -12,6 +12,9 @@ export function useSearch() {
 
     try {
       const res = await searchProducts(query)
+      
+      console.log("DATA SET:", res)
+
       setData(res)
     } catch (err) {
       setError("Something went wrong")

@@ -9,7 +9,7 @@ searchRouter.get("/", (req, res) => {
 
   if (!query) {
     return res.status(400).json({
-      error: "Query is required"
+      error: "Query is required",
     })
   }
 

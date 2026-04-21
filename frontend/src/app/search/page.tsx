@@ -13,6 +13,8 @@ export default function SearchPage() {
 
   const { search, loading, data } = useSearch()
 
+  console.log("PAGE DATA:", data)
+
   useEffect(() => {
     if (query) {
       search(query)
