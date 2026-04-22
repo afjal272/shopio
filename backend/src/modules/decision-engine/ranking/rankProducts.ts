@@ -4,11 +4,17 @@ import { scoreProduct } from "../scoring/scoreProduct"
 export function rankProducts(
   products: Product[],
   intent: IntentType[] | { type: IntentType; weight: number }[],
-  budget: number | null
+  budget: number | null,
+  constraints?: {
+    minRam?: number | null
+    minBattery?: number | null
+    minRating?: number | null
+  }
 ) {
   return products
     .map((p) => {
-      const result = scoreProduct(p, intent, budget)
+      // 🔥 FIX: pass constraints to scoring
+      const result = scoreProduct(p, intent, budget, constraints)
 
       return {
         ...p,

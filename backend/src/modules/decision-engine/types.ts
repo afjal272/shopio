@@ -1,14 +1,29 @@
 // 🔥 INTENT TYPE (CORE FIX)
 export type IntentType = "gaming" | "camera" | "battery" | "balanced"
 
-// 🔥 CATEGORY TYPE (NEW)
-export type CategoryType = "smartphone"
+// 🔥 CATEGORY TYPE (UPGRADED)
+export type CategoryType = "smartphone" | "laptop" | "general"
 
-// 🔥 PARSED QUERY
+// 🔥 PARSED QUERY (FULL ENGINE SUPPORT)
 export type ParsedQuery = {
   category: CategoryType | null
   budget: number | null
+
+  // OLD SYSTEM (keep)
   intent: IntentType[]
+
+  // 🔥 NEW SYSTEM (used by engine)
+  weightedIntent?: { type: IntentType; weight: number }[]
+
+  // 🔥 NEGATIVE INTENT
+  negativeIntent?: IntentType[]
+
+  // 🔥 CONSTRAINTS (CORE FEATURE)
+  constraints?: {
+    minRam?: number | null
+    minBattery?: number | null
+    minRating?: number | null
+  }
 }
 
 // 🔥 PRODUCT TYPE
@@ -27,7 +42,10 @@ export type Product = {
   tags: string[]
   image?: string
 
-  // 🔥 NEW: BRAND (IMPORTANT FOR SCORING)
+  // 🔥 CATEGORY (required for filtering)
+  category?: CategoryType
+
+  // 🔥 BRAND (IMPORTANT FOR SCORING)
   brand?: string
 
   // 🔥 TRUST SIGNAL

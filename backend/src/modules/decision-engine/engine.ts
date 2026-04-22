@@ -6,12 +6,20 @@ import { getRejectionReason } from "./explanation/getRejectionReason"
 import { compareProducts } from "./comparison/compareProducts"
 
 export function runEngine(parsed: ParsedQuery, products: Product[]) {
+
+  // 🔥 CONVERT weightedIntent → simple intent (IMPORTANT FIX)
+  const finalIntent =
+    parsed.weightedIntent?.map((i) => i.type) || parsed.intent
+
+  // 🔥 FILTER
   const filtered = applyFilters(products, parsed)
 
+  // 🔥 RANK (ONLY HERE weightedIntent allowed)
   const ranked = rankProducts(
     filtered,
-    parsed.intent,
-    parsed.budget
+    parsed.weightedIntent || parsed.intent,
+    parsed.budget,
+    parsed.constraints
   )
 
   const best = ranked.length > 0 ? ranked[0] : null
@@ -43,28 +51,45 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
     }
   }
 
-  // COMPARISON
+  // 🔥 COMPARISON (FIXED)
   const comparison =
     ranked.length > 1
-      ? compareProducts(ranked[0], ranked[1], parsed.intent)
+      ? compareProducts(
+          ranked[0],
+          ranked[1],
+          finalIntent   // ✅ FIXED
+        )
       : []
 
   return {
+    // BEST
     best: {
       ...best,
-      explanation: generateExplanation(best, parsed.intent),
+      explanation: generateExplanation(
+        best,
+        finalIntent   // ✅ FIXED
+      ),
       confidence: Math.min(100, Math.round(best.score || 0))
     },
 
+    // TOP 3
     top3: ranked.slice(1, 4).map((p) => ({
       ...p,
-      explanation: generateExplanation(p, parsed.intent),
+      explanation: generateExplanation(
+        p,
+        finalIntent   // ✅ FIXED
+      ),
       confidence: Math.min(100, Math.round(p.score || 0))
     })),
 
+    // NOT RECOMMENDED
     notRecommended: ranked.slice(4, 7).map((p) => ({
       ...p,
-      reason: getRejectionReason(p, parsed.intent, parsed.budget)
+      reason: getRejectionReason(
+        p,
+        finalIntent,   // ✅ FIXED
+        parsed.budget
+      )
     })),
 
     comparison,

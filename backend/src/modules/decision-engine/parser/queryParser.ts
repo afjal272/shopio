@@ -63,7 +63,41 @@ export function parseQuery(query: string): ParsedQuery {
   }
 
   // =====================================================
-  // 🔥 NEW: WEIGHTED INTENT SYSTEM (NO BREAKING CHANGE)
+  // 🔥 NEW: NEGATIVE INTENT (NO BREAKING CHANGE)
+  // =====================================================
+
+  const negativeIntent: IntentType[] = []
+
+  const negativePatterns = [
+    /not\s+for\s+(\w+)/i,
+    /no\s+(\w+)/i,
+    /avoid\s+(\w+)/i,
+  ]
+
+  negativePatterns.forEach((pattern) => {
+    const match = q.match(pattern)
+    if (match) {
+      const word = match[1]
+
+      Object.entries(intentMap).forEach(([key, keywords]) => {
+        if (keywords.includes(word)) {
+          negativeIntent.push(key as IntentType)
+        }
+      })
+    }
+  })
+
+  // 🔥 REMOVE NEGATIVE FROM INTENT
+  const filteredIntent = uniqueIntent.filter(
+    (i) => !negativeIntent.includes(i)
+  )
+
+  if (filteredIntent.length === 0) {
+    filteredIntent.push("balanced")
+  }
+
+  // =====================================================
+  // 🔥 NEW: WEIGHTED INTENT SYSTEM
   // =====================================================
 
   const intentWeights: Record<IntentType, number> = {
@@ -73,7 +107,6 @@ export function parseQuery(query: string): ParsedQuery {
     balanced: 0
   }
 
-  // Count keyword matches (frequency based weight)
   Object.entries(intentMap).forEach(([key, keywords]) => {
     keywords.forEach((word) => {
       const regex = new RegExp(`\\b${word}\\b`, "gi")
@@ -84,7 +117,6 @@ export function parseQuery(query: string): ParsedQuery {
     })
   })
 
-  // Normalize weights
   const totalWeight = Object.values(intentWeights).reduce((a, b) => a + b, 0)
 
   let weightedIntent: { type: IntentType; weight: number }[] = []
@@ -100,18 +132,56 @@ export function parseQuery(query: string): ParsedQuery {
       }))
   }
 
+  // 🔥 FILTER NEGATIVE FROM WEIGHTED
+  weightedIntent = weightedIntent.filter(
+    (i) => !negativeIntent.includes(i.type)
+  )
+
+  if (weightedIntent.length === 0) {
+    weightedIntent = [{ type: "balanced", weight: 1 }]
+  }
+
   // =====================================================
-  // FINAL RETURN (BACKWARD + FORWARD COMPATIBLE)
+  // 🔥 NEW: CONSTRAINTS PARSER (ADDED)
+  // =====================================================
+
+  const constraints = {
+    minRam: null as number | null,
+    minBattery: null as number | null,
+    minRating: null as number | null
+  }
+
+  // RAM (e.g. 8GB)
+  const ramMatch = q.match(/(\d+)\s?gb/)
+  if (ramMatch) {
+    const val = Number(ramMatch[1])
+    if (!isNaN(val)) constraints.minRam = val
+  }
+
+  // Battery (e.g. 6000mAh)
+  const batteryMatch = q.match(/(\d+)\s?mah/)
+  if (batteryMatch) {
+    const val = Number(batteryMatch[1])
+    if (!isNaN(val)) constraints.minBattery = val
+  }
+
+  // Rating (e.g. 4.5 rating)
+  const ratingMatch = q.match(/(\d+(\.\d+)?)\s?(rating|stars?)/)
+  if (ratingMatch) {
+    const val = Number(ratingMatch[1])
+    if (!isNaN(val)) constraints.minRating = val
+  }
+
+  // =====================================================
+  // FINAL RETURN
   // =====================================================
 
   return {
     category,
     budget,
-
-    // OLD SYSTEM (keep for compatibility)
-    intent: uniqueIntent,
-
-    // NEW SYSTEM (for advanced scoring)
-    weightedIntent
+    intent: filteredIntent,
+    weightedIntent,
+    negativeIntent,
+    constraints
   }
 }

@@ -10,21 +10,24 @@ function normalize(value: number, max: number) {
 export function scoreProduct(
   product: Product,
   intent: IntentType[] | { type: IntentType; weight: number }[],
-  budget: number | null
+  budget: number | null,
+  constraints?: {
+    minRam?: number | null
+    minBattery?: number | null
+    minRating?: number | null
+  }
 ) {
   // 🔥 BACKWARD + FORWARD COMPAT HANDLING
   let weightedIntent: { type: IntentType; weight: number }[] = []
 
   if (Array.isArray(intent) && intent.length > 0) {
     if (typeof intent[0] === "string") {
-      // OLD FORMAT → convert to equal weight
       const weight = 1 / intent.length
       weightedIntent = (intent as IntentType[]).map((i) => ({
         type: i,
         weight
       }))
     } else {
-      // NEW FORMAT
       weightedIntent = intent as { type: IntentType; weight: number }[]
     }
   } else {
@@ -46,7 +49,7 @@ export function scoreProduct(
     balanced: { ram: 0.25, cpu: 0.25, batt: 0.20, rating: 0.30 }
   }
 
-  // 🔥 CORE SCORE (NEW WEIGHTED SYSTEM)
+  // 🔥 CORE SCORE
   let core = 0
 
   weightedIntent.forEach(({ type, weight }) => {
@@ -65,7 +68,6 @@ export function scoreProduct(
   let adj = 0
 
   const tags = product.tags || []
-
   const intentTypes = weightedIntent.map((i) => i.type)
 
   // TAG BOOST
@@ -114,6 +116,23 @@ export function scoreProduct(
     else adj += 0.03
 
     adj += (1 - u) * 0.05
+  }
+
+  // 🔥 CONSTRAINT BOOST (NEW)
+  if (constraints) {
+    const specs = product.specs || {}
+
+    if (constraints.minRam && specs.ram >= constraints.minRam) {
+      adj += 0.05
+    }
+
+    if (constraints.minBattery && specs.battery >= constraints.minBattery) {
+      adj += 0.05
+    }
+
+    if (constraints.minRating && product.rating >= constraints.minRating) {
+      adj += 0.04
+    }
   }
 
   // TIE BREAKERS
