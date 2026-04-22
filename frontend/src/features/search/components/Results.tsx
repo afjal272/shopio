@@ -50,26 +50,57 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🔥 BEST RESULT */}
+      {/* 🧠 DECISION SUMMARY (NEW) */}
       {best && best.score > 0 && (
-        <div className="p-6 rounded-3xl bg-gradient-to-b from-gray-50 to-white border border-gray-200 shadow-md">
-          
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-black font-semibold text-lg">
+        <div className="p-4 rounded-2xl bg-black text-white text-center text-sm">
+          Best for{" "}
+          <span className="font-semibold">
+            {parsed?.intent?.join(" & ") || "general use"}
+          </span>{" "}
+          {parsed?.budget && <>under ₹{parsed.budget}</>} with strong overall performance
+        </div>
+      )}
+
+      {/* 🏆 BEST RESULT (UPGRADED HERO) */}
+      {best && best.score > 0 && (
+        <div className="p-6 rounded-3xl bg-gradient-to-b from-gray-50 to-white border border-black shadow-lg space-y-4">
+
+          <div className="flex items-center justify-between">
+            <h2 className="text-black font-bold text-xl">
               🏆 Best Choice
             </h2>
 
-            <span className="text-xs bg-black text-white px-3 py-1 rounded-full">
-              Top Match
-            </span>
+            <div className="text-right">
+              <div className="text-xs bg-black text-white px-3 py-1 rounded-full">
+                {best.score} match
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Confidence {best.confidence}%
+              </p>
+            </div>
           </div>
+
+          {/* 🔥 COMPARISON (moved inside hero, NOT removed) */}
+          {comparison?.length > 0 && (
+            <div className="bg-green-50 border border-green-200 p-4 rounded-xl">
+              <h3 className="text-green-700 font-semibold mb-2">
+                Why this wins
+              </h3>
+
+              <ul className="text-sm text-gray-700 space-y-1">
+                {comparison.map((point, i) => (
+                  <li key={i}>✔ {point}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <ResultCard item={best} highlight />
         </div>
       )}
 
-      {/* 🔥 COMPARISON */}
-      {comparison?.length > 0 && (
+      {/* 🔥 COMPARISON (fallback - agar hero me na aaye) */}
+      {comparison?.length > 0 && !best && (
         <div className="p-5 border border-black/10 bg-black/5 rounded-2xl">
           <h3 className="text-black font-semibold mb-3">
             Why this wins

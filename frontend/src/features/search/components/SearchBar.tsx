@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 export default function SearchBar() {
   const router = useRouter()
   const params = useSearchParams()
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const [query, setQuery] = useState("")
   const [loading, setLoading] = useState(false)
@@ -13,8 +14,10 @@ export default function SearchBar() {
 
   const suggestions = [
     "best gaming phone",
-    "best phone under 20000",
+    "best gaming phone under 20000",
     "best camera phone",
+    "best phone under 20000",
+    "best battery phone",
     "best laptop for coding",
   ]
 
@@ -22,6 +25,18 @@ export default function SearchBar() {
     const q = params.get("q")
     if (q) setQuery(q)
   }, [params])
+
+  // 🔥 OUTSIDE CLICK CLOSE
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   const handleSearch = () => {
     if (!query.trim()) return
@@ -37,12 +52,18 @@ export default function SearchBar() {
     router.push(`/search?q=${encodeURIComponent(value)}`)
   }
 
-  const filteredSuggestions = suggestions.filter((s) =>
-    s.toLowerCase().includes(query.toLowerCase())
-  )
+  // 🔥 SMART FILTER (startsWith priority)
+  const filteredSuggestions = suggestions
+    .filter((s) => s.toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) => {
+      const aStarts = a.toLowerCase().startsWith(query.toLowerCase())
+      const bStarts = b.toLowerCase().startsWith(query.toLowerCase())
+      return Number(bStarts) - Number(aStarts)
+    })
+    .slice(0, 5)
 
   return (
-    <div className="relative w-full flex items-center gap-2">
+    <div ref={wrapperRef} className="relative w-full flex items-center gap-2">
       <input
         className="flex-1 border px-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-black/20 focus:border-black transition"
         placeholder="e.g. best phone under 20000 for gaming"
@@ -67,7 +88,7 @@ export default function SearchBar() {
 
       {/* 🔥 Suggestions Dropdown */}
       {showSuggestions && query.length > 1 && filteredSuggestions.length > 0 && (
-        <div className="absolute top-full left-0 w-full mt-2 bg-white border rounded-lg shadow-md z-10">
+        <div className="absolute top-full left-0 w-full mt-2 bg-white border rounded-lg shadow-md z-10 overflow-hidden">
           {filteredSuggestions.map((s, i) => (
             <div
               key={i}

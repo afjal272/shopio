@@ -78,13 +78,6 @@ export default function ResultCard({ item, highlight, index }: Props) {
           : "May not be ideal"}
       </p>
 
-      {/* CONFIDENCE */}
-      {item.confidence !== undefined && (
-        <p className="text-xs text-gray-400 mt-2">
-          Confidence: {item.confidence}%
-        </p>
-      )}
-
       {/* EXPLANATION */}
       {item.explanation && (
         <p className="text-sm text-gray-700 mt-3 leading-relaxed">
@@ -130,6 +123,20 @@ export default function ResultCard({ item, highlight, index }: Props) {
           })}
         </div>
       )}
+
+      {/* 🔥 CTA + CONFIDENCE (NEW) */}
+      <div className="mt-4 flex items-center justify-between">
+
+        {item.confidence !== undefined && (
+          <span className="text-xs text-gray-500">
+            Confidence: {item.confidence}%
+          </span>
+        )}
+
+        <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 active:scale-95 transition">
+          Buy Now
+        </button>
+      </div>
     </div>
   )
 }
