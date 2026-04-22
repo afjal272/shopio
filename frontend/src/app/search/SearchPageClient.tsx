@@ -12,7 +12,7 @@ export default function SearchPageClient() {
   const params = useSearchParams()
   const query = params.get("q") || ""
 
-  const { search, loading, data } = useSearch()
+  const { search, loading, data, error } = useSearch()
 
   const lastQueryRef = useRef("")
 
@@ -39,6 +39,7 @@ export default function SearchPageClient() {
           </h1>
         )}
 
+        {/* 🔥 LOADING */}
         {loading && (
           <div className="space-y-4 p-4">
             <Skeleton className="h-32 w-full" />
@@ -47,7 +48,24 @@ export default function SearchPageClient() {
           </div>
         )}
 
-        {!loading && data && (
+        {/* 🔥 ERROR */}
+        {!loading && error && (
+          <div className="text-center py-10 space-y-3">
+            <p className="text-red-500 font-medium">
+              Something went wrong
+            </p>
+
+            <button
+              onClick={() => search(query)}
+              className="px-4 py-2 bg-black text-white rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* 🔥 RESULTS */}
+        {!loading && !error && data && (
           <div className="mt-6 flex justify-center">
             <Results data={data} />
           </div>

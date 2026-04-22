@@ -12,12 +12,12 @@ export function scoreProduct(
   intent: IntentType[],
   budget: number | null
 ) {
-  if (intent.length === 0) intent = ["balanced"]
+  if (!intent || intent.length === 0) intent = ["balanced"]
 
   const ram = normalize(product.specs.ram || 0, 16)
   const cpu = normalize(product.specs.processorScore || 0, 10)
   const batt = normalize(product.specs.battery || 0, 6000)
-  const rating = normalize(product.rating, 5)
+  const rating = normalize(product.rating || 0, 5)
 
   const W: Record<
     IntentType,
@@ -29,12 +29,16 @@ export function scoreProduct(
     balanced: { ram: 0.25, cpu: 0.25, batt: 0.20, rating: 0.30 }
   }
 
+  // 🔥 CORE SCORE
   let core = 0
 
   if (intent.length === 1) {
     const w = W[intent[0]]
     core = ram * w.ram + cpu * w.cpu + batt * w.batt + rating * w.rating
   } else {
+    const primaryWeight = 0.6
+    const secondaryWeight = intent.length > 1 ? 0.4 / (intent.length - 1) : 0
+
     intent.forEach((i, idx) => {
       const w = W[i]
       const part =
@@ -43,7 +47,7 @@ export function scoreProduct(
         batt * w.batt +
         rating * w.rating
 
-      const pw = idx === 0 ? 0.6 : 0.4 / (intent.length - 1)
+      const pw = idx === 0 ? primaryWeight : secondaryWeight
       core += part * pw
     })
   }
@@ -51,12 +55,14 @@ export function scoreProduct(
   // ---------- ADJUSTMENTS ----------
   let adj = 0
 
-  // TAG BOOST
-  if (intent.includes("gaming") && product.tags.includes("gaming")) adj += 0.08
-  if (intent.includes("battery") && product.tags.includes("battery")) adj += 0.08
-  if (intent.includes("camera") && product.tags.includes("camera")) adj += 0.08
+  const tags = product.tags || []
 
-  // BRAND
+  // TAG BOOST (safe)
+  if (intent.includes("gaming") && tags.includes("gaming")) adj += 0.08
+  if (intent.includes("battery") && tags.includes("battery")) adj += 0.08
+  if (intent.includes("camera") && tags.includes("camera")) adj += 0.08
+
+  // BRAND BOOST
   const brandMap: Record<string, number> = {
     samsung: 0.06,
     apple: 0.10,
@@ -72,43 +78,43 @@ export function scoreProduct(
   // PENALTIES
   if ((product.specs.ram || 0) < 6) adj -= 0.12
   if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.15
-  if (product.rating < 4) adj -= 0.08
+  if ((product.rating || 0) < 4) adj -= 0.08
 
-  // TRUST
+  // TRUST (log-based)
   const reviews = product.reviewsCount ?? 100
   const trust = Math.min(1, Math.log10(reviews + 1) / 2.3)
   adj += trust * 0.12
 
-  // VALUE
+  // VALUE (avoid division explosion)
+  const safePrice = Math.max(product.price || 1, 1)
   const rawValue =
     ((product.specs.processorScore || 0) + (product.specs.ram || 0)) /
-    Math.max(product.price, 1)
+    safePrice
 
   adj += Math.min(rawValue * 4, 0.08)
 
   // PRICE FIT
-  if (budget) {
+  if (budget && budget > 0) {
     const u = product.price / budget
+
     if (u > 1) adj -= 0.18
     else if (u >= 0.8) adj += 0.08
     else if (u >= 0.6) adj += 0.05
     else adj += 0.03
+
+    // EXTRA: cheap advantage (controlled)
+    adj += (1 - u) * 0.05
   }
 
-  // 🔥 REAL TIE BREAKER (FINAL FIX)
-  adj += Math.log10((product.reviewsCount || 1)) * 0.02
+  // 🔥 TIE BREAKERS (controlled, not overpowering)
+  adj += Math.log10(reviews || 1) * 0.02
   adj += (product.rating || 0) * 0.01
   adj += (product.specs.processorScore || 0) * 0.002
 
-  // 🔥 PRICE ADVANTAGE (cheap = slight boost)
-  if (budget) {
-    adj += (1 - product.price / budget) * 0.05
-  }
-
-  // clamp
+  // clamp adjustments
   adj = Math.max(-0.25, Math.min(0.25, adj))
 
-  // FINAL
+  // FINAL SCORE
   const final01 = Math.max(0, Math.min(1, core * 0.8 + adj))
 
   // NON-LINEAR SCALE

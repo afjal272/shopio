@@ -8,46 +8,55 @@ export function getRejectionReason(
   const ram = product.specs.ram || 0
   const battery = product.specs.battery || 0
   const processor = product.specs.processorScore || 0
-  const rating = product.rating
+  const rating = product.rating || 0
   const reviews = product.reviewsCount || 0
 
   const reasons: string[] = []
 
-  // 💰 BUDGET
+  // 💰 BUDGET (strong signal)
   if (budget && product.price > budget) {
-    reasons.push(`price (₹${product.price}) is above your budget`)
+    reasons.push(`over budget (₹${product.price})`)
   }
 
-  // 🎮 GAMING
+  // 🎮 GAMING (strict)
   if (intent.includes("gaming")) {
-    if (ram < 6) {
-      reasons.push(`${ram}GB RAM is not enough for smooth gaming`)
-    }
     if (processor < 6) {
-      reasons.push(`processor (${processor}/10) may struggle with heavy games`)
+      reasons.push(`weak processor (${processor}/10) for gaming`)
+    }
+    if (ram < 6) {
+      reasons.push(`low RAM (${ram}GB) limits performance`)
     }
   }
 
   // 🔋 BATTERY
-  if (intent.includes("battery") && battery < 5000) {
-    reasons.push(`${battery}mAh battery may not last long under heavy use`)
+  if (intent.includes("battery")) {
+    if (battery < 5000) {
+      reasons.push(`battery (${battery}mAh) is below ideal`)
+    }
   }
 
   // 📸 CAMERA
-  if (intent.includes("camera") && rating < 4.2) {
-    reasons.push(`camera performance is average (${rating}⭐ rating)`)
+  if (intent.includes("camera")) {
+    if (rating < 4.2) {
+      reasons.push(`average camera performance (${rating}⭐)`)
+    }
   }
 
-  // 🔥 TRUST (improved logic)
-  if (reviews < 300) {
-    reasons.push(`low user confidence (${reviews} reviews)`)
-  } else if (reviews < 1000) {
-    reasons.push(`limited user feedback compared to top options`)
+  // 🔥 TRUST (more realistic)
+  if (reviews < 200) {
+    reasons.push(`very low user trust (${reviews} reviews)`)
+  } else if (reviews < 800) {
+    reasons.push(`less proven than top options`)
   }
 
-  // 🔥 FALLBACK (smarter)
+  // ⚠️ GENERAL WEAKNESS (catch-all)
+  if (!intent.includes("gaming") && processor < 5) {
+    reasons.push(`overall performance is below average`)
+  }
+
+  // 🔥 FINAL OUTPUT
   if (reasons.length === 0) {
-    return `outperformed by higher-ranked products in overall performance`
+    return `weaker value compared to better-ranked alternatives`
   }
 
   return reasons.slice(0, 2).join(", ")

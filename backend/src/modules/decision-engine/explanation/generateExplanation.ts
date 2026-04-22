@@ -4,66 +4,74 @@ export function generateExplanation(product: Product, intent: IntentType[]) {
   const ram = product.specs.ram || 0
   const battery = product.specs.battery || 0
   const processor = product.specs.processorScore || 0
-  const rating = product.rating
+  const rating = product.rating || 0
   const reviews = product.reviewsCount || 0
+  const tags = product.tags || []
 
-  let reasons: string[] = []
+  const reasons: string[] = []
 
   // 🎮 GAMING
   if (intent.includes("gaming")) {
-    if (ram >= 8) {
-      reasons.push(`${ram}GB RAM handles heavy gaming smoothly`)
+    if (processor >= 8) {
+      reasons.push(`strong processor (${processor}/10) ensures smooth gaming`)
+    } else if (processor >= 6) {
+      reasons.push(`decent processor (${processor}/10) handles moderate gaming`)
     } else {
-      reasons.push(`${ram}GB RAM suits casual gaming`)
+      reasons.push(`limited processor performance for heavy gaming`)
     }
 
-    if (processor >= 8) {
-      reasons.push(`powerful processor (${processor}/10) ensures stable performance`)
-    } else {
-      reasons.push(`decent processor (${processor}/10) for normal usage`)
+    if (ram >= 8) {
+      reasons.push(`${ram}GB RAM supports multitasking and gaming`)
     }
   }
 
   // 📸 CAMERA
   if (intent.includes("camera")) {
-    reasons.push(`${rating}⭐ rating reflects reliable camera output`)
+    if (rating >= 4.3) {
+      reasons.push(`high user rating (${rating}⭐) indicates good camera performance`)
+    } else {
+      reasons.push(`average rating (${rating}⭐) suggests camera is decent`)
+    }
 
-    if (product.tags.includes("camera")) {
-      reasons.push(`camera-focused optimization`)
+    if (tags.includes("camera")) {
+      reasons.push(`optimized for photography`)
     }
   }
 
   // 🔋 BATTERY
   if (intent.includes("battery")) {
     if (battery >= 6000) {
-      reasons.push(`${battery}mAh battery easily lasts a full day+`)
+      reasons.push(`${battery}mAh battery easily lasts more than a day`)
+    } else if (battery >= 5000) {
+      reasons.push(`${battery}mAh battery is reliable for daily usage`)
     } else {
-      reasons.push(`${battery}mAh battery handles daily usage comfortably`)
+      reasons.push(`battery life may be average`)
     }
   }
 
-  // ⚖️ BALANCED (only if nothing added)
+  // ⚖️ BALANCED (fallback)
   if (intent.includes("balanced") && reasons.length === 0) {
-    reasons.push(`${ram}GB RAM with balanced performance`)
+    reasons.push(`${ram}GB RAM and stable performance for everyday use`)
     reasons.push(`${battery}mAh battery for regular usage`)
-    reasons.push(`${rating}⭐ overall user rating`)
   }
 
-  // 🔥 TRUST SIGNAL
-  if (reviews > 0) {
-    reasons.push(`${reviews}+ user reviews build trust`)
+  // 🔥 TRUST SIGNAL (stronger wording)
+  if (reviews > 1000) {
+    reasons.push(`${reviews}+ reviews indicate strong market trust`)
+  } else if (reviews > 100) {
+    reasons.push(`${reviews}+ reviews provide reasonable confidence`)
   }
 
   // 🔥 SAFETY
   if (reasons.length === 0) {
-    reasons.push(`balanced specifications for everyday use`)
+    reasons.push(`balanced specifications for general usage`)
   }
 
-  // 🔥 SMART TITLE LINE (not generic)
+  // 🔥 CLEAN INTENT TEXT
   const intentText =
     intent.length > 1
       ? intent.join(" & ")
       : intent[0] || "general use"
 
-  return `${product.title} fits ${intentText} needs because it offers ${reasons.join(", ")}.`
+  return `${product.title} is a good fit for ${intentText} because it offers ${reasons.join(", ")}.`
 }

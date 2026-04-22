@@ -1,7 +1,7 @@
 import { ParsedQuery, IntentType } from "../types"
 
 export function parseQuery(query: string): ParsedQuery {
-  const q = query.toLowerCase()
+  const q = query.toLowerCase().trim()
 
   // 🔥 IMPROVED BUDGET PARSER
   const budgetMatch =
@@ -16,10 +16,21 @@ export function parseQuery(query: string): ParsedQuery {
     const raw = budgetMatch[1].toLowerCase()
 
     if (raw.includes("k")) {
-      budget = Number(raw.replace("k", "")) * 1000
+      const num = Number(raw.replace("k", ""))
+      if (!isNaN(num)) budget = num * 1000
     } else {
-      budget = Number(raw.replace(/,/g, ""))
+      const num = Number(raw.replace(/,/g, ""))
+      if (!isNaN(num)) budget = num
     }
+  }
+
+  // 🔥 CATEGORY DETECTION (basic but needed)
+  let category: ParsedQuery["category"] = "general"
+
+  if (q.includes("phone") || q.includes("mobile")) {
+    category = "smartphone"
+  } else if (q.includes("laptop")) {
+    category = "laptop"
   }
 
   // 🔥 STRICT INTENT TYPE
@@ -32,7 +43,6 @@ export function parseQuery(query: string): ParsedQuery {
     balanced: []
   }
 
-  // 🔍 SMART MATCH (word boundary)
   Object.entries(intentMap).forEach(([key, keywords]) => {
     if (
       keywords.some((word) => {
@@ -47,13 +57,13 @@ export function parseQuery(query: string): ParsedQuery {
   // 🔥 REMOVE DUPLICATES
   const uniqueIntent: IntentType[] = [...new Set(intent)]
 
-  // ⚡ DEFAULT
+  // ⚡ DEFAULT FALLBACK
   if (uniqueIntent.length === 0) {
     uniqueIntent.push("balanced")
   }
 
   return {
-    category: "smartphone",
+    category,
     budget,
     intent: uniqueIntent
   }
