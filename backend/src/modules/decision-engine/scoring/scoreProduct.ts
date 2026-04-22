@@ -9,10 +9,27 @@ function normalize(value: number, max: number) {
 
 export function scoreProduct(
   product: Product,
-  intent: IntentType[],
+  intent: IntentType[] | { type: IntentType; weight: number }[],
   budget: number | null
 ) {
-  if (!intent || intent.length === 0) intent = ["balanced"]
+  // 🔥 BACKWARD + FORWARD COMPAT HANDLING
+  let weightedIntent: { type: IntentType; weight: number }[] = []
+
+  if (Array.isArray(intent) && intent.length > 0) {
+    if (typeof intent[0] === "string") {
+      // OLD FORMAT → convert to equal weight
+      const weight = 1 / intent.length
+      weightedIntent = (intent as IntentType[]).map((i) => ({
+        type: i,
+        weight
+      }))
+    } else {
+      // NEW FORMAT
+      weightedIntent = intent as { type: IntentType; weight: number }[]
+    }
+  } else {
+    weightedIntent = [{ type: "balanced", weight: 1 }]
+  }
 
   const ram = normalize(product.specs.ram || 0, 16)
   const cpu = normalize(product.specs.processorScore || 0, 10)
@@ -29,38 +46,32 @@ export function scoreProduct(
     balanced: { ram: 0.25, cpu: 0.25, batt: 0.20, rating: 0.30 }
   }
 
-  // 🔥 CORE SCORE
+  // 🔥 CORE SCORE (NEW WEIGHTED SYSTEM)
   let core = 0
 
-  if (intent.length === 1) {
-    const w = W[intent[0]]
-    core = ram * w.ram + cpu * w.cpu + batt * w.batt + rating * w.rating
-  } else {
-    const primaryWeight = 0.6
-    const secondaryWeight = intent.length > 1 ? 0.4 / (intent.length - 1) : 0
+  weightedIntent.forEach(({ type, weight }) => {
+    const w = W[type]
 
-    intent.forEach((i, idx) => {
-      const w = W[i]
-      const part =
-        ram * w.ram +
-        cpu * w.cpu +
-        batt * w.batt +
-        rating * w.rating
+    const part =
+      ram * w.ram +
+      cpu * w.cpu +
+      batt * w.batt +
+      rating * w.rating
 
-      const pw = idx === 0 ? primaryWeight : secondaryWeight
-      core += part * pw
-    })
-  }
+    core += part * weight
+  })
 
   // ---------- ADJUSTMENTS ----------
   let adj = 0
 
   const tags = product.tags || []
 
-  // TAG BOOST (safe)
-  if (intent.includes("gaming") && tags.includes("gaming")) adj += 0.08
-  if (intent.includes("battery") && tags.includes("battery")) adj += 0.08
-  if (intent.includes("camera") && tags.includes("camera")) adj += 0.08
+  const intentTypes = weightedIntent.map((i) => i.type)
+
+  // TAG BOOST
+  if (intentTypes.includes("gaming") && tags.includes("gaming")) adj += 0.08
+  if (intentTypes.includes("battery") && tags.includes("battery")) adj += 0.08
+  if (intentTypes.includes("camera") && tags.includes("camera")) adj += 0.08
 
   // BRAND BOOST
   const brandMap: Record<string, number> = {
@@ -77,15 +88,15 @@ export function scoreProduct(
 
   // PENALTIES
   if ((product.specs.ram || 0) < 6) adj -= 0.12
-  if (intent.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.15
+  if (intentTypes.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.15
   if ((product.rating || 0) < 4) adj -= 0.08
 
-  // TRUST (log-based)
+  // TRUST
   const reviews = product.reviewsCount ?? 100
   const trust = Math.min(1, Math.log10(reviews + 1) / 2.3)
   adj += trust * 0.12
 
-  // VALUE (avoid division explosion)
+  // VALUE
   const safePrice = Math.max(product.price || 1, 1)
   const rawValue =
     ((product.specs.processorScore || 0) + (product.specs.ram || 0)) /
@@ -102,22 +113,19 @@ export function scoreProduct(
     else if (u >= 0.6) adj += 0.05
     else adj += 0.03
 
-    // EXTRA: cheap advantage (controlled)
     adj += (1 - u) * 0.05
   }
 
-  // 🔥 TIE BREAKERS (controlled, not overpowering)
+  // TIE BREAKERS
   adj += Math.log10(reviews || 1) * 0.02
   adj += (product.rating || 0) * 0.01
   adj += (product.specs.processorScore || 0) * 0.002
 
-  // clamp adjustments
+  // clamp
   adj = Math.max(-0.25, Math.min(0.25, adj))
 
-  // FINAL SCORE
+  // FINAL
   const final01 = Math.max(0, Math.min(1, core * 0.8 + adj))
-
-  // NON-LINEAR SCALE
   const total = Math.round(Math.pow(final01, 1.4) * 100)
 
   return {

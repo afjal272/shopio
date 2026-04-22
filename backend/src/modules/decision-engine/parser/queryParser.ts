@@ -24,7 +24,7 @@ export function parseQuery(query: string): ParsedQuery {
     }
   }
 
-  // 🔥 CATEGORY DETECTION (basic but needed)
+  // 🔥 CATEGORY DETECTION
   let category: ParsedQuery["category"] = "general"
 
   if (q.includes("phone") || q.includes("mobile")) {
@@ -33,7 +33,7 @@ export function parseQuery(query: string): ParsedQuery {
     category = "laptop"
   }
 
-  // 🔥 STRICT INTENT TYPE
+  // 🔥 STRICT INTENT TYPE (existing logic preserved)
   const intent: IntentType[] = []
 
   const intentMap: Record<IntentType, string[]> = {
@@ -62,9 +62,56 @@ export function parseQuery(query: string): ParsedQuery {
     uniqueIntent.push("balanced")
   }
 
+  // =====================================================
+  // 🔥 NEW: WEIGHTED INTENT SYSTEM (NO BREAKING CHANGE)
+  // =====================================================
+
+  const intentWeights: Record<IntentType, number> = {
+    gaming: 0,
+    camera: 0,
+    battery: 0,
+    balanced: 0
+  }
+
+  // Count keyword matches (frequency based weight)
+  Object.entries(intentMap).forEach(([key, keywords]) => {
+    keywords.forEach((word) => {
+      const regex = new RegExp(`\\b${word}\\b`, "gi")
+      const matches = q.match(regex)
+      if (matches) {
+        intentWeights[key as IntentType] += matches.length
+      }
+    })
+  })
+
+  // Normalize weights
+  const totalWeight = Object.values(intentWeights).reduce((a, b) => a + b, 0)
+
+  let weightedIntent: { type: IntentType; weight: number }[] = []
+
+  if (totalWeight === 0) {
+    weightedIntent = [{ type: "balanced", weight: 1 }]
+  } else {
+    weightedIntent = Object.entries(intentWeights)
+      .filter(([_, value]) => value > 0)
+      .map(([key, value]) => ({
+        type: key as IntentType,
+        weight: value / totalWeight
+      }))
+  }
+
+  // =====================================================
+  // FINAL RETURN (BACKWARD + FORWARD COMPATIBLE)
+  // =====================================================
+
   return {
     category,
     budget,
-    intent: uniqueIntent
+
+    // OLD SYSTEM (keep for compatibility)
+    intent: uniqueIntent,
+
+    // NEW SYSTEM (for advanced scoring)
+    weightedIntent
   }
 }

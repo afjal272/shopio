@@ -50,7 +50,7 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🧠 DECISION SUMMARY (NEW) */}
+      {/* 🧠 DECISION SUMMARY */}
       {best && best.score > 0 && (
         <div className="p-4 rounded-2xl bg-black text-white text-center text-sm">
           Best for{" "}
@@ -61,7 +61,7 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🏆 BEST RESULT (UPGRADED HERO) */}
+      {/* 🏆 BEST RESULT */}
       {best && best.score > 0 && (
         <div className="p-6 rounded-3xl bg-gradient-to-b from-gray-50 to-white border border-black shadow-lg space-y-4">
 
@@ -80,18 +80,24 @@ export default function Results({ data }: { data: SearchResponse }) {
             </div>
           </div>
 
-          {/* 🔥 COMPARISON (moved inside hero, NOT removed) */}
+          {/* 🔥 COMPARISON (Hero) */}
           {comparison?.length > 0 && (
-            <div className="bg-green-50 border border-green-200 p-4 rounded-xl">
-              <h3 className="text-green-700 font-semibold mb-2">
+            <div className="p-5 border border-green-200 bg-green-50 rounded-2xl">
+              <h3 className="text-green-700 font-semibold mb-3">
                 Why this wins
               </h3>
 
-              <ul className="text-sm text-gray-700 space-y-1">
+              <div className="space-y-2">
                 {comparison.map((point, i) => (
-                  <li key={i}>✔ {point}</li>
+                  <div
+                    key={i}
+                    className="flex items-start gap-2 bg-white border border-green-100 rounded-lg px-3 py-2 text-sm text-gray-700"
+                  >
+                    <span className="text-green-600 font-bold">✔</span>
+                    <span className="leading-relaxed">{point}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
 
@@ -99,8 +105,8 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🔥 COMPARISON (fallback - agar hero me na aaye) */}
-      {comparison?.length > 0 && !best && (
+      {/* 🔥 COMPARISON (Fallback FIXED) */}
+      {comparison?.length > 0 && best && best.score === 0 && (
         <div className="p-5 border border-black/10 bg-black/5 rounded-2xl">
           <h3 className="text-black font-semibold mb-3">
             Why this wins
@@ -137,30 +143,32 @@ export default function Results({ data }: { data: SearchResponse }) {
       )}
 
       {/* 🔥 NOT RECOMMENDED */}
-      {notRecommended?.length > 0 && (
-        <div className="p-5 border border-red-100 bg-red-50 rounded-2xl">
-          <h3 className="text-red-600 font-semibold mb-4">
-            Why not these?
-          </h3>
+    {notRecommended?.length > 0 && (
+      <div className="p-5 border border-red-100 bg-red-50 rounded-2xl">
+      <h3 className="text-red-600 font-semibold mb-4">
+        Why not these?
+      </h3>
 
-          <div className="flex flex-col gap-3">
-            {notRecommended.map((item) => (
-              <div
-                key={item.id}
-                className="text-sm text-gray-700 border border-red-100 rounded-lg p-3 bg-white flex justify-between items-center"
-              >
-                <span>
-                  ❌{" "}
-                  <span className="font-medium text-black">
-                    {item.title}
-                  </span>{" "}
-                  — {item.reason}
-                </span>
-              </div>
-            ))}
+     <div className="flex flex-col gap-3">
+       {notRecommended.map((item) => (
+        <div
+          key={item.id}
+          className="text-sm text-gray-700 border border-red-100 rounded-lg p-3 bg-white hover:bg-red-50 transition flex justify-between items-start"
+        >
+          <div className="flex flex-col">
+            <span className="font-medium text-black">
+              ❌ {item.title}
+            </span>
+
+            <span className="text-red-600 text-xs mt-1">
+              {item.reason}
+            </span>
           </div>
         </div>
-      )}
+      ))}
+     </div>
+    </div>
+    )}
 
     </div>
   )
