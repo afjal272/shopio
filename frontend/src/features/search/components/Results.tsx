@@ -3,14 +3,39 @@ import { SearchResponse } from "@/types/search"
 
 export default function Results({ data }: { data: SearchResponse }) {
 
-   console.log("RESULTS RECEIVED:", data)
-   
   const { best, top3, parsed, notRecommended, comparison } = data
+
+  const noResults =
+    (!best || best.score === 0) &&
+    (!top3 || top3.length === 0)
+
+  if (noResults) {
+    return (
+      <div className="w-full max-w-3xl mx-auto text-center py-12 space-y-4">
+        <p className="text-lg font-semibold text-black">
+          No exact match found
+        </p>
+
+        <p className="text-sm text-gray-500">
+          Try increasing your budget or changing preferences
+        </p>
+
+        <div className="flex justify-center gap-2 flex-wrap">
+          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm cursor-pointer">
+            best phone under 30000
+          </span>
+          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm cursor-pointer">
+            best gaming phone
+          </span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-12">
 
-      {/* 🔥 USER CONTEXT (IMPROVED) */}
+      {/* 🔥 USER CONTEXT */}
       {parsed && (
         <div className="text-sm text-gray-500 text-center">
           Results for{" "}
@@ -25,14 +50,7 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* ❌ NO RESULT */}
-      {best?.score === 0 && (
-        <p className="text-red-500 text-sm text-center">
-          No suitable product found
-        </p>
-      )}
-
-      {/* 🔥 BEST RESULT (UPGRADED) */}
+      {/* 🔥 BEST RESULT */}
       {best && best.score > 0 && (
         <div className="p-6 rounded-3xl bg-gradient-to-b from-gray-50 to-white border border-gray-200 shadow-md">
           
@@ -50,7 +68,7 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🔥 COMPARISON (MORE VISIBLE) */}
+      {/* 🔥 COMPARISON */}
       {comparison?.length > 0 && (
         <div className="p-5 border border-black/10 bg-black/5 rounded-2xl">
           <h3 className="text-black font-semibold mb-3">
@@ -87,7 +105,7 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🔥 WHY NOT THESE (IMPROVED READABILITY) */}
+      {/* 🔥 NOT RECOMMENDED */}
       {notRecommended?.length > 0 && (
         <div className="p-5 border border-red-100 bg-red-50 rounded-2xl">
           <h3 className="text-red-600 font-semibold mb-4">

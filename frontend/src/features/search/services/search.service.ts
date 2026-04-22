@@ -1,6 +1,8 @@
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+
 export async function searchProducts(query: string) {
   const res = await fetch(
-    `http://localhost:5000/api/search?q=${encodeURIComponent(query)}`
+    `${BASE_URL}/api/search?q=${encodeURIComponent(query)}`
   )
 
   if (!res.ok) {
