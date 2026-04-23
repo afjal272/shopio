@@ -20,6 +20,20 @@ export default function ResultCard({ item, highlight, index }: Props) {
     ? new Intl.NumberFormat("en-IN").format(item.price)
     : "N/A"
 
+  // 🔥 NEW: Highlight best spec
+  let bestKey: string | null = null
+  let bestValue = 0
+
+  if (item.breakdown) {
+    Object.entries(item.breakdown).forEach(([key, value]) => {
+      const val = Number(value) || 0
+      if (val > bestValue) {
+        bestValue = val
+        bestKey = key
+      }
+    })
+  }
+
   return (
     <div
       className={`rounded-2xl p-5 bg-white transition border ${
@@ -48,6 +62,13 @@ export default function ResultCard({ item, highlight, index }: Props) {
           <p className="text-sm text-gray-500 mt-1">
             ₹{formattedPrice}
           </p>
+
+          {/* 🔥 NEW: BEST FEATURE TAG */}
+          {bestKey && (
+            <span className="inline-block mt-1 text-[10px] bg-black text-white px-2 py-[2px] rounded-full">
+              Best in {bestKey}
+            </span>
+          )}
         </div>
 
         {/* SCORE BADGE */}
@@ -105,16 +126,21 @@ export default function ResultCard({ item, highlight, index }: Props) {
           {Object.entries(item.breakdown).map(([key, value]) => {
             const safeValue = Math.max(0, Math.min(100, Number(value) || 0))
 
+            // 🔥 NEW: highlight best bar
+            const isBest = key === bestKey
+
             return (
               <div key={key}>
                 <div className="flex justify-between text-[11px] text-gray-500">
-                  <span className="capitalize">{key}</span>
+                  <span className={`capitalize ${isBest ? "font-semibold text-black" : ""}`}>
+                    {key}
+                  </span>
                   <span>{safeValue}%</span>
                 </div>
 
                 <div className="w-full bg-gray-200 h-1 rounded overflow-hidden">
                   <div
-                    className="bg-black/80 h-1 rounded"
+                    className={`${isBest ? "bg-black" : "bg-black/60"} h-1 rounded`}
                     style={{ width: `${safeValue}%` }}
                   />
                 </div>
@@ -124,7 +150,7 @@ export default function ResultCard({ item, highlight, index }: Props) {
         </div>
       )}
 
-      {/* 🔥 CTA + CONFIDENCE (NEW) */}
+      {/* 🔥 CTA + CONFIDENCE */}
       <div className="mt-4 flex items-center justify-between">
 
         {item.confidence !== undefined && (

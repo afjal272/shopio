@@ -10,6 +10,12 @@ export default function Results({ data }: { data: SearchResponse }) {
     (!top3 || top3.length === 0) &&
     !isRelaxed
 
+  // 🔥 NEW: Smart intent label
+  const intentText =
+    parsed?.intent?.length > 1
+      ? parsed.intent.join(" & ")
+      : parsed?.intent?.[0] || "general use"
+
   if (noResults) {
     return (
       <div className="w-full max-w-3xl mx-auto text-center py-12 space-y-4">
@@ -36,7 +42,7 @@ export default function Results({ data }: { data: SearchResponse }) {
   return (
     <div className="w-full max-w-3xl mx-auto space-y-12">
 
-      {/* 🔥 RELAXED MODE MESSAGE (NEW) */}
+      {/* 🔥 RELAXED MODE MESSAGE */}
       {isRelaxed && (
         <div className="text-center text-sm text-orange-600">
           Budget too low — showing closest available options
@@ -48,7 +54,7 @@ export default function Results({ data }: { data: SearchResponse }) {
         <div className="text-sm text-gray-500 text-center">
           Results for{" "}
           <span className="text-black font-medium">
-            {parsed.intent?.join(" & ") || "general"}
+            {intentText}
           </span>{" "}
           {parsed.budget && (
             <>
@@ -63,13 +69,13 @@ export default function Results({ data }: { data: SearchResponse }) {
         <div className="p-4 rounded-2xl bg-black text-white text-center text-sm">
           Best for{" "}
           <span className="font-semibold">
-            {parsed?.intent?.join(" & ") || "general use"}
+            {intentText}
           </span>{" "}
           {parsed?.budget && <>under ₹{parsed.budget}</>} with strong overall performance
         </div>
       )}
 
-      {/* 🔥 LOW SCORE WARNING (NEW) */}
+      {/* 🔥 LOW SCORE WARNING */}
       {best && best.score <= 40 && (
         <div className="text-center text-sm text-orange-500">
           Not an ideal match, but best available in this range
@@ -95,11 +101,22 @@ export default function Results({ data }: { data: SearchResponse }) {
             </div>
           </div>
 
+          {/* 🔥 NEW: WINNING FACTOR HIGHLIGHT */}
+          {best.breakdown && (
+            <div className="text-xs text-gray-600 bg-black/5 px-3 py-2 rounded-lg">
+              Strongest area:{" "}
+              <span className="font-medium text-black">
+                {Object.entries(best.breakdown)
+                  .sort((a, b) => (b[1] as number) - (a[1] as number))[0][0]}
+              </span>
+            </div>
+          )}
+
           {/* 🔥 COMPARISON (Hero) */}
           {comparison?.length > 0 && (
             <div className="p-5 border border-green-200 bg-green-50 rounded-2xl">
               <h3 className="text-green-700 font-semibold mb-3">
-                Why this wins
+                Why this beats next option
               </h3>
 
               <div className="space-y-2">
@@ -120,7 +137,7 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🔥 COMPARISON (Fallback FIXED) */}
+      {/* 🔥 COMPARISON (Fallback) */}
       {comparison?.length > 0 && best && (
         <div className="p-5 border border-black/10 bg-black/5 rounded-2xl">
           <h3 className="text-black font-semibold mb-3">
