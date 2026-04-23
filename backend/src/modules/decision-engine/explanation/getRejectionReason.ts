@@ -3,7 +3,12 @@ import { Product, IntentType } from "../types"
 export function getRejectionReason(
   product: Product,
   intent: IntentType[],
-  budget: number | null
+  budget: number | null,
+  constraints?: {
+    minRam?: number | null
+    minBattery?: number | null
+    minRating?: number | null
+  }
 ) {
   const ram = product.specs.ram || 0
   const battery = product.specs.battery || 0
@@ -12,6 +17,22 @@ export function getRejectionReason(
   const reviews = product.reviewsCount || 0
 
   const reasons: string[] = []
+
+  // =====================================================
+  // 🔥 NEW: CONSTRAINT FAIL REASONS (MOST IMPORTANT)
+  // =====================================================
+
+  if (constraints?.minRam && ram < constraints.minRam) {
+    reasons.push(`does not meet ${constraints.minRam}GB RAM requirement`)
+  }
+
+  if (constraints?.minBattery && battery < constraints.minBattery) {
+    reasons.push(`battery below required ${constraints.minBattery}mAh`)
+  }
+
+  if (constraints?.minRating && rating < constraints.minRating) {
+    reasons.push(`rating (${rating}⭐) below expected level`)
+  }
 
   // 💰 BUDGET (strong signal)
   if (budget && product.price > budget) {
@@ -49,7 +70,7 @@ export function getRejectionReason(
     reasons.push(`less proven than top options`)
   }
 
-  // ⚠️ GENERAL WEAKNESS (catch-all)
+  // ⚠️ GENERAL WEAKNESS
   if (!intent.includes("gaming") && processor < 5) {
     reasons.push(`overall performance is below average`)
   }

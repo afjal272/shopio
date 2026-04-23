@@ -14,25 +14,34 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
   // 🔥 FILTER
   let filtered = applyFilters(products, parsed)
 
-  // 🔥 FAIL-SAFE (NEW)
+  // 🔥 FAIL-SAFE (IMPROVED)
   let isRelaxed = false
 
-  if (filtered.length === 0) {
-    console.log("⚠️ No strict match → applying relaxed filter")
+  if (filtered.length < 3) {
+    console.log("⚠️ Low results → applying relaxed filter")
 
     isRelaxed = true
 
-    filtered = products.filter((p) => {
-      if (parsed.budget && p.price > parsed.budget * 1.3) return false
-      return true
-    })
+    filtered = products
+      .sort((a, b) => {
+        const diffA = Math.abs((a.price ?? 0) - (parsed.budget ?? 0))
+        const diffB = Math.abs((b.price ?? 0) - (parsed.budget ?? 0))
+        return diffA - diffB
+      })
+      .slice(0, 5)
   }
+
+  // 🔥 (NEW) attach constraints to products
+  const enriched = filtered.map((p) => ({
+    ...p,
+    __constraints: parsed.constraints
+  }))
 
   // 🔥 RANK
   const ranked = rankProducts(
-    filtered,
+    enriched,
     parsed.weightedIntent || parsed.intent,
-    parsed.budget,
+    isRelaxed ? null : parsed.budget,
     parsed.constraints
   )
 
@@ -62,36 +71,53 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
       notRecommended: [],
       comparison: [],
       parsed,
-      isRelaxed // 🔥 NEW
+      isRelaxed
     }
   }
 
   // 🔥 COMPARISON
   const comparison =
     ranked.length > 1
-      ? compareProducts(ranked[0], ranked[1], finalIntent)
+      ? compareProducts(
+          ranked[0],
+          ranked[1],
+          finalIntent
+        )
       : []
 
   return {
     best: {
       ...best,
-      explanation: generateExplanation(best, finalIntent),
+      explanation: generateExplanation(
+        best,
+        finalIntent,
+        parsed.constraints // 🔥 FIX
+      ),
       confidence: Math.min(100, Math.round(best.score || 0))
     },
 
-    top3: ranked.slice(1, 4).map((p) => ({
+    top3: ranked.slice(1, 9).map((p) => ({
       ...p,
-      explanation: generateExplanation(p, finalIntent),
+      explanation: generateExplanation(
+        p,
+        finalIntent,
+        parsed.constraints // 🔥 FIX
+      ),
       confidence: Math.min(100, Math.round(p.score || 0))
     })),
 
     notRecommended: ranked.slice(4, 7).map((p) => ({
       ...p,
-      reason: getRejectionReason(p, finalIntent, parsed.budget)
+      reason: getRejectionReason(
+        p,
+        finalIntent,
+        parsed.budget,
+        parsed.constraints // 🔥 NEW (future-ready)
+      )
     })),
 
     comparison,
     parsed,
-    isRelaxed // 🔥 NEW
+    isRelaxed
   }
 }

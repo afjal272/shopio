@@ -37,4 +37,7 @@ export type SearchResponse = {
   notRecommended: NotRecommendedItem[]
   comparison: string[]
   parsed: Parsed
+
+  // 🔥 NEW (IMPORTANT FIX)
+  isRelaxed?: boolean
 }

@@ -1,6 +1,14 @@
 import { Product, IntentType } from "../types"
 
-export function generateExplanation(product: Product, intent: IntentType[]) {
+export function generateExplanation(
+  product: Product,
+  intent: IntentType[],
+  constraints?: {
+    minRam?: number | null
+    minBattery?: number | null
+    minRating?: number | null
+  }
+) {
   const ram = product.specs.ram || 0
   const battery = product.specs.battery || 0
   const processor = product.specs.processorScore || 0
@@ -9,6 +17,34 @@ export function generateExplanation(product: Product, intent: IntentType[]) {
   const tags = product.tags || []
 
   const reasons: string[] = []
+
+  // =====================================================
+  // 🔥 NEW: CONSTRAINT-AWARE REASONS (ADDED)
+  // =====================================================
+
+  if (constraints?.minRam) {
+    if (ram >= constraints.minRam) {
+      reasons.push(`${ram}GB RAM meets your requirement`)
+    } else {
+      reasons.push(`RAM is below your preferred ${constraints.minRam}GB`)
+    }
+  }
+
+  if (constraints?.minBattery) {
+    if (battery >= constraints.minBattery) {
+      reasons.push(`${battery}mAh battery meets your requirement`)
+    } else {
+      reasons.push(`battery is lower than expected ${constraints.minBattery}mAh`)
+    }
+  }
+
+  if (constraints?.minRating) {
+    if (rating >= constraints.minRating) {
+      reasons.push(`rating (${rating}⭐) meets your expectation`)
+    } else {
+      reasons.push(`rating (${rating}⭐) is below preferred level`)
+    }
+  }
 
   // 🎮 GAMING
   if (intent.includes("gaming")) {
@@ -55,7 +91,7 @@ export function generateExplanation(product: Product, intent: IntentType[]) {
     reasons.push(`${battery}mAh battery for regular usage`)
   }
 
-  // 🔥 TRUST SIGNAL (stronger wording)
+  // 🔥 TRUST SIGNAL
   if (reviews > 1000) {
     reasons.push(`${reviews}+ reviews indicate strong market trust`)
   } else if (reviews > 100) {

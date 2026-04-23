@@ -3,11 +3,12 @@ import { SearchResponse } from "@/types/search"
 
 export default function Results({ data }: { data: SearchResponse }) {
 
-  const { best, top3, parsed, notRecommended, comparison } = data
+  const { best, top3, parsed, notRecommended, comparison, isRelaxed } = data
 
   const noResults =
     (!best || best.score === 0) &&
-    (!top3 || top3.length === 0)
+    (!top3 || top3.length === 0) &&
+    !isRelaxed
 
   if (noResults) {
     return (
@@ -35,6 +36,13 @@ export default function Results({ data }: { data: SearchResponse }) {
   return (
     <div className="w-full max-w-3xl mx-auto space-y-12">
 
+      {/* 🔥 RELAXED MODE MESSAGE (NEW) */}
+      {isRelaxed && (
+        <div className="text-center text-sm text-orange-600">
+          Budget too low — showing closest available options
+        </div>
+      )}
+
       {/* 🔥 USER CONTEXT */}
       {parsed && (
         <div className="text-sm text-gray-500 text-center">
@@ -61,8 +69,15 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
+      {/* 🔥 LOW SCORE WARNING (NEW) */}
+      {best && best.score <= 40 && (
+        <div className="text-center text-sm text-orange-500">
+          Not an ideal match, but best available in this range
+        </div>
+      )}
+
       {/* 🏆 BEST RESULT */}
-      {best && best.score > 0 && (
+      {best && (
         <div className="p-6 rounded-3xl bg-gradient-to-b from-gray-50 to-white border border-black shadow-lg space-y-4">
 
           <div className="flex items-center justify-between">
@@ -106,7 +121,7 @@ export default function Results({ data }: { data: SearchResponse }) {
       )}
 
       {/* 🔥 COMPARISON (Fallback FIXED) */}
-      {comparison?.length > 0 && best && best.score === 0 && (
+      {comparison?.length > 0 && best && (
         <div className="p-5 border border-black/10 bg-black/5 rounded-2xl">
           <h3 className="text-black font-semibold mb-3">
             Why this wins
@@ -143,32 +158,32 @@ export default function Results({ data }: { data: SearchResponse }) {
       )}
 
       {/* 🔥 NOT RECOMMENDED */}
-    {notRecommended?.length > 0 && (
-      <div className="p-5 border border-red-100 bg-red-50 rounded-2xl">
-      <h3 className="text-red-600 font-semibold mb-4">
-        Why not these?
-      </h3>
+      {notRecommended?.length > 0 && (
+        <div className="p-5 border border-red-100 bg-red-50 rounded-2xl">
+          <h3 className="text-red-600 font-semibold mb-4">
+            Why not these?
+          </h3>
 
-     <div className="flex flex-col gap-3">
-       {notRecommended.map((item) => (
-        <div
-          key={item.id}
-          className="text-sm text-gray-700 border border-red-100 rounded-lg p-3 bg-white hover:bg-red-50 transition flex justify-between items-start"
-        >
-          <div className="flex flex-col">
-            <span className="font-medium text-black">
-              ❌ {item.title}
-            </span>
+          <div className="flex flex-col gap-3">
+            {notRecommended.map((item) => (
+              <div
+                key={item.id}
+                className="text-sm text-gray-700 border border-red-100 rounded-lg p-3 bg-white hover:bg-red-50 transition flex justify-between items-start"
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium text-black">
+                    ❌ {item.title}
+                  </span>
 
-            <span className="text-red-600 text-xs mt-1">
-              {item.reason}
-            </span>
+                  <span className="text-red-600 text-xs mt-1">
+                    {item.reason}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      ))}
-     </div>
-    </div>
-    )}
+      )}
 
     </div>
   )

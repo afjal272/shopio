@@ -142,7 +142,7 @@ export function parseQuery(query: string): ParsedQuery {
   }
 
   // =====================================================
-  // 🔥 NEW: CONSTRAINTS PARSER (ADDED)
+  // 🔥 NEW: CONSTRAINTS PARSER (IMPROVED, NOT REMOVED)
   // =====================================================
 
   const constraints = {
@@ -151,21 +151,21 @@ export function parseQuery(query: string): ParsedQuery {
     minRating: null as number | null
   }
 
-  // RAM (e.g. 8GB)
-  const ramMatch = q.match(/(\d+)\s?gb/)
+  // 🔥 RAM (strict: only when "ram" present)
+  const ramMatch = q.match(/(\d+)\s?gb\s?ram/)
   if (ramMatch) {
     const val = Number(ramMatch[1])
     if (!isNaN(val)) constraints.minRam = val
   }
 
-  // Battery (e.g. 6000mAh)
+  // 🔥 Battery (safe)
   const batteryMatch = q.match(/(\d+)\s?mah/)
   if (batteryMatch) {
     const val = Number(batteryMatch[1])
     if (!isNaN(val)) constraints.minBattery = val
   }
 
-  // Rating (e.g. 4.5 rating)
+  // 🔥 Rating (safe)
   const ratingMatch = q.match(/(\d+(\.\d+)?)\s?(rating|stars?)/)
   if (ratingMatch) {
     const val = Number(ratingMatch[1])

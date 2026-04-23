@@ -118,20 +118,38 @@ export function scoreProduct(
     adj += (1 - u) * 0.05
   }
 
-  // 🔥 CONSTRAINT BOOST (NEW)
+  // =====================================================
+  // 🔥 CONSTRAINT BOOST + PENALTY (UPGRADED)
+  // =====================================================
+
   if (constraints) {
     const specs = product.specs || {}
 
-    if (constraints.minRam && specs.ram >= constraints.minRam) {
-      adj += 0.05
+    // 🔥 RAM
+    if (constraints.minRam !== null && constraints.minRam !== undefined) {
+      if ((specs.ram || 0) >= constraints.minRam) {
+        adj += 0.06 // boost
+      } else {
+        adj -= 0.12 // penalty (important)
+      }
     }
 
-    if (constraints.minBattery && specs.battery >= constraints.minBattery) {
-      adj += 0.05
+    // 🔥 BATTERY
+    if (constraints.minBattery !== null && constraints.minBattery !== undefined) {
+      if ((specs.battery || 0) >= constraints.minBattery) {
+        adj += 0.05
+      } else {
+        adj -= 0.10
+      }
     }
 
-    if (constraints.minRating && product.rating >= constraints.minRating) {
-      adj += 0.04
+    // 🔥 RATING
+    if (constraints.minRating !== null && constraints.minRating !== undefined) {
+      if ((product.rating || 0) >= constraints.minRating) {
+        adj += 0.04
+      } else {
+        adj -= 0.08
+      }
     }
   }
 

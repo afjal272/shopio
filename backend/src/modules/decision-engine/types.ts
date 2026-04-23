@@ -4,6 +4,13 @@ export type IntentType = "gaming" | "camera" | "battery" | "balanced"
 // 🔥 CATEGORY TYPE (UPGRADED)
 export type CategoryType = "smartphone" | "laptop" | "general"
 
+// 🔥 CONSTRAINT TYPE (NEW - CLEAN STRUCTURE)
+export type Constraints = {
+  minRam?: number | null
+  minBattery?: number | null
+  minRating?: number | null
+}
+
 // 🔥 PARSED QUERY (FULL ENGINE SUPPORT)
 export type ParsedQuery = {
   category: CategoryType | null
@@ -19,11 +26,7 @@ export type ParsedQuery = {
   negativeIntent?: IntentType[]
 
   // 🔥 CONSTRAINTS (CORE FEATURE)
-  constraints?: {
-    minRam?: number | null
-    minBattery?: number | null
-    minRating?: number | null
-  }
+  constraints?: Constraints
 }
 
 // 🔥 PRODUCT TYPE
