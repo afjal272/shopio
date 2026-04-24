@@ -3,13 +3,22 @@
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
-export default function SearchBar() {
+export default function SearchBar({ initialValue = "" }: { initialValue?: string }) {
   const router = useRouter()
   const params = useSearchParams()
 
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState(initialValue || "")
   const [loading, setLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // 🔥 NEW: dynamic suggestions
+  const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>([])
+
+  // 🔥 NEW: keyboard navigation
+  const [activeIndex, setActiveIndex] = useState(-1)
+
+  // 🔥 NEW: recent searches
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
 
   const suggestions = [
     "best gaming phone",
@@ -17,6 +26,23 @@ export default function SearchBar() {
     "best camera phone",
     "best laptop for coding",
   ]
+
+  // 🔥 LOAD recent searches
+  useEffect(() => {
+    const stored = localStorage.getItem("recent_searches")
+    if (stored) {
+      setRecentSearches(JSON.parse(stored))
+    }
+  }, [])
+
+  // 🔥 SAVE recent searches
+  const saveRecent = (value: string) => {
+    let updated = [value, ...recentSearches.filter((v) => v !== value)]
+    updated = updated.slice(0, 5)
+
+    setRecentSearches(updated)
+    localStorage.setItem("recent_searches", JSON.stringify(updated))
+  }
 
   // 🔥 FIX: query sync + loading reset
   useEffect(() => {
@@ -26,10 +52,31 @@ export default function SearchBar() {
       setQuery(q)
     }
 
-    // 🔥 IMPORTANT: reset loading after route change
     setLoading(false)
-
   }, [params])
+
+  // 🔥 NEW: debounce + dynamic suggestions
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!query || query.length < 2) {
+        setDynamicSuggestions([])
+        return
+      }
+
+      const generated = [
+        `${query} under 15000`,
+        `${query} under 20000`,
+        `best ${query}`,
+        `${query} with 8GB RAM`,
+        `${query} for gaming`,
+      ]
+
+      setDynamicSuggestions(generated)
+      setActiveIndex(-1)
+    }, 300)
+
+    return () => clearTimeout(timeout)
+  }, [query])
 
   const handleSearch = () => {
     if (!query.trim()) return
@@ -37,22 +84,49 @@ export default function SearchBar() {
     setLoading(true)
     setShowSuggestions(false)
 
+    saveRecent(query)
+
     router.push(`/search?q=${encodeURIComponent(query)}`)
   }
 
   const handleSelect = (value: string) => {
     setQuery(value)
     setShowSuggestions(false)
-
-    // 🔥 also trigger loading for consistency
     setLoading(true)
+
+    saveRecent(value)
 
     router.push(`/search?q=${encodeURIComponent(value)}`)
   }
 
-  const filteredSuggestions = suggestions.filter((s) =>
-    s.toLowerCase().includes(query.toLowerCase())
-  )
+  // 🔥 MERGE: static + dynamic + recent + remove duplicates
+  const filteredSuggestions = Array.from(
+    new Set([
+      ...recentSearches,
+      ...suggestions.filter((s) =>
+        s.toLowerCase().includes(query.toLowerCase())
+      ),
+      ...dynamicSuggestions
+    ])
+  ).slice(0, 8)
+
+  // 🔥 NEW: highlight function
+  const highlightMatch = (text: string, query: string) => {
+    if (!query) return text
+
+    const regex = new RegExp(`(${query})`, "gi")
+    const parts = text.split(regex)
+
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <span key={i} className="font-semibold text-black">
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    )
+  }
 
   return (
     <div className="relative w-full flex items-center gap-2">
@@ -63,10 +137,34 @@ export default function SearchBar() {
         onChange={(e) => {
           setQuery(e.target.value)
           setShowSuggestions(true)
+          setActiveIndex(-1)
         }}
         onFocus={() => setShowSuggestions(true)}
+        onBlur={() => {
+          setTimeout(() => setShowSuggestions(false), 150)
+        }}
         onKeyDown={(e) => {
-          if (e.key === "Enter") handleSearch()
+          if (e.key === "Enter") {
+            if (activeIndex >= 0) {
+              handleSelect(filteredSuggestions[activeIndex])
+            } else {
+              handleSearch()
+            }
+          }
+
+          if (e.key === "ArrowDown") {
+            e.preventDefault()
+            setActiveIndex((prev) =>
+              prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+            )
+          }
+
+          if (e.key === "ArrowUp") {
+            e.preventDefault()
+            setActiveIndex((prev) =>
+              prev > 0 ? prev - 1 : -1
+            )
+          }
         }}
       />
 
@@ -79,15 +177,27 @@ export default function SearchBar() {
       </button>
 
       {/* 🔥 Suggestions Dropdown */}
-      {showSuggestions && query.length > 1 && filteredSuggestions.length > 0 && (
+      {showSuggestions && filteredSuggestions.length > 0 && (
         <div className="absolute top-full left-0 w-full mt-2 bg-white border rounded-lg shadow-md z-10">
+
+          {/* 🔥 RECENT LABEL */}
+          {recentSearches.length > 0 && (
+            <div className="px-4 py-2 text-xs text-gray-400">
+              Recent searches
+            </div>
+          )}
+
           {filteredSuggestions.map((s, i) => (
             <div
               key={i}
-              onClick={() => handleSelect(s)}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+              onMouseDown={() => handleSelect(s)} // 🔥 FIX (IMPORTANT)
+              className={`px-4 py-2 cursor-pointer text-sm ${
+                i === activeIndex
+                  ? "bg-gray-200"
+                  : "hover:bg-gray-100"
+              }`}
             >
-              {s}
+              {highlightMatch(s, query)}
             </div>
           ))}
         </div>
