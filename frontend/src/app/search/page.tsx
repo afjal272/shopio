@@ -10,8 +10,10 @@ export async function generateMetadata({ searchParams }: any) {
   }
 }
 
-export default function Page({ searchParams }: any) {
-  const query = searchParams?.q || ""
+// 🔥 FIX: async + await add
+export default async function Page({ searchParams }: any) {
+  const params = await searchParams
+  const query = params?.q || ""
 
   return <SearchPageClient initialQuery={query} />
 }
