@@ -1,13 +1,21 @@
 export type Parsed = {
   intent: string[]
   budget: number | null
+
+  // 🔥 NEW (future-safe)
+  category?: string | null
+  constraints?: {
+    minRam?: number | null
+    minBattery?: number | null
+    minRating?: number | null
+  }
 }
 
 export type Breakdown = {
-  ram: number
-  processor: number
-  battery: number
-  rating: number
+  ram?: number
+  processor?: number
+  battery?: number
+  rating?: number
 }
 
 export type ProductItem = {
@@ -37,7 +45,8 @@ export type SearchResponse = {
   notRecommended: NotRecommendedItem[]
   comparison: string[]
   parsed: Parsed
+  suggestions?: string[]
 
-  // 🔥 NEW (IMPORTANT FIX)
+  // 🔥 NEW
   isRelaxed?: boolean
 }

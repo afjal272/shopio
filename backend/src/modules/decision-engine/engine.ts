@@ -4,6 +4,7 @@ import { rankProducts } from "./ranking/rankProducts"
 import { generateExplanation } from "./explanation/generateExplanation"
 import { getRejectionReason } from "./explanation/getRejectionReason"
 import { compareProducts } from "./comparison/compareProducts"
+import { generateSuggestions } from "./suggestions" // 🔥 NEW
 
 export function runEngine(parsed: ParsedQuery, products: Product[]) {
 
@@ -71,7 +72,8 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
       notRecommended: [],
       comparison: [],
       parsed,
-      isRelaxed
+      isRelaxed,
+      suggestions: generateSuggestions(parsed, isRelaxed) // 🔥 NEW
     }
   }
 
@@ -91,7 +93,7 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
       explanation: generateExplanation(
         best,
         finalIntent,
-        parsed.constraints // 🔥 FIX
+        parsed.constraints
       ),
       confidence: Math.min(100, Math.round(best.score || 0))
     },
@@ -101,7 +103,7 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
       explanation: generateExplanation(
         p,
         finalIntent,
-        parsed.constraints // 🔥 FIX
+        parsed.constraints
       ),
       confidence: Math.min(100, Math.round(p.score || 0))
     })),
@@ -112,12 +114,13 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
         p,
         finalIntent,
         parsed.budget,
-        parsed.constraints // 🔥 NEW (future-ready)
+        parsed.constraints
       )
     })),
 
     comparison,
     parsed,
-    isRelaxed
+    isRelaxed,
+    suggestions: generateSuggestions(parsed, isRelaxed) // 🔥 NEW
   }
 }

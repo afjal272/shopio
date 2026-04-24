@@ -1,21 +1,32 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import SearchBar from "@/features/search/components/SearchBar"
 import Results from "@/features/search/components/Results"
 import { useSearch } from "@/features/search/hooks/useSearch"
 import Skeleton from "@/components/ui/Skeleton"
 
-export default function SearchPageClient() {
+export default function SearchPageClient({ initialQuery = "" }: { initialQuery?: string }) {
   const params = useSearchParams()
-  const query = params.get("q") || ""
+  const queryFromURL = params.get("q") || ""
+
+  // 🔥 NEW: local query state (source of truth)
+  const [query, setQuery] = useState(initialQuery || queryFromURL)
 
   const { search, loading, data, error } = useSearch()
 
   const lastQueryRef = useRef("")
 
+  // 🔥 SYNC URL → STATE
+  useEffect(() => {
+    if (queryFromURL && queryFromURL !== query) {
+      setQuery(queryFromURL)
+    }
+  }, [queryFromURL])
+
+  // 🔥 TRIGGER SEARCH
   useEffect(() => {
     if (!query) return
 
@@ -30,7 +41,8 @@ export default function SearchPageClient() {
       <div className="max-w-4xl mx-auto">
 
         <div className="mb-8 flex justify-center">
-          <SearchBar />
+          {/* 🔥 PASS INITIAL VALUE */}
+          <SearchBar initialValue={query} />
         </div>
 
         {query && (

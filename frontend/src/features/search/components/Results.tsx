@@ -1,7 +1,10 @@
 import ResultCard from "./ResultCard"
 import { SearchResponse } from "@/types/search"
+import { useRouter } from "next/navigation" // 🔥 NEW
 
 export default function Results({ data }: { data: SearchResponse }) {
+
+  const router = useRouter() // 🔥 NEW
 
   const { best, top3, parsed, notRecommended, comparison, isRelaxed } = data
 
@@ -101,7 +104,7 @@ export default function Results({ data }: { data: SearchResponse }) {
             </div>
           </div>
 
-          {/* 🔥 NEW: WINNING FACTOR HIGHLIGHT */}
+          {/* 🔥 WINNING FACTOR */}
           {best.breakdown && (
             <div className="text-xs text-gray-600 bg-black/5 px-3 py-2 rounded-lg">
               Strongest area:{" "}
@@ -109,6 +112,13 @@ export default function Results({ data }: { data: SearchResponse }) {
                 {Object.entries(best.breakdown)
                   .sort((a, b) => (b[1] as number) - (a[1] as number))[0][0]}
               </span>
+            </div>
+          )}
+
+          {/* 🔥 EXTRA INSIGHT (NEW) */}
+          {best.breakdown && (
+            <div className="text-xs text-gray-500 text-center">
+              Balanced score across specs improves overall ranking
             </div>
           )}
 
@@ -137,8 +147,8 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🔥 COMPARISON (Fallback) */}
-      {comparison?.length > 0 && best && (
+      {/* 🔥 COMPARISON (Fallback FIXED CONDITION) */}
+      {comparison?.length > 0 && best && best.score < 60 && (
         <div className="p-5 border border-black/10 bg-black/5 rounded-2xl">
           <h3 className="text-black font-semibold mb-3">
             Why this wins
@@ -197,6 +207,29 @@ export default function Results({ data }: { data: SearchResponse }) {
                   </span>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 🔥 SUGGESTIONS (UPGRADED CLICK) */}
+      {data.suggestions?.length > 0 && (
+        <div className="p-5 border border-blue-100 bg-blue-50 rounded-2xl">
+          <h3 className="text-blue-600 font-semibold mb-3">
+            Try refining your search
+          </h3>
+
+          <div className="flex flex-wrap gap-2">
+            {data.suggestions.map((s, i) => (
+              <span
+                key={i}
+                onClick={() => {
+                  router.push(`/search?q=${encodeURIComponent(s)}`) // 🔥 FIXED (no reload)
+                }}
+                className="px-3 py-1 bg-white border border-blue-200 rounded-full text-sm cursor-pointer hover:bg-blue-100 transition"
+              >
+                {s}
+              </span>
             ))}
           </div>
         </div>
