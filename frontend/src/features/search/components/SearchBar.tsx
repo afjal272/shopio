@@ -20,6 +20,9 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
   // 🔥 NEW: recent searches
   const [recentSearches, setRecentSearches] = useState<string[]>([])
 
+  // 🔥 NEW: click tracking data
+  const [clickData, setClickData] = useState<Record<string, number>>({})
+
   const suggestions = [
     "best gaming phone",
     "best phone under 20000",
@@ -33,6 +36,12 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     if (stored) {
       setRecentSearches(JSON.parse(stored))
     }
+
+    // 🔥 LOAD click data
+    const clicks = localStorage.getItem("search_clicks")
+    if (clicks) {
+      setClickData(JSON.parse(clicks))
+    }
   }, [])
 
   // 🔥 SAVE recent searches
@@ -42,6 +51,17 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
 
     setRecentSearches(updated)
     localStorage.setItem("recent_searches", JSON.stringify(updated))
+  }
+
+  // 🔥 NEW: track click
+  const trackClick = (value: string) => {
+    const updated = {
+      ...clickData,
+      [value]: (clickData[value] || 0) + 1
+    }
+
+    setClickData(updated)
+    localStorage.setItem("search_clicks", JSON.stringify(updated))
   }
 
   // 🔥 FIX: query sync + loading reset
@@ -85,6 +105,7 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     setShowSuggestions(false)
 
     saveRecent(query)
+    trackClick(query) // 🔥 ADD
 
     router.push(`/search?q=${encodeURIComponent(query)}`)
   }
@@ -95,11 +116,12 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     setLoading(true)
 
     saveRecent(value)
+    trackClick(value) // 🔥 ADD
 
     router.push(`/search?q=${encodeURIComponent(value)}`)
   }
 
-  // 🔥 MERGE: static + dynamic + recent + remove duplicates
+  // 🔥 MERGE + RANKING (NEW)
   const filteredSuggestions = Array.from(
     new Set([
       ...recentSearches,
@@ -108,7 +130,9 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
       ),
       ...dynamicSuggestions
     ])
-  ).slice(0, 8)
+  )
+  .sort((a, b) => (clickData[b] || 0) - (clickData[a] || 0)) // 🔥 KEY
+  .slice(0, 8)
 
   // 🔥 NEW: highlight function
   const highlightMatch = (text: string, query: string) => {
@@ -190,7 +214,7 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
           {filteredSuggestions.map((s, i) => (
             <div
               key={i}
-              onMouseDown={() => handleSelect(s)} // 🔥 FIX (IMPORTANT)
+              onMouseDown={() => handleSelect(s)}
               className={`px-4 py-2 cursor-pointer text-sm ${
                 i === activeIndex
                   ? "bg-gray-200"

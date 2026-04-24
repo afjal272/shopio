@@ -59,7 +59,7 @@ export const products: Product[] = [
     specs: { ram: 12, processorScore: 9, battery: 5000 },
     image: "https://via.placeholder.com/150",
     tags: ["gaming"],
-    reviewsCount: 1800
+    reviewsCount: 1100
   },
   {
     id: "6",
@@ -107,7 +107,7 @@ export const products: Product[] = [
     specs: { ram: 8, processorScore: 8, battery: 5000 },
     image: "https://via.placeholder.com/150",
     tags: ["camera"],
-    reviewsCount: 1700
+    reviewsCount: 1000
   },
   {
     id: "10",

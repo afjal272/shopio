@@ -34,6 +34,18 @@ export default function ResultCard({ item, highlight, index }: Props) {
     })
   }
 
+  // 🔥 NEW: VALUE SCORE LOGIC (FIXED)
+  const valueScore =
+    ((item.breakdown?.processor || 0) +
+      (item.breakdown?.ram || 0)) /
+    (Math.max(item.price || 1, 1) / 1000) // ✅ FIX
+
+  let valueLabel = " Balanced"
+
+  // 🔥 FIXED THRESHOLDS
+  if (valueScore > 12) valueLabel = "🔥 Great Value"
+  else if (valueScore < 6) valueLabel = "  Overpriced"
+
   return (
     <div
       className={`rounded-2xl p-5 bg-white transition border ${
@@ -63,7 +75,12 @@ export default function ResultCard({ item, highlight, index }: Props) {
             ₹{formattedPrice}
           </p>
 
-          {/* 🔥 NEW: BEST FEATURE TAG */}
+          {/* 🔥 VALUE LABEL */}
+          <p className="text-xs mt-1 text-gray-600">
+            {valueLabel}
+          </p>
+
+          {/* 🔥 BEST FEATURE TAG */}
           {bestKey && (
             <span className="inline-block mt-1 text-[10px] bg-black text-white px-2 py-[2px] rounded-full">
               Best in {bestKey}
@@ -125,8 +142,6 @@ export default function ResultCard({ item, highlight, index }: Props) {
         <div className="mt-4 space-y-2">
           {Object.entries(item.breakdown).map(([key, value]) => {
             const safeValue = Math.max(0, Math.min(100, Number(value) || 0))
-
-            // 🔥 NEW: highlight best bar
             const isBest = key === bestKey
 
             return (
@@ -150,9 +165,8 @@ export default function ResultCard({ item, highlight, index }: Props) {
         </div>
       )}
 
-      {/* 🔥 CTA + CONFIDENCE */}
+      {/* CTA + CONFIDENCE */}
       <div className="mt-4 flex items-center justify-between">
-
         {item.confidence !== undefined && (
           <span className="text-xs text-gray-500">
             Confidence: {item.confidence}%

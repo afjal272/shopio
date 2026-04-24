@@ -25,6 +25,11 @@ export function compareProducts(
   const safePriceA = Math.max(a.price || 1, 1)
   const safePriceB = Math.max(b.price || 1, 1)
 
+  // 🔥 NEW: helper (winner bias toward A)
+  const pushA = (condition: boolean, text: string) => {
+    if (condition) result.push(text)
+  }
+
   // 🎮 GAMING
   if (intent.includes("gaming")) {
     if (aProcessor > bProcessor) {
@@ -38,6 +43,12 @@ export function compareProducts(
     } else if (bRam > aRam) {
       result.push(`${b.title} offers better multitasking with ${bRam}GB RAM`)
     }
+
+    // 🔥 NEW: reinforce A if better
+    pushA(
+      aProcessor > bProcessor && aRam >= bRam,
+      `${a.title} is more optimized overall for gaming performance`
+    )
   }
 
   // 🔋 BATTERY
@@ -47,6 +58,12 @@ export function compareProducts(
     } else if (bBattery > aBattery) {
       result.push(`${b.title} provides better battery backup (${bBattery}mAh)`)
     }
+
+    // 🔥 NEW
+    pushA(
+      aBattery > bBattery,
+      `${a.title} offers more reliable all-day battery usage`
+    )
   }
 
   // 📸 CAMERA
@@ -56,6 +73,12 @@ export function compareProducts(
     } else if (bRating > aRating) {
       result.push(`${b.title} delivers better camera performance (${bRating}⭐)`)
     }
+
+    // 🔥 NEW
+    pushA(
+      aRating > bRating,
+      `${a.title} is more consistent for photography overall`
+    )
   }
 
   // 🔥 TRUST (balanced)
@@ -65,6 +88,12 @@ export function compareProducts(
     } else {
       result.push(`${b.title} has stronger market trust with more user feedback`)
     }
+
+    // 🔥 NEW
+    pushA(
+      aReviews > bReviews,
+      `${a.title} has proven reliability with a larger user base`
+    )
   }
 
   // 💰 VALUE (important)
@@ -77,9 +106,20 @@ export function compareProducts(
     result.push(`${b.title} provides better value for money`)
   }
 
-  // ⚖️ TRADE-OFF LINE (very important)
-  if (result.length >= 2) {
+  // 🔥 NEW: reinforce A if value better
+  pushA(
+    aValue > bValue,
+    `${a.title} stands out as a stronger value overall`
+  )
+
+  // ⚖️ TRADE-OFF LINE (existing)
+  if (result.length >= 2 && intent.length > 0) {
     result.push(`while ${b.title} may excel in some areas, ${a.title} delivers a more balanced overall experience`)
+  }
+
+  // 🔥 NEW: clearer winner statement
+  if (result.length >= 2) {
+    result.push(`${a.title} is the better overall choice compared to ${b.title}`)
   }
 
   // 🔥 FALLBACK
@@ -87,5 +127,8 @@ export function compareProducts(
     result.push(`${a.title} edges ahead with a more balanced overall performance`)
   }
 
-  return result.slice(0, 3)
+  // 🔥 NEW: remove duplicates (critical fix)
+  const unique = Array.from(new Set(result))
+
+  return unique.slice(0, 3)
 }
