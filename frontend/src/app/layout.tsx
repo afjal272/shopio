@@ -5,6 +5,8 @@ import "./globals.css"
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 
+import { Toaster } from "sonner" // 🔥 ADD
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -42,6 +44,9 @@ export default function RootLayout({
 
         {/* FOOTER */}
         <Footer />
+
+        {/* 🔥 TOASTER ADD (IMPORTANT) */}
+        <Toaster position="top-center" richColors />
 
       </body>
     </html>

@@ -1,19 +1,38 @@
+"use client"
+
 import ResultCard from "./ResultCard"
 import { SearchResponse } from "@/types/search"
-import { useRouter } from "next/navigation" // 🔥 NEW
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
-export default function Results({ data }: { data: SearchResponse }) {
+// 🔥 UPDATED PROPS (ADD ONLY)
+export default function Results({
+  data,
+  selected = [],
+  onSelect,
+}: {
+  data: SearchResponse
+  selected?: string[]
+  onSelect?: (id: string) => void
+}) {
 
-  const router = useRouter() // 🔥 NEW
+  const router = useRouter()
 
   const { best, top3, parsed, notRecommended, comparison, isRelaxed } = data
+
+  // 🔥 ADDED: SAVE LAST RESULTS (no delete, pure addition)
+  useEffect(() => {
+    if (best) {
+      const all = [best, ...(top3 || [])]
+      localStorage.setItem("last_results", JSON.stringify(all))
+    }
+  }, [best, top3])
 
   const noResults =
     (!best || best.score === 0) &&
     (!top3 || top3.length === 0) &&
     !isRelaxed
 
-  // 🔥 NEW: Smart intent label
   const intentText =
     parsed?.intent?.length > 1
       ? parsed.intent.join(" & ")
@@ -45,14 +64,12 @@ export default function Results({ data }: { data: SearchResponse }) {
   return (
     <div className="w-full max-w-3xl mx-auto space-y-12">
 
-      {/* 🔥 RELAXED MODE MESSAGE */}
       {isRelaxed && (
         <div className="text-center text-sm text-orange-600">
           Budget too low — showing closest available options
         </div>
       )}
 
-      {/* 🔥 USER CONTEXT */}
       {parsed && (
         <div className="text-sm text-gray-500 text-center">
           Results for{" "}
@@ -67,7 +84,6 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🧠 DECISION SUMMARY */}
       {best && best.score > 0 && (
         <div className="p-4 rounded-2xl bg-black text-white text-center text-sm">
           Best for{" "}
@@ -78,14 +94,12 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🔥 LOW SCORE WARNING */}
       {best && best.score <= 40 && (
         <div className="text-center text-sm text-orange-500">
           Not an ideal match, but best available in this range
         </div>
       )}
 
-      {/* 🏆 BEST RESULT */}
       {best && (
         <div className="p-6 rounded-3xl bg-gradient-to-b from-gray-50 to-white border border-black shadow-lg space-y-4">
 
@@ -104,7 +118,6 @@ export default function Results({ data }: { data: SearchResponse }) {
             </div>
           </div>
 
-          {/* 🔥 WINNING FACTOR */}
           {best.breakdown && (
             <div className="text-xs text-gray-600 bg-black/5 px-3 py-2 rounded-lg">
               Strongest area:{" "}
@@ -115,14 +128,12 @@ export default function Results({ data }: { data: SearchResponse }) {
             </div>
           )}
 
-          {/* 🔥 EXTRA INSIGHT (NEW) */}
           {best.breakdown && (
             <div className="text-xs text-gray-500 text-center">
               Balanced score across specs improves overall ranking
             </div>
           )}
 
-          {/* 🔥 COMPARISON (Hero) */}
           {comparison?.length > 0 && (
             <div className="p-5 border border-green-200 bg-green-50 rounded-2xl">
               <h3 className="text-green-700 font-semibold mb-3">
@@ -143,11 +154,16 @@ export default function Results({ data }: { data: SearchResponse }) {
             </div>
           )}
 
-          <ResultCard item={best} highlight />
+          {/* 🔥 ADD selection support */}
+          <ResultCard
+            item={best}
+            highlight
+            selected={selected?.includes(best.id)}
+            onSelect={onSelect ? () => onSelect(best.id) : undefined}
+          />
         </div>
       )}
 
-      {/* 🔥 COMPARISON (Fallback FIXED CONDITION) */}
       {comparison?.length > 0 && best && best.score < 60 && (
         <div className="p-5 border border-black/10 bg-black/5 rounded-2xl">
           <h3 className="text-black font-semibold mb-3">
@@ -165,7 +181,6 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🔥 TOP 3 */}
       {top3?.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-black">
@@ -178,13 +193,14 @@ export default function Results({ data }: { data: SearchResponse }) {
                 key={item.id}
                 item={item}
                 index={index}
+                selected={selected?.includes(item.id)}              // 🔥 ADD
+                onSelect={onSelect ? () => onSelect(item.id) : undefined} // 🔥 ADD
               />
             ))}
           </div>
         </div>
       )}
 
-      {/* 🔥 NOT RECOMMENDED */}
       {notRecommended?.length > 0 && (
         <div className="p-5 border border-red-100 bg-red-50 rounded-2xl">
           <h3 className="text-red-600 font-semibold mb-4">
@@ -212,7 +228,6 @@ export default function Results({ data }: { data: SearchResponse }) {
         </div>
       )}
 
-      {/* 🔥 SUGGESTIONS (UPGRADED CLICK) */}
       {data.suggestions?.length > 0 && (
         <div className="p-5 border border-blue-100 bg-blue-50 rounded-2xl">
           <h3 className="text-blue-600 font-semibold mb-3">
@@ -224,7 +239,7 @@ export default function Results({ data }: { data: SearchResponse }) {
               <span
                 key={i}
                 onClick={() => {
-                  router.push(`/search?q=${encodeURIComponent(s)}`) // 🔥 FIXED (no reload)
+                  router.push(`/search?q=${encodeURIComponent(s)}`)
                 }}
                 className="px-3 py-1 bg-white border border-blue-200 rounded-full text-sm cursor-pointer hover:bg-blue-100 transition"
               >

@@ -71,7 +71,7 @@ export default function Header() {
             )}
           </div>
 
-          {/* Wishlist */}
+          {/* ✅ CLEAN WISHLIST */}
           <Link
             href="/wishlist"
             className="p-2 rounded-lg hover:bg-gray-100 transition"

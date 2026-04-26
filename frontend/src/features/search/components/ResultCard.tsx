@@ -1,12 +1,21 @@
+"use client"
+
 import { ProductItem } from "@/types/search"
+import { useState, useEffect } from "react"
+import { Heart } from "lucide-react"
+import { toast } from "sonner"
 
 type Props = {
   item: ProductItem
   index?: number
   highlight?: boolean
+
+  // 🔥 ADD (compare support)
+  selected?: boolean
+  onSelect?: () => void
 }
 
-export default function ResultCard({ item, highlight, index }: Props) {
+export default function ResultCard({ item, highlight, index, selected, onSelect }: Props) {
   const safeScore = Math.max(0, Math.min(100, item.score || 0))
 
   const scoreColor =
@@ -20,7 +29,41 @@ export default function ResultCard({ item, highlight, index }: Props) {
     ? new Intl.NumberFormat("en-IN").format(item.price)
     : "N/A"
 
-  // 🔥 NEW: Highlight best spec
+  // 🔥 SAVE STATE
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("saved_products") || "[]")
+      setSaved(stored.includes(item.id))
+    } catch {
+      setSaved(false)
+    }
+  }, [item.id])
+
+  const toggleSave = () => {
+    let stored: string[] = []
+
+    try {
+      stored = JSON.parse(localStorage.getItem("saved_products") || "[]")
+    } catch {
+      stored = []
+    }
+
+    if (stored.includes(item.id)) {
+      stored = stored.filter((id: string) => id !== item.id)
+      setSaved(false)
+      toast.success("Removed from wishlist")
+    } else {
+      stored.push(item.id)
+      setSaved(true)
+      toast.success("Saved to wishlist")
+    }
+
+    localStorage.setItem("saved_products", JSON.stringify(stored))
+  }
+
+  // 🔥 Highlight best spec
   let bestKey: string | null = null
   let bestValue = 0
 
@@ -34,26 +77,39 @@ export default function ResultCard({ item, highlight, index }: Props) {
     })
   }
 
-  // 🔥 NEW: VALUE SCORE LOGIC (FIXED)
+  // 🔥 VALUE SCORE
   const valueScore =
     ((item.breakdown?.processor || 0) +
       (item.breakdown?.ram || 0)) /
-    (Math.max(item.price || 1, 1) / 1000) // ✅ FIX
+    (Math.max(item.price || 1, 1) / 1000)
 
-  let valueLabel = " Balanced"
+  let valueLabel = "Balanced"
 
-  // 🔥 FIXED THRESHOLDS
   if (valueScore > 12) valueLabel = "🔥 Great Value"
-  else if (valueScore < 6) valueLabel = "  Overpriced"
+  else if (valueScore < 6) valueLabel = "Overpriced"
 
   return (
     <div
-      className={`rounded-2xl p-5 bg-white transition border ${
+      className={`relative rounded-2xl p-5 bg-white transition border ${
         highlight
           ? "border-black shadow-xl scale-[1.02]"
           : "border-gray-200 hover:shadow-md"
       }`}
     >
+
+      {/* 🔥 ADD: SELECT CHECKBOX */}
+      {onSelect && (
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={(e) => {
+            e.stopPropagation() // 🔥 prevent card click issues
+            onSelect()
+          }}
+          className="absolute top-3 left-3 w-4 h-4 cursor-pointer"
+        />
+      )}
+
       {/* TOP */}
       <div className="flex gap-4 items-center">
         <img
@@ -75,12 +131,10 @@ export default function ResultCard({ item, highlight, index }: Props) {
             ₹{formattedPrice}
           </p>
 
-          {/* 🔥 VALUE LABEL */}
           <p className="text-xs mt-1 text-gray-600">
             {valueLabel}
           </p>
 
-          {/* 🔥 BEST FEATURE TAG */}
           {bestKey && (
             <span className="inline-block mt-1 text-[10px] bg-black text-white px-2 py-[2px] rounded-full">
               Best in {bestKey}
@@ -88,7 +142,7 @@ export default function ResultCard({ item, highlight, index }: Props) {
           )}
         </div>
 
-        {/* SCORE BADGE */}
+        {/* SCORE */}
         <div className="text-right">
           <div
             className={`text-sm font-semibold text-white px-3 py-1 rounded-full ${scoreColor}`}
@@ -107,7 +161,6 @@ export default function ResultCard({ item, highlight, index }: Props) {
         />
       </div>
 
-      {/* LABEL */}
       <p className="text-xs text-gray-500 mt-1">
         {safeScore > 85
           ? "Perfect for your needs"
@@ -165,7 +218,7 @@ export default function ResultCard({ item, highlight, index }: Props) {
         </div>
       )}
 
-      {/* CTA + CONFIDENCE */}
+      {/* CTA */}
       <div className="mt-4 flex items-center justify-between">
         {item.confidence !== undefined && (
           <span className="text-xs text-gray-500">
@@ -173,9 +226,28 @@ export default function ResultCard({ item, highlight, index }: Props) {
           </span>
         )}
 
-        <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 active:scale-95 transition">
-          Buy Now
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={toggleSave}
+            title={saved ? "Remove from wishlist" : "Save to wishlist"}
+            className={`p-2 rounded-lg transition ${
+              saved
+                ? "bg-black text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            <Heart
+              size={16}
+              className={`transition ${
+                saved ? "fill-white scale-110" : "hover:scale-110"
+              }`}
+            />
+          </button>
+
+          <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 active:scale-95 transition">
+            Buy Now
+          </button>
+        </div>
       </div>
     </div>
   )

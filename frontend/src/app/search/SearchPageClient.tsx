@@ -19,6 +19,21 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
 
   const lastQueryRef = useRef("")
 
+  // 🔥 NEW: compare state
+  const [selected, setSelected] = useState<string[]>([])
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((i) => i !== id)
+      }
+
+      if (prev.length >= 2) return prev
+
+      return [...prev, id]
+    })
+  }
+
   // 🔥 SYNC URL → STATE
   useEffect(() => {
     if (queryFromURL && queryFromURL !== query) {
@@ -41,7 +56,6 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
       <div className="max-w-4xl mx-auto">
 
         <div className="mb-8 flex justify-center">
-          {/* 🔥 PASS INITIAL VALUE */}
           <SearchBar initialValue={query} />
         </div>
 
@@ -79,8 +93,25 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
         {/* 🔥 RESULTS */}
         {!loading && !error && data && (
           <div className="mt-6 flex justify-center">
-            <Results data={data} />
+            <Results
+              data={data}
+              selected={selected}                // 🔥 ADD
+              onSelect={toggleSelect}           // 🔥 ADD
+            />
           </div>
+        )}
+
+        {/* 🔥 COMPARE BUTTON */}
+        {selected.length === 2 && (
+          <button
+            onClick={() => {
+              localStorage.setItem("compare_ids", JSON.stringify(selected))
+              window.location.href = "/compare"
+            }}
+            className="fixed bottom-6 right-6 bg-black text-white px-6 py-3 rounded-lg shadow-lg"
+          >
+            Compare
+          </button>
         )}
 
       </div>
