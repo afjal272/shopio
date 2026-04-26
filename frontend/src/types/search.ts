@@ -2,7 +2,6 @@ export type Parsed = {
   intent: string[]
   budget: number | null
 
-  // 🔥 NEW (future-safe)
   category?: string | null
   constraints?: {
     minRam?: number | null
@@ -18,6 +17,12 @@ export type Breakdown = {
   rating?: number
 }
 
+export type Specs = {
+  ram?: number
+  battery?: number
+  processorScore?: number
+}
+
 export type ProductItem = {
   id: string
   title: string
@@ -31,6 +36,13 @@ export type ProductItem = {
   tags?: string[]
 
   breakdown?: Breakdown
+
+  // 🔥 ADD THIS (CRITICAL)
+  specs?: Specs
+
+  // 🔥 ADD THIS (compareProducts ke liye)
+  rating?: number
+  reviewsCount?: number
 }
 
 export type NotRecommendedItem = {
@@ -47,6 +59,5 @@ export type SearchResponse = {
   parsed: Parsed
   suggestions?: string[]
 
-  // 🔥 NEW
   isRelaxed?: boolean
 }

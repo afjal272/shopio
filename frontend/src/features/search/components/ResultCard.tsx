@@ -9,13 +9,18 @@ type Props = {
   item: ProductItem
   index?: number
   highlight?: boolean
-
-  // 🔥 ADD (compare support)
   selected?: boolean
   onSelect?: () => void
 }
 
-export default function ResultCard({ item, highlight, index, selected, onSelect }: Props) {
+export default function ResultCard({
+  item,
+  highlight,
+  index,
+  selected,
+  onSelect,
+}: Props) {
+
   const safeScore = Math.max(0, Math.min(100, item.score || 0))
 
   const scoreColor =
@@ -29,17 +34,36 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
     ? new Intl.NumberFormat("en-IN").format(item.price)
     : "N/A"
 
-  // 🔥 SAVE STATE
-  const [saved, setSaved] = useState(false)
+  const id = String(item.id)
 
+  const [saved, setSaved] = useState(false)
+  const [compared, setCompared] = useState(false)
+
+  // ✅ Sync saved state (clean version)
   useEffect(() => {
     try {
       const stored = JSON.parse(localStorage.getItem("saved_products") || "[]")
-      setSaved(stored.includes(item.id))
+      setSaved(stored.includes(id))
     } catch {
       setSaved(false)
     }
-  }, [item.id])
+  }, [id])
+
+  // ✅ Sync compare state (single source of truth)
+  useEffect(() => {
+    const sync = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem("compare_ids") || "[]")
+        setCompared(stored.includes(id))
+      } catch {
+        setCompared(false)
+      }
+    }
+
+    sync()
+    window.addEventListener("compare_update", sync)
+    return () => window.removeEventListener("compare_update", sync)
+  }, [id])
 
   const toggleSave = () => {
     let stored: string[] = []
@@ -50,41 +74,65 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
       stored = []
     }
 
-    if (stored.includes(item.id)) {
-      stored = stored.filter((id: string) => id !== item.id)
-      setSaved(false)
+    let updated: string[]
+
+    if (stored.includes(id)) {
+      updated = stored.filter((x: string) => x !== id)
       toast.success("Removed from wishlist")
     } else {
-      stored.push(item.id)
-      setSaved(true)
+      updated = [...stored, id]
       toast.success("Saved to wishlist")
     }
 
-    localStorage.setItem("saved_products", JSON.stringify(stored))
+    localStorage.setItem("saved_products", JSON.stringify(updated))
+    setSaved(updated.includes(id))
   }
 
-  // 🔥 Highlight best spec
+  const toggleCompare = () => {
+    let stored: string[] = []
+
+    try {
+      stored = JSON.parse(localStorage.getItem("compare_ids") || "[]")
+    } catch {
+      stored = []
+    }
+
+    let updated: string[]
+
+    if (stored.includes(id)) {
+      updated = stored.filter((x: string) => x !== id)
+    } else {
+      if (stored.length >= 4) {
+        toast.error("You can compare up to 4 products only")
+        return
+      }
+
+      updated = Array.from(new Set([...stored, id]))
+    }
+
+    localStorage.setItem("compare_ids", JSON.stringify(updated))
+    window.dispatchEvent(new Event("compare_update"))
+  }
+
   let bestKey: string | null = null
   let bestValue = 0
 
   if (item.breakdown) {
-    Object.entries(item.breakdown).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(item.breakdown)) {
       const val = Number(value) || 0
       if (val > bestValue) {
         bestValue = val
         bestKey = key
       }
-    })
+    }
   }
 
-  // 🔥 VALUE SCORE
   const valueScore =
     ((item.breakdown?.processor || 0) +
       (item.breakdown?.ram || 0)) /
     (Math.max(item.price || 1, 1) / 1000)
 
   let valueLabel = "Balanced"
-
   if (valueScore > 12) valueLabel = "🔥 Great Value"
   else if (valueScore < 6) valueLabel = "Overpriced"
 
@@ -97,26 +145,24 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
       }`}
     >
 
-      {/* 🔥 ADD: SELECT CHECKBOX */}
       {onSelect && (
         <input
           type="checkbox"
           checked={selected}
           onChange={(e) => {
-            e.stopPropagation() // 🔥 prevent card click issues
+            e.stopPropagation()
             onSelect()
           }}
           className="absolute top-3 left-3 w-4 h-4 cursor-pointer"
         />
       )}
 
-      {/* TOP */}
       <div className="flex gap-4 items-center">
         <img
           src={item.image || "/placeholder.png"}
           alt={item.title || "product"}
           onError={(e) => {
-            ;(e.currentTarget as HTMLImageElement).src = "/placeholder.png"
+            (e.currentTarget as HTMLImageElement).src = "/placeholder.png"
           }}
           className="w-16 h-16 object-cover rounded-xl border"
         />
@@ -142,7 +188,6 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
           )}
         </div>
 
-        {/* SCORE */}
         <div className="text-right">
           <div
             className={`text-sm font-semibold text-white px-3 py-1 rounded-full ${scoreColor}`}
@@ -153,7 +198,6 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
         </div>
       </div>
 
-      {/* SCORE BAR */}
       <div className="w-full bg-gray-200 h-2 rounded mt-4 overflow-hidden">
         <div
           className={`${scoreColor} h-2 rounded`}
@@ -169,15 +213,13 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
           : "May not be ideal"}
       </p>
 
-      {/* EXPLANATION */}
       {item.explanation && (
         <p className="text-sm text-gray-700 mt-3 leading-relaxed">
           {item.explanation}
         </p>
       )}
 
-      {/* TAGS */}
-      {item.tags?.length > 0 && (
+      {item.tags && item.tags.length > 0 && (
         <div className="flex gap-2 mt-3 flex-wrap">
           {item.tags.map((tag) => (
             <span
@@ -190,7 +232,6 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
         </div>
       )}
 
-      {/* BREAKDOWN */}
       {item.breakdown && (
         <div className="mt-4 space-y-2">
           {Object.entries(item.breakdown).map(([key, value]) => {
@@ -218,7 +259,6 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
         </div>
       )}
 
-      {/* CTA */}
       <div className="mt-4 flex items-center justify-between">
         {item.confidence !== undefined && (
           <span className="text-xs text-gray-500">
@@ -227,9 +267,9 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
         )}
 
         <div className="flex gap-2">
+
           <button
             onClick={toggleSave}
-            title={saved ? "Remove from wishlist" : "Save to wishlist"}
             className={`p-2 rounded-lg transition ${
               saved
                 ? "bg-black text-white"
@@ -244,9 +284,21 @@ export default function ResultCard({ item, highlight, index, selected, onSelect 
             />
           </button>
 
+          <button
+            onClick={toggleCompare}
+            className={`px-3 py-2 text-xs rounded-lg ${
+              compared
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            {compared ? "Added" : "Compare"}
+          </button>
+
           <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 active:scale-95 transition">
             Buy Now
           </button>
+
         </div>
       </div>
     </div>

@@ -28,7 +28,7 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
         return prev.filter((i) => i !== id)
       }
 
-      if (prev.length >= 2) return prev
+      if (prev.length >= 4) return prev
 
       return [...prev, id]
     })
@@ -102,7 +102,7 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
         )}
 
         {/* 🔥 COMPARE BUTTON */}
-        {selected.length === 2 && (
+        {selected.length === 4 && (
           <button
             onClick={() => {
               localStorage.setItem("compare_ids", JSON.stringify(selected))
