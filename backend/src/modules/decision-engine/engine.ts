@@ -4,7 +4,7 @@ import { rankProducts } from "./ranking/rankProducts"
 import { generateExplanation } from "./explanation/generateExplanation"
 import { getRejectionReason } from "./explanation/getRejectionReason"
 import { compareProducts } from "./comparison/compareProducts"
-import { generateSuggestions } from "./suggestions" // 🔥 NEW
+import { generateSuggestions } from "./suggestions"
 
 export function runEngine(parsed: ParsedQuery, products: Product[]) {
 
@@ -32,7 +32,7 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
       .slice(0, 5)
   }
 
-  // 🔥 (NEW) attach constraints to products
+  // 🔥 attach constraints
   const enriched = filtered.map((p) => ({
     ...p,
     __constraints: parsed.constraints
@@ -48,7 +48,7 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
 
   const best = ranked.length > 0 ? ranked[0] : null
 
-  // SAFETY
+  // 🔴 SAFETY
   if (!best) {
     return {
       best: {
@@ -70,22 +70,29 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
       },
       top3: [],
       notRecommended: [],
-      comparison: [],
+      comparison: {
+        winner: null,
+        reasons: [],
+        scores: []
+      },
       parsed,
       isRelaxed,
-      suggestions: generateSuggestions(parsed, isRelaxed) // 🔥 NEW
+      suggestions: generateSuggestions(parsed, isRelaxed)
     }
   }
 
-  // 🔥 COMPARISON
+  // 🔥 FIXED COMPARISON (multi-product, no crash)
   const comparison =
     ranked.length > 1
       ? compareProducts(
-          ranked[0],
-          ranked[1],
+          ranked.slice(0, 4), // 🔥 top 2–4 products
           finalIntent
         )
-      : []
+      : {
+          winner: null,
+          reasons: [],
+          scores: []
+        }
 
   return {
     best: {
@@ -121,6 +128,6 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
     comparison,
     parsed,
     isRelaxed,
-    suggestions: generateSuggestions(parsed, isRelaxed) // 🔥 NEW
+    suggestions: generateSuggestions(parsed, isRelaxed)
   }
 }

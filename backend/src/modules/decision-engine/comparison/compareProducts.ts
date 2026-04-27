@@ -1,20 +1,27 @@
 import { Product, IntentType } from "../types"
 
-export function compareProducts(
+// 🔥 SAFE COMPARE TWO
+function compareTwo(
   a: Product,
   b: Product,
   intent: IntentType[] = ["balanced"]
 ) {
   const result: string[] = []
 
-  const aRam = a.specs.ram || 0
-  const bRam = b.specs.ram || 0
+  // ✅ HARD SAFETY
+  if (!a || !b) return result
 
-  const aProcessor = a.specs.processorScore || 0
-  const bProcessor = b.specs.processorScore || 0
+  const aSpecs = a.specs || {}
+  const bSpecs = b.specs || {}
 
-  const aBattery = a.specs.battery || 0
-  const bBattery = b.specs.battery || 0
+  const aRam = aSpecs.ram || 0
+  const bRam = bSpecs.ram || 0
+
+  const aProcessor = aSpecs.processorScore || 0
+  const bProcessor = bSpecs.processorScore || 0
+
+  const aBattery = aSpecs.battery || 0
+  const bBattery = bSpecs.battery || 0
 
   const aReviews = a.reviewsCount || 0
   const bReviews = b.reviewsCount || 0
@@ -25,7 +32,6 @@ export function compareProducts(
   const safePriceA = Math.max(a.price || 1, 1)
   const safePriceB = Math.max(b.price || 1, 1)
 
-  // 🔥 NEW: helper (winner bias toward A)
   const pushA = (condition: boolean, text: string) => {
     if (condition) result.push(text)
   }
@@ -33,102 +39,110 @@ export function compareProducts(
   // 🎮 GAMING
   if (intent.includes("gaming")) {
     if (aProcessor > bProcessor) {
-      result.push(`${a.title} delivers smoother gaming with a stronger processor`)
+      result.push(`${a.title} delivers smoother gaming performance`)
     } else if (bProcessor > aProcessor) {
-      result.push(`${b.title} has better gaming performance due to a stronger processor`)
+      result.push(`${b.title} delivers smoother gaming performance`)
     }
 
     if (aRam > bRam) {
-      result.push(`${a.title} handles multitasking better with ${aRam}GB RAM`)
+      result.push(`${a.title} has better multitasking (${aRam}GB RAM)`)
     } else if (bRam > aRam) {
-      result.push(`${b.title} offers better multitasking with ${bRam}GB RAM`)
+      result.push(`${b.title} has better multitasking (${bRam}GB RAM)`)
     }
 
-    // 🔥 NEW: reinforce A if better
     pushA(
       aProcessor > bProcessor && aRam >= bRam,
-      `${a.title} is more optimized overall for gaming performance`
+      `${a.title} is better optimized for gaming`
     )
   }
 
   // 🔋 BATTERY
   if (intent.includes("battery")) {
     if (aBattery > bBattery) {
-      result.push(`${a.title} lasts longer with its ${aBattery}mAh battery`)
+      result.push(`${a.title} has better battery (${aBattery}mAh)`)
     } else if (bBattery > aBattery) {
-      result.push(`${b.title} provides better battery backup (${bBattery}mAh)`)
+      result.push(`${b.title} has better battery (${bBattery}mAh)`)
     }
 
-    // 🔥 NEW
-    pushA(
-      aBattery > bBattery,
-      `${a.title} offers more reliable all-day battery usage`
-    )
+    pushA(aBattery > bBattery, `${a.title} lasts longer overall`)
   }
 
   // 📸 CAMERA
   if (intent.includes("camera")) {
     if (aRating > bRating) {
-      result.push(`${a.title} offers better camera results based on higher ratings`)
+      result.push(`${a.title} has better camera performance`)
     } else if (bRating > aRating) {
-      result.push(`${b.title} delivers better camera performance (${bRating}⭐)`)
+      result.push(`${b.title} has better camera performance`)
     }
 
-    // 🔥 NEW
-    pushA(
-      aRating > bRating,
-      `${a.title} is more consistent for photography overall`
-    )
+    pushA(aRating > bRating, `${a.title} is more reliable for photography`)
   }
 
-  // 🔥 TRUST (balanced)
-  if (Math.abs(aReviews - bReviews) > 300) {
-    if (aReviews > bReviews) {
-      result.push(`${a.title} is more trusted with significantly more reviews`)
-    } else {
-      result.push(`${b.title} has stronger market trust with more user feedback`)
-    }
-
-    // 🔥 NEW
-    pushA(
-      aReviews > bReviews,
-      `${a.title} has proven reliability with a larger user base`
-    )
-  }
-
-  // 💰 VALUE (important)
+  // 💰 VALUE
   const aValue = (aProcessor * 2 + aRam) / safePriceA
   const bValue = (bProcessor * 2 + bRam) / safePriceB
 
-  if (aValue > bValue * 1.1) {
-    result.push(`${a.title} offers better performance for its price`)
-  } else if (bValue > aValue * 1.1) {
-    result.push(`${b.title} provides better value for money`)
+  if (aValue > bValue) {
+    result.push(`${a.title} offers better value`)
+  } else if (bValue > aValue) {
+    result.push(`${b.title} offers better value`)
   }
 
-  // 🔥 NEW: reinforce A if value better
-  pushA(
-    aValue > bValue,
-    `${a.title} stands out as a stronger value overall`
-  )
+  return Array.from(new Set(result)).slice(0, 2)
+}
 
-  // ⚖️ TRADE-OFF LINE (existing)
-  if (result.length >= 2 && intent.length > 0) {
-    result.push(`while ${b.title} may excel in some areas, ${a.title} delivers a more balanced overall experience`)
+
+// 🔥 MAIN FUNCTION
+export function compareProducts(
+  products: Product[],
+  intent: IntentType[] = ["balanced"]
+) {
+
+  // ✅ HARD GUARD
+  if (!Array.isArray(products) || products.length < 2) {
+    return {
+      winner: null,
+      reasons: [],
+      scores: []
+    }
   }
 
-  // 🔥 NEW: clearer winner statement
-  if (result.length >= 2) {
-    result.push(`${a.title} is the better overall choice compared to ${b.title}`)
+  // 🧠 SAFE SCORING
+  const scored = products.map((p) => {
+    const specs = p.specs || {}
+
+    const score =
+      (specs.processorScore || 0) * 2 +
+      (specs.ram || 0) +
+      (specs.battery || 0) / 1000 +
+      (p.rating || 0) * 2
+
+    return { ...p, score }
+  })
+
+  // 🏆 SORT SAFE
+  const sorted = [...scored].sort((a, b) => (b.score || 0) - (a.score || 0))
+
+  const winner = sorted[0]
+  const runnerUp = sorted[1]
+
+  // ✅ SAFETY AGAIN
+  if (!winner || !runnerUp) {
+    return {
+      winner: null,
+      reasons: [],
+      scores: []
+    }
   }
 
-  // 🔥 FALLBACK
-  if (result.length === 0) {
-    result.push(`${a.title} edges ahead with a more balanced overall performance`)
+  const reasons = compareTwo(winner, runnerUp, intent || ["balanced"])
+
+  return {
+    winner: winner.id,
+    reasons,
+    scores: sorted.map((p) => ({
+      id: p.id,
+      score: p.score || 0
+    }))
   }
-
-  // 🔥 NEW: remove duplicates (critical fix)
-  const unique = Array.from(new Set(result))
-
-  return unique.slice(0, 3)
 }

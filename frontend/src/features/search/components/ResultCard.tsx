@@ -4,6 +4,7 @@ import { ProductItem } from "@/types/search"
 import { useState, useEffect } from "react"
 import { Heart } from "lucide-react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 type Props = {
   item: ProductItem
@@ -20,6 +21,8 @@ export default function ResultCard({
   selected,
   onSelect,
 }: Props) {
+
+  const router = useRouter()
 
   const safeScore = Math.max(0, Math.min(100, item.score || 0))
 
@@ -39,7 +42,7 @@ export default function ResultCard({
   const [saved, setSaved] = useState(false)
   const [compared, setCompared] = useState(false)
 
-  // ✅ Sync saved state (clean version)
+  // ✅ Sync saved state
   useEffect(() => {
     try {
       const stored = JSON.parse(localStorage.getItem("saved_products") || "[]")
@@ -49,11 +52,18 @@ export default function ResultCard({
     }
   }, [id])
 
-  // ✅ Sync compare state (single source of truth)
+  // 🔥 FIXED: compare sync (no stale bug)
   useEffect(() => {
     const sync = () => {
       try {
         const stored = JSON.parse(localStorage.getItem("compare_ids") || "[]")
+
+        if (!Array.isArray(stored)) {
+          localStorage.removeItem("compare_ids")
+          setCompared(false)
+          return
+        }
+
         setCompared(stored.includes(id))
       } catch {
         setCompared(false)
@@ -101,6 +111,7 @@ export default function ResultCard({
 
     if (stored.includes(id)) {
       updated = stored.filter((x: string) => x !== id)
+      toast.success("Removed from comparison")
     } else {
       if (stored.length >= 4) {
         toast.error("You can compare up to 4 products only")
@@ -108,10 +119,21 @@ export default function ResultCard({
       }
 
       updated = Array.from(new Set([...stored, id]))
+      toast.success("Added to comparison")
     }
 
+    // 🔥 SAVE
     localStorage.setItem("compare_ids", JSON.stringify(updated))
-    window.dispatchEvent(new Event("compare_update"))
+
+    // 🔥 UI SYNC
+    setCompared(updated.includes(id))
+
+    console.log("COMPARE IDS:", updated)
+
+    // 🔥 EVENT SYNC
+    setTimeout(() => {
+      window.dispatchEvent(new Event("compare_update"))
+    }, 0)
   }
 
   let bestKey: string | null = null
@@ -145,13 +167,15 @@ export default function ResultCard({
       }`}
     >
 
+      {/* 🔥 FIXED CHECKBOX SYNC */}
       {onSelect && (
         <input
           type="checkbox"
-          checked={selected}
+          checked={selected || compared}
           onChange={(e) => {
             e.stopPropagation()
-            onSelect()
+            onSelect?.()
+            toggleCompare()
           }}
           className="absolute top-3 left-3 w-4 h-4 cursor-pointer"
         />
@@ -284,8 +308,12 @@ export default function ResultCard({
             />
           </button>
 
+          {/* 🔥 FIXED BUTTON SYNC */}
           <button
-            onClick={toggleCompare}
+            onClick={() => {
+              toggleCompare()
+              onSelect?.()
+            }}
             className={`px-3 py-2 text-xs rounded-lg ${
               compared
                 ? "bg-blue-600 text-white"

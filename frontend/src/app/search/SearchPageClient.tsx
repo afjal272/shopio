@@ -12,25 +12,40 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
   const params = useSearchParams()
   const queryFromURL = params.get("q") || ""
 
-  // 🔥 NEW: local query state (source of truth)
   const [query, setQuery] = useState(initialQuery || queryFromURL)
 
   const { search, loading, data, error } = useSearch()
 
   const lastQueryRef = useRef("")
 
-  // 🔥 NEW: compare state
+  // 🔥 compare state
   const [selected, setSelected] = useState<string[]>([])
 
+  // ✅ FIX 1: restore from localStorage (CRITICAL)
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("compare_ids") || "[]")
+
+      if (Array.isArray(stored)) {
+        setSelected(stored.map((id: any) => String(id)))
+      }
+    } catch {
+      setSelected([])
+    }
+  }, [])
+
+  // ✅ FIX 2: normalize ID always
   const toggleSelect = (id: string) => {
+    const normalized = String(id)
+
     setSelected((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((i) => i !== id)
+      if (prev.includes(normalized)) {
+        return prev.filter((i) => i !== normalized)
       }
 
       if (prev.length >= 4) return prev
 
-      return [...prev, id]
+      return [...prev, normalized]
     })
   }
 
@@ -95,22 +110,30 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
           <div className="mt-6 flex justify-center">
             <Results
               data={data}
-              selected={selected}                // 🔥 ADD
-              onSelect={toggleSelect}           // 🔥 ADD
+              selected={selected}
+              onSelect={toggleSelect}
             />
           </div>
         )}
 
-        {/* 🔥 COMPARE BUTTON */}
-        {selected.length === 4 && (
+        {/* 🔥 FINAL COMPARE BUTTON */}
+        {selected.length >= 2 && (
           <button
             onClick={() => {
+              // save ids
               localStorage.setItem("compare_ids", JSON.stringify(selected))
-              window.location.href = "/compare"
+
+              // sync event (IMPORTANT)
+              window.dispatchEvent(new Event("compare_update"))
+
+              // slight delay to avoid race condition
+              setTimeout(() => {
+                window.location.href = "/compare"
+              }, 50)
             }}
             className="fixed bottom-6 right-6 bg-black text-white px-6 py-3 rounded-lg shadow-lg"
           >
-            Compare
+            Compare ({selected.length}/4)
           </button>
         )}
 

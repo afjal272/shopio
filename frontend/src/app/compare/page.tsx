@@ -7,33 +7,67 @@ export default function ComparePage() {
 
   const [mounted, setMounted] = useState(false)
   const [products, setProducts] = useState<ProductItem[]>([])
+  const [comparison, setComparison] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  // 🔥 CLEAN: reusable loader (same logic, no duplication)
-  const loadProducts = () => {
+  const loadProducts = async () => {
     try {
-      const ids: string[] = JSON.parse(localStorage.getItem("compare_ids") || "[]")
-      const all: ProductItem[] = JSON.parse(localStorage.getItem("last_results") || "[]")
+      // ✅ SAFE PARSE
+      let ids: string[] = []
+      try {
+        const raw = localStorage.getItem("compare_ids")
+        ids = raw ? JSON.parse(raw) : []
+      } catch {
+        console.error("❌ Invalid compare_ids in localStorage")
+        ids = []
+      }
 
-      const selected = ids
-        .map((id) =>
-          all.find((p) => String(p.id) === String(id))
-        )
-        .filter(Boolean)
-        .slice(0, 4) as ProductItem[]
+      console.log("FRONTEND IDS:", ids)
 
-      setProducts(selected)
-    } catch {
+      if (!Array.isArray(ids) || ids.length < 2) {
+        setProducts([])
+        setComparison(null)
+        setLoading(false)
+        return
+      }
+
+      const res = await fetch("http://localhost:5000/api/search/compare", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ productIds: ids.slice(0, 4) })
+      })
+
+      // 🔥 CRITICAL FIX
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        console.error("❌ API ERROR:", errorData)
+        setProducts([])
+        setComparison(null)
+        return
+      }
+
+      const data = await res.json()
+
+      console.log("API RESPONSE:", data)
+
+      setProducts(Array.isArray(data.products) ? data.products : [])
+      setComparison(data.comparison ?? null)
+
+    } catch (err) {
+      console.error("❌ FETCH FAILED:", err)
       setProducts([])
+      setComparison(null)
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     setMounted(true)
-
-    // initial load
     loadProducts()
 
-    // sync updates
     window.addEventListener("compare_update", loadProducts)
     return () => window.removeEventListener("compare_update", loadProducts)
 
@@ -44,9 +78,14 @@ export default function ComparePage() {
     [products]
   )
 
-  const winner = sorted[0]
+  const winner =
+    products.find((p) => p.id === comparison?.winner) || sorted[0]
 
   if (!mounted) return null
+
+  if (loading) {
+    return <div className="p-10 text-center">Loading...</div>
+  }
 
   if (products.length < 2) {
     return <div className="p-10 text-center">Select at least 2 products</div>
@@ -61,8 +100,20 @@ export default function ComparePage() {
         🏆 {winner?.title} is the best choice
       </h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      {comparison?.reasons?.length > 0 && (
+        <div className="bg-white border rounded-xl p-5 shadow-sm">
+          <h3 className="font-semibold text-lg mb-3">
+            Why this is the best choice
+          </h3>
+          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+            {comparison.reasons.map((r: string, i: number) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {products.map((p) => (
           <div
             key={p.id}
@@ -88,7 +139,6 @@ export default function ComparePage() {
             />
 
             <h3 className="font-semibold mt-3 text-sm">{p.title}</h3>
-
             <p className="mt-1 font-bold">₹{p.price}</p>
 
             <p className="text-sm text-gray-500">
@@ -99,7 +149,6 @@ export default function ComparePage() {
       </div>
 
       <div className="border rounded-xl overflow-hidden text-sm bg-white">
-
         <div className="grid grid-cols-5 bg-gray-100 p-3 font-semibold">
           <div>Spec</div>
           {products.map((p) => (
@@ -108,26 +157,11 @@ export default function ComparePage() {
         </div>
 
         {[
-          {
-            label: "Price",
-            get: (p: ProductItem) => `₹${p.price}`,
-          },
-          {
-            label: "Score",
-            get: (p: ProductItem) => p.score,
-          },
-          {
-            label: "RAM",
-            get: (p: ProductItem) => `${p.breakdown?.ram ?? "-"} GB`,
-          },
-          {
-            label: "Battery",
-            get: (p: ProductItem) => `${p.breakdown?.battery ?? "-"} mAh`,
-          },
-          {
-            label: "Processor",
-            get: (p: ProductItem) => p.breakdown?.processor ?? "-",
-          },
+          { label: "Price", get: (p: ProductItem) => `₹${p.price}` },
+          { label: "Score", get: (p: ProductItem) => p.score },
+          { label: "RAM", get: (p: ProductItem) => `${p.breakdown?.ram ?? "-"} GB` },
+          { label: "Battery", get: (p: ProductItem) => `${p.breakdown?.battery ?? "-"} mAh` },
+          { label: "Processor", get: (p: ProductItem) => p.breakdown?.processor ?? "-" },
         ].map((row, i) => (
           <div key={i} className="grid grid-cols-5 p-3 border-t">
             <div>{row.label}</div>

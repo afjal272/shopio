@@ -5,7 +5,6 @@ import { SearchResponse } from "@/types/search"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
-// 🔥 UPDATED PROPS (ADD ONLY)
 export default function Results({
   data,
   selected = [],
@@ -20,7 +19,7 @@ export default function Results({
 
   const { best, top3, parsed, notRecommended, comparison, isRelaxed } = data
 
-  // 🔥 ADDED: SAVE LAST RESULTS (no delete, pure addition)
+  // 🔥 SAVE LAST RESULTS (NO CHANGE)
   useEffect(() => {
     if (best) {
       const all = [best, ...(top3 || [])]
@@ -154,30 +153,13 @@ export default function Results({
             </div>
           )}
 
-          {/* 🔥 ADD selection support */}
+          {/* 🔥 FIXED */}
           <ResultCard
             item={best}
             highlight
-            selected={selected?.includes(best.id)}
-            onSelect={onSelect ? () => onSelect(best.id) : undefined}
+            selected={selected?.includes(String(best.id))}
+            onSelect={onSelect ? () => onSelect(String(best.id)) : undefined}
           />
-        </div>
-      )}
-
-      {comparison?.length > 0 && best && best.score < 60 && (
-        <div className="p-5 border border-black/10 bg-black/5 rounded-2xl">
-          <h3 className="text-black font-semibold mb-3">
-            Why this wins
-          </h3>
-
-          <ul className="text-sm text-gray-700 space-y-2">
-            {comparison.map((point, i) => (
-              <li key={i} className="flex gap-2">
-                <span>✔</span>
-                <span>{point}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       )}
 
@@ -193,8 +175,8 @@ export default function Results({
                 key={item.id}
                 item={item}
                 index={index}
-                selected={selected?.includes(item.id)}              // 🔥 ADD
-                onSelect={onSelect ? () => onSelect(item.id) : undefined} // 🔥 ADD
+                selected={selected?.includes(String(item.id))}
+                onSelect={onSelect ? () => onSelect(String(item.id)) : undefined}
               />
             ))}
           </div>
