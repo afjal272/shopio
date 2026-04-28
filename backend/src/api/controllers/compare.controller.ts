@@ -7,8 +7,12 @@ export const compareController = async (req: Request, res: Response) => {
     const body = req.body ?? {}
     const productIds = body.productIds
 
+    // 🔥 NEW: INTENT INPUT (OPTIONAL)
+    const intent = body.intent || ["balanced"]
+
     console.log("COMPARE BODY:", body)
     console.log("PRODUCT IDS:", productIds)
+    console.log("INTENT:", intent)
 
     // ✅ HARD VALIDATION
     if (!Array.isArray(productIds)) {
@@ -55,8 +59,8 @@ export const compareController = async (req: Request, res: Response) => {
       })
     }
 
-    // 🔥 ENGINE CALL SAFE
-    const comparison = compareProducts(selectedProducts)
+    // 🔥 ENGINE CALL SAFE (WITH INTENT)
+    const comparison = compareProducts(selectedProducts, intent)
 
     // ✅ FINAL SAFETY
     if (!comparison) {
@@ -65,9 +69,13 @@ export const compareController = async (req: Request, res: Response) => {
       })
     }
 
+    // 🔥 NEW: RESPONSE ENRICHMENT
     return res.json({
       products: selectedProducts,
-      comparison
+      comparison: {
+        ...comparison,
+        intent // 👈 frontend ke liye important
+      }
     })
 
   } catch (err) {

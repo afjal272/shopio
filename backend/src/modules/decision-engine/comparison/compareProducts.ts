@@ -88,7 +88,16 @@ function compareTwo(
     result.push(`${b.title} offers better value`)
   }
 
-  return Array.from(new Set(result)).slice(0, 2)
+  // 🔥 NEW: GENERAL FALLBACK (important)
+  if (result.length === 0) {
+    if (aRating > bRating) {
+      result.push(`${a.title} is overall more reliable`)
+    } else {
+      result.push(`${b.title} is overall more reliable`)
+    }
+  }
+
+  return Array.from(new Set(result)).slice(0, 3)
 }
 
 
@@ -103,19 +112,39 @@ export function compareProducts(
     return {
       winner: null,
       reasons: [],
-      scores: []
+      scores: [],
+      intent // 🔥 NEW
     }
   }
 
-  // 🧠 SAFE SCORING
+  // 🔥 NORMALIZE INTENT
+  const safeIntent = Array.isArray(intent) && intent.length > 0
+    ? intent
+    : ["balanced"]
+
+  // 🧠 INTENT-AWARE SCORING
   const scored = products.map((p) => {
     const specs = p.specs || {}
 
-    const score =
+    let score =
       (specs.processorScore || 0) * 2 +
       (specs.ram || 0) +
       (specs.battery || 0) / 1000 +
       (p.rating || 0) * 2
+
+    // 🔥 NEW: intent weighting
+    if (safeIntent.includes("gaming")) {
+      score += (specs.processorScore || 0) * 2
+      score += (specs.ram || 0)
+    }
+
+    if (safeIntent.includes("battery")) {
+      score += (specs.battery || 0) / 500
+    }
+
+    if (safeIntent.includes("camera")) {
+      score += (p.rating || 0) * 3
+    }
 
     return { ...p, score }
   })
@@ -131,11 +160,12 @@ export function compareProducts(
     return {
       winner: null,
       reasons: [],
-      scores: []
+      scores: [],
+      intent: safeIntent // 🔥 NEW
     }
   }
 
-  const reasons = compareTwo(winner, runnerUp, intent || ["balanced"])
+  const reasons = compareTwo(winner, runnerUp, safeIntent)
 
   return {
     winner: winner.id,
@@ -143,6 +173,7 @@ export function compareProducts(
     scores: sorted.map((p) => ({
       id: p.id,
       score: p.score || 0
-    }))
+    })),
+    intent: safeIntent // 🔥 NEW
   }
 }

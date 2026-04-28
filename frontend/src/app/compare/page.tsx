@@ -5,24 +5,41 @@ import { ProductItem } from "@/types/search"
 
 export default function ComparePage() {
 
+  // 🔥 ADD THIS TYPE (yahin, useState se pehle)
+  type ComparisonType = {
+    winner: string
+    reasons: string[]
+    scores: { id: string; score: number }[]
+  }
+
   const [mounted, setMounted] = useState(false)
   const [products, setProducts] = useState<ProductItem[]>([])
-  const [comparison, setComparison] = useState<any>(null)
+
+  // 🔥 SIRF YE LINE CHANGE
+  const [comparison, setComparison] = useState<ComparisonType | null>(null)
+
   const [loading, setLoading] = useState(true)
 
+  const getTags = (p: ProductItem, score?: number) => {
+    const tags: string[] = []
+
+    if ((p.specs?.processorScore || 0) >= 8) tags.push("🔥 Gaming")
+    if ((p.specs?.battery || 0) >= 5500) tags.push("🔋 Battery")
+    if ((p.rating || 0) >= 4.3) tags.push("📸 Camera")
+    if ((score || 0) >= 8) tags.push("💰 Value")
+
+    return tags.slice(0, 2)
+  }
   const loadProducts = async () => {
     try {
-      // ✅ SAFE PARSE
       let ids: string[] = []
+
       try {
         const raw = localStorage.getItem("compare_ids")
         ids = raw ? JSON.parse(raw) : []
       } catch {
-        console.error("❌ Invalid compare_ids in localStorage")
         ids = []
       }
-
-      console.log("FRONTEND IDS:", ids)
 
       if (!Array.isArray(ids) || ids.length < 2) {
         setProducts([])
@@ -33,16 +50,14 @@ export default function ComparePage() {
 
       const res = await fetch("http://localhost:5000/api/search/compare", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ productIds: ids.slice(0, 4) })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productIds: ids.slice(0, 4),
+          intent: ["balanced"]
+        })
       })
 
-      // 🔥 CRITICAL FIX
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        console.error("❌ API ERROR:", errorData)
         setProducts([])
         setComparison(null)
         return
@@ -50,13 +65,10 @@ export default function ComparePage() {
 
       const data = await res.json()
 
-      console.log("API RESPONSE:", data)
-
       setProducts(Array.isArray(data.products) ? data.products : [])
       setComparison(data.comparison ?? null)
 
-    } catch (err) {
-      console.error("❌ FETCH FAILED:", err)
+    } catch {
       setProducts([])
       setComparison(null)
     } finally {
@@ -70,16 +82,38 @@ export default function ComparePage() {
 
     window.addEventListener("compare_update", loadProducts)
     return () => window.removeEventListener("compare_update", loadProducts)
-
   }, [])
 
+  const scoreMap = useMemo(() => {
+    return new Map(
+      (comparison?.scores || []).map((s: any) => [
+        String(s.id),
+        Number(s.score || 0)
+      ])
+    )
+  }, [comparison])
+
   const sorted = useMemo(
-    () => [...products].sort((a, b) => (b.score || 0) - (a.score || 0)),
-    [products]
+    () =>
+      [...products].sort(
+        (a, b) =>
+          Number(scoreMap.get(String(b.id)) || 0) -
+          Number(scoreMap.get(String(a.id)) || 0)
+      ),
+    [products, scoreMap]
   )
 
   const winner =
-    products.find((p) => p.id === comparison?.winner) || sorted[0]
+    products.find((p) => String(p.id) === String(comparison?.winner)) || sorted[0]
+
+  const intent = comparison?.intent || ["balanced"]
+
+  const isImportant = (label: string) => {
+    if (intent.includes("gaming") && label === "Processor") return true
+    if (intent.includes("battery") && label === "Battery") return true
+    if (intent.includes("camera") && label === "Score") return true
+    return false
+  }
 
   if (!mounted) return null
 
@@ -91,64 +125,113 @@ export default function ComparePage() {
     return <div className="p-10 text-center">Select at least 2 products</div>
   }
 
-  const minPrice = Math.min(...products.map((x) => x.price || 0))
+  const minPrice = Math.min(...products.map((x) => Number(x.price || 0)))
+
+  // 🔥 ADD ONLY THIS (no deletion)
+  const maxScore = Math.max(
+    ...products.map((p) => Number(scoreMap.get(String(p.id)) || 0))
+  )
 
   return (
-    <div className="p-10 max-w-7xl mx-auto space-y-10">
+    <div className="p-10 max-w-7xl mx-auto space-y-12">
 
-      <h2 className="text-3xl font-bold">
-        🏆 {winner?.title} is the best choice
-      </h2>
+      {/* 🏆 HERO */}
+      <div className="bg-gradient-to-r from-green-50 to-white border rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center gap-6">
 
-      {comparison?.reasons?.length > 0 && (
-        <div className="bg-white border rounded-xl p-5 shadow-sm">
-          <h3 className="font-semibold text-lg mb-3">
-            Why this is the best choice
-          </h3>
-          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
-            {comparison.reasons.map((r: string, i: number) => (
-              <li key={i}>{r}</li>
-            ))}
-          </ul>
+        <img
+          src={winner?.image || "https://via.placeholder.com/150"}
+          className="w-40 h-40 object-contain bg-white rounded-xl p-3"
+        />
+
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold">
+            🏆 {winner?.title}
+          </h2>
+
+          <p className="text-lg font-semibold mt-1 text-green-600">
+            ₹{winner?.price}
+          </p>
+
+          <p className="text-sm mt-2 text-gray-600">
+            Score: {Number(scoreMap.get(String(winner?.id)) || 0)}
+          </p>
+
+          {comparison?.reasons?.length > 0 && (
+            <div className="mt-3 bg-green-50 border border-green-200 p-3 rounded-lg">
+              {comparison.reasons.map((r: string, i: number) => (
+                <div key={i} className="text-sm">
+                  ✔ {r}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {products.map((p) => (
-          <div
-            key={p.id}
-            className={`border rounded-xl p-4 bg-white shadow-sm relative ${
-              p.id === winner?.id ? "border-green-500" : ""
-            }`}
-          >
-            {p.id === winner?.id && (
-              <span className="absolute top-2 right-2 text-xs bg-green-500 text-white px-2 py-1 rounded">
-                Best
-              </span>
-            )}
-
-            {p.price === minPrice && (
-              <span className="absolute top-2 left-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">
-                Cheapest
-              </span>
-            )}
-
-            <img
-              src={p.image || "/placeholder.png"}
-              className="w-full h-40 object-contain"
-            />
-
-            <h3 className="font-semibold mt-3 text-sm">{p.title}</h3>
-            <p className="mt-1 font-bold">₹{p.price}</p>
-
-            <p className="text-sm text-gray-500">
-              Score: {p.score}
-            </p>
-          </div>
-        ))}
       </div>
 
-      <div className="border rounded-xl overflow-hidden text-sm bg-white">
+      {/* 🔥 PRODUCT CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {products.map((p) => {
+          const score = Number(scoreMap.get(String(p.id)) || 0)
+
+          return (
+            <div
+              key={p.id}
+              className={`rounded-xl p-4 bg-white shadow-md border hover:shadow-lg transition ${
+                p.id === winner?.id ? "ring-2 ring-green-400" : ""
+              }`}
+            >
+              <div className="relative">
+                <img
+                  src={p.image || "https://via.placeholder.com/150"}
+                  className="w-full h-36 object-contain bg-gray-50 rounded-lg p-2"
+                />
+
+                {p.id === winner?.id && (
+                  <span className="absolute top-2 right-2 text-xs bg-green-500 text-white px-2 py-1 rounded">
+                    Best
+                  </span>
+                )}
+
+                {Number(p.price) === minPrice && (
+                  <span className="absolute top-2 left-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">
+                    Cheapest
+                  </span>
+                )}
+              </div>
+
+              <h3 className="font-semibold mt-3 text-sm">{p.title}</h3>
+
+              <div className="flex flex-wrap gap-1 mt-2">
+                {getTags(p, score).map((tag, i) => (
+                  <span key={i} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+
+              <p className="font-bold mt-2">₹{p.price}</p>
+
+              <div className="mt-2">
+                <div className="h-2 bg-gray-200 rounded overflow-hidden">
+                  <div
+                    className="h-2 bg-green-500 rounded"
+                    style={{
+                      width: `${maxScore ? (score / maxScore) * 100 : 0}%`
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Score: {score}
+                </p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* 📊 TABLE */}
+      <div className="bg-white border rounded-xl overflow-hidden text-sm bg-white">
+
         <div className="grid grid-cols-5 bg-gray-100 p-3 font-semibold">
           <div>Spec</div>
           {products.map((p) => (
@@ -157,16 +240,31 @@ export default function ComparePage() {
         </div>
 
         {[
-          { label: "Price", get: (p: ProductItem) => `₹${p.price}` },
-          { label: "Score", get: (p: ProductItem) => p.score },
-          { label: "RAM", get: (p: ProductItem) => `${p.breakdown?.ram ?? "-"} GB` },
-          { label: "Battery", get: (p: ProductItem) => `${p.breakdown?.battery ?? "-"} mAh` },
-          { label: "Processor", get: (p: ProductItem) => p.breakdown?.processor ?? "-" },
+          {
+            label: "Price",
+            get: (p: ProductItem) => `₹${p.price}`,
+          },
+          {
+            label: "Score",
+            get: (p: ProductItem) => scoreMap.get(String(p.id)) || 0,
+          },
+          {
+            label: "RAM",
+            get: (p: ProductItem) => `${p.specs?.ram ?? "-"} GB`,
+          },
+          {
+            label: "Battery",
+            get: (p: ProductItem) => `${p.specs?.battery ?? "-"} mAh`,
+          },
+          {
+            label: "Processor",
+            get: (p: ProductItem) => p.specs?.processorScore ?? "-",
+          },
         ].map((row, i) => (
           <div key={i} className="grid grid-cols-5 p-3 border-t">
             <div>{row.label}</div>
             {products.map((p) => (
-              <div key={p.id}>{row.get(p)}</div>
+              <div key={p.id}>{String(row.get(p) ?? "-")}</div>
             ))}
           </div>
         ))}

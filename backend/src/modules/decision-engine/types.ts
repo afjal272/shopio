@@ -11,6 +11,12 @@ export type Constraints = {
   minRating?: number | null
 }
 
+// 🔥 WEIGHTED INTENT (NEW - TYPE SAFETY)
+export type WeightedIntent = {
+  type: IntentType
+  weight: number
+}
+
 // 🔥 PARSED QUERY (FULL ENGINE SUPPORT)
 export type ParsedQuery = {
   category: CategoryType | null
@@ -20,13 +26,28 @@ export type ParsedQuery = {
   intent: IntentType[]
 
   // 🔥 NEW SYSTEM (used by engine)
-  weightedIntent?: { type: IntentType; weight: number }[]
+  weightedIntent?: WeightedIntent[]
 
   // 🔥 NEGATIVE INTENT
   negativeIntent?: IntentType[]
 
   // 🔥 CONSTRAINTS (CORE FEATURE)
   constraints?: Constraints
+}
+
+// 🔥 PRODUCT SPECS (NEW - SAFE STRUCTURE)
+export type ProductSpecs = {
+  ram?: number
+  battery?: number
+  processorScore?: number
+}
+
+// 🔥 BREAKDOWN TYPE (STRICT)
+export type Breakdown = {
+  ram: number
+  processor: number
+  battery: number
+  rating: number
 }
 
 // 🔥 PRODUCT TYPE
@@ -36,11 +57,7 @@ export type Product = {
   price: number
   rating: number
 
-  specs: {
-    ram?: number
-    battery?: number
-    processorScore?: number
-  }
+  specs: ProductSpecs
 
   tags: string[]
   image?: string
@@ -56,12 +73,8 @@ export type Product = {
 
   // 🔥 ENGINE OUTPUT (runtime fields)
   score?: number
-  breakdown?: {
-    ram: number
-    processor: number
-    battery: number
-    rating: number
-  }
+
+  breakdown?: Breakdown
 
   explanation?: string
   confidence?: number
