@@ -5,17 +5,18 @@ import { ProductItem } from "@/types/search"
 
 export default function ComparePage() {
 
-  // 🔥 ADD THIS TYPE (yahin, useState se pehle)
+  // 🔥 TYPE (UPDATED - ADD ONLY, NOTHING REMOVED)
   type ComparisonType = {
     winner: string
     reasons: string[]
     scores: { id: string; score: number }[]
+    intent?: string[] // ✅ FIX ADDED
   }
 
   const [mounted, setMounted] = useState(false)
   const [products, setProducts] = useState<ProductItem[]>([])
 
-  // 🔥 SIRF YE LINE CHANGE
+  // ✅ FIXED TYPE (no any)
   const [comparison, setComparison] = useState<ComparisonType | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -30,6 +31,11 @@ export default function ComparePage() {
 
     return tags.slice(0, 2)
   }
+
+  const getScorePercent = (score: number) => {
+  return Math.min(Math.max(score, 0), 100)
+}
+
   const loadProducts = async () => {
     try {
       let ids: string[] = []
@@ -84,9 +90,10 @@ export default function ComparePage() {
     return () => window.removeEventListener("compare_update", loadProducts)
   }, [])
 
+  // ✅ FIX: removed any
   const scoreMap = useMemo(() => {
     return new Map(
-      (comparison?.scores || []).map((s: any) => [
+      (comparison?.scores || []).map((s) => [
         String(s.id),
         Number(s.score || 0)
       ])
@@ -127,7 +134,7 @@ export default function ComparePage() {
 
   const minPrice = Math.min(...products.map((x) => Number(x.price || 0)))
 
-  // 🔥 ADD ONLY THIS (no deletion)
+  // ✅ FIX: correct scaling
   const maxScore = Math.max(
     ...products.map((p) => Number(scoreMap.get(String(p.id)) || 0))
   )
@@ -170,7 +177,7 @@ export default function ComparePage() {
 
       {/* 🔥 PRODUCT CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {products.map((p) => {
+        {sorted.map((p) => {
           const score = Number(scoreMap.get(String(p.id)) || 0)
 
           return (
@@ -211,12 +218,13 @@ export default function ComparePage() {
 
               <p className="font-bold mt-2">₹{p.price}</p>
 
+              {/* ✅ FIXED PROGRESS BAR */}
               <div className="mt-2">
                 <div className="h-2 bg-gray-200 rounded overflow-hidden">
                   <div
                     className="h-2 bg-green-500 rounded"
                     style={{
-                      width: `${maxScore ? (score / maxScore) * 100 : 0}%`
+                      width: `${getScorePercent(score)}%`
                     }}
                   />
                 </div>
@@ -230,7 +238,7 @@ export default function ComparePage() {
       </div>
 
       {/* 📊 TABLE */}
-      <div className="bg-white border rounded-xl overflow-hidden text-sm bg-white">
+      <div className="bg-white border rounded-xl overflow-hidden text-sm">
 
         <div className="grid grid-cols-5 bg-gray-100 p-3 font-semibold">
           <div>Spec</div>

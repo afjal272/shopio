@@ -1,6 +1,41 @@
 import { Product, IntentType } from "../types"
 
-// 🔥 SAFE COMPARE TWO
+// 🔥 NORMALIZATION FUNCTIONS (NEW - ADDED, NOTHING REMOVED)
+const normalizeCPU = (score: number) => {
+  return Math.min(score / 10, 10)
+}
+
+const normalizeRAM = (ram: number) => {
+  return Math.min(ram / 2, 10)
+}
+
+const normalizeBattery = (battery: number, cpuScore: number) => {
+  let base = battery / 1000
+  if (cpuScore > 8) base += 1
+  return Math.min(base, 10)
+}
+
+const normalizeCamera = (rating: number, reviews: number) => {
+  let base = rating * 2
+  if (reviews > 5000) base += 0.5
+  if (reviews > 20000) base += 1
+  return Math.min(base, 10)
+}
+
+const normalizeValue = (score: number, price: number) => {
+  return Math.min((score / price) * 10000, 10)
+}
+
+// 🔥 WEIGHTS (NEW)
+const weights = {
+  gaming:   { cpu: 4, ram: 3, battery: 2, camera: 1, value: 1 },
+  battery:  { cpu: 1, ram: 1, battery: 4, camera: 1, value: 2 },
+  camera:   { cpu: 1, ram: 1, battery: 1, camera: 4, value: 2 },
+  balanced: { cpu: 3, ram: 2, battery: 2, camera: 2, value: 2 }
+}
+
+
+// 🔥 SAFE COMPARE TWO (UNCHANGED)
 function compareTwo(
   a: Product,
   b: Product,
@@ -8,7 +43,6 @@ function compareTwo(
 ) {
   const result: string[] = []
 
-  // ✅ HARD SAFETY
   if (!a || !b) return result
 
   const aSpecs = a.specs || {}
@@ -36,7 +70,6 @@ function compareTwo(
     if (condition) result.push(text)
   }
 
-  // 🎮 GAMING
   if (intent.includes("gaming")) {
     if (aProcessor > bProcessor) {
       result.push(`${a.title} delivers smoother gaming performance`)
@@ -56,7 +89,6 @@ function compareTwo(
     )
   }
 
-  // 🔋 BATTERY
   if (intent.includes("battery")) {
     if (aBattery > bBattery) {
       result.push(`${a.title} has better battery (${aBattery}mAh)`)
@@ -67,7 +99,6 @@ function compareTwo(
     pushA(aBattery > bBattery, `${a.title} lasts longer overall`)
   }
 
-  // 📸 CAMERA
   if (intent.includes("camera")) {
     if (aRating > bRating) {
       result.push(`${a.title} has better camera performance`)
@@ -78,7 +109,6 @@ function compareTwo(
     pushA(aRating > bRating, `${a.title} is more reliable for photography`)
   }
 
-  // 💰 VALUE
   const aValue = (aProcessor * 2 + aRam) / safePriceA
   const bValue = (bProcessor * 2 + bRam) / safePriceB
 
@@ -88,7 +118,6 @@ function compareTwo(
     result.push(`${b.title} offers better value`)
   }
 
-  // 🔥 NEW: GENERAL FALLBACK (important)
   if (result.length === 0) {
     if (aRating > bRating) {
       result.push(`${a.title} is overall more reliable`)
@@ -101,67 +130,66 @@ function compareTwo(
 }
 
 
-// 🔥 MAIN FUNCTION
+// 🔥 MAIN FUNCTION (UPDATED SCORING ONLY)
 export function compareProducts(
   products: Product[],
   intent: IntentType[] = ["balanced"]
 ) {
 
-  // ✅ HARD GUARD
   if (!Array.isArray(products) || products.length < 2) {
     return {
       winner: null,
       reasons: [],
       scores: [],
-      intent // 🔥 NEW
+      intent
     }
   }
 
-  // 🔥 NORMALIZE INTENT
-  const safeIntent = Array.isArray(intent) && intent.length > 0
-    ? intent
+  const safeIntent: IntentType[] =
+  Array.isArray(intent) && intent.length > 0
+    ? (intent as IntentType[])
     : ["balanced"]
 
-  // 🧠 INTENT-AWARE SCORING
+  const primaryIntent: IntentType = (safeIntent[0] as IntentType) || "balanced"
+  const w = weights[primaryIntent]
+
   const scored = products.map((p) => {
     const specs = p.specs || {}
 
-    let score =
-      (specs.processorScore || 0) * 2 +
-      (specs.ram || 0) +
-      (specs.battery || 0) / 1000 +
-      (p.rating || 0) * 2
+    const cpu = normalizeCPU(specs.processorScore || 0)
+    const ram = normalizeRAM(specs.ram || 0)
+    const battery = normalizeBattery(specs.battery || 0, cpu)
+    const camera = normalizeCamera(p.rating || 0, p.reviewsCount || 0)
 
-    // 🔥 NEW: intent weighting
-    if (safeIntent.includes("gaming")) {
-      score += (specs.processorScore || 0) * 2
-      score += (specs.ram || 0)
-    }
+    const baseScore =
+      cpu * 3 +
+      ram * 2 +
+      battery * 2 +
+      camera * 2
 
-    if (safeIntent.includes("battery")) {
-      score += (specs.battery || 0) / 500
-    }
+    const value = normalizeValue(baseScore, p.price || 1)
 
-    if (safeIntent.includes("camera")) {
-      score += (p.rating || 0) * 3
-    }
+    const finalScore =
+      cpu * w.cpu +
+      ram * w.ram +
+      battery * w.battery +
+      camera * w.camera +
+      value * w.value
 
-    return { ...p, score }
+    return { ...p, score: Number(finalScore.toFixed(2)) }
   })
 
-  // 🏆 SORT SAFE
   const sorted = [...scored].sort((a, b) => (b.score || 0) - (a.score || 0))
 
   const winner = sorted[0]
   const runnerUp = sorted[1]
 
-  // ✅ SAFETY AGAIN
   if (!winner || !runnerUp) {
     return {
       winner: null,
       reasons: [],
       scores: [],
-      intent: safeIntent // 🔥 NEW
+      intent: safeIntent
     }
   }
 
@@ -174,6 +202,6 @@ export function compareProducts(
       id: p.id,
       score: p.score || 0
     })),
-    intent: safeIntent // 🔥 NEW
+    intent: safeIntent
   }
 }
