@@ -5,20 +5,16 @@ import { ProductItem } from "@/types/search"
 
 export default function ComparePage() {
 
-  // 🔥 TYPE (UPDATED - ADD ONLY, NOTHING REMOVED)
   type ComparisonType = {
     winner: string
     reasons: string[]
     scores: { id: string; score: number }[]
-    intent?: string[] // ✅ FIX ADDED
+    intent?: string[]
   }
 
   const [mounted, setMounted] = useState(false)
   const [products, setProducts] = useState<ProductItem[]>([])
-
-  // ✅ FIXED TYPE (no any)
   const [comparison, setComparison] = useState<ComparisonType | null>(null)
-
   const [loading, setLoading] = useState(true)
 
   const getTags = (p: ProductItem, score?: number) => {
@@ -32,9 +28,12 @@ export default function ComparePage() {
     return tags.slice(0, 2)
   }
 
+  // 🔥 UPDATED (normalize using maxScore)
+  
   const getScorePercent = (score: number) => {
-  return Math.min(Math.max(score, 0), 100)
+  return score > 100 ? 100 : score < 0 ? 0 : score
 }
+
 
   const loadProducts = async () => {
     try {
@@ -90,7 +89,6 @@ export default function ComparePage() {
     return () => window.removeEventListener("compare_update", loadProducts)
   }, [])
 
-  // ✅ FIX: removed any
   const scoreMap = useMemo(() => {
     return new Map(
       (comparison?.scores || []).map((s) => [
@@ -134,7 +132,6 @@ export default function ComparePage() {
 
   const minPrice = Math.min(...products.map((x) => Number(x.price || 0)))
 
-  // ✅ FIX: correct scaling
   const maxScore = Math.max(
     ...products.map((p) => Number(scoreMap.get(String(p.id)) || 0))
   )
@@ -218,7 +215,7 @@ export default function ComparePage() {
 
               <p className="font-bold mt-2">₹{p.price}</p>
 
-              {/* ✅ FIXED PROGRESS BAR */}
+              {/* PROGRESS BAR */}
               <div className="mt-2">
                 <div className="h-2 bg-gray-200 rounded overflow-hidden">
                   <div
@@ -242,36 +239,26 @@ export default function ComparePage() {
 
         <div className="grid grid-cols-5 bg-gray-100 p-3 font-semibold">
           <div>Spec</div>
-          {products.map((p) => (
+          {sorted.map((p) => (
             <div key={p.id}>{p.title}</div>
           ))}
         </div>
 
         {[
-          {
-            label: "Price",
-            get: (p: ProductItem) => `₹${p.price}`,
-          },
-          {
-            label: "Score",
-            get: (p: ProductItem) => scoreMap.get(String(p.id)) || 0,
-          },
-          {
-            label: "RAM",
-            get: (p: ProductItem) => `${p.specs?.ram ?? "-"} GB`,
-          },
-          {
-            label: "Battery",
-            get: (p: ProductItem) => `${p.specs?.battery ?? "-"} mAh`,
-          },
-          {
-            label: "Processor",
-            get: (p: ProductItem) => p.specs?.processorScore ?? "-",
-          },
+          { label: "Price", get: (p: ProductItem) => `₹${p.price}` },
+          { label: "Score", get: (p: ProductItem) => scoreMap.get(String(p.id)) || 0 },
+          { label: "RAM", get: (p: ProductItem) => `${p.specs?.ram ?? "-"} GB` },
+          { label: "Battery", get: (p: ProductItem) => `${p.specs?.battery ?? "-"} mAh` },
+          { label: "Processor", get: (p: ProductItem) => p.specs?.processorScore ?? "-" },
         ].map((row, i) => (
-          <div key={i} className="grid grid-cols-5 p-3 border-t">
+          <div
+            key={i}
+            className={`grid grid-cols-5 p-3 border-t ${
+              isImportant(row.label) ? "bg-yellow-50 font-semibold" : ""
+            }`}
+          >
             <div>{row.label}</div>
-            {products.map((p) => (
+            {sorted.map((p) => (
               <div key={p.id}>{String(row.get(p) ?? "-")}</div>
             ))}
           </div>
