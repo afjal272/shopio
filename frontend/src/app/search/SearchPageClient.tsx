@@ -21,6 +21,9 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
   // 🔥 compare state
   const [selected, setSelected] = useState<string[]>([])
 
+  // 🔥 NEW: intent state
+  const [intent, setIntent] = useState<string[]>(["balanced"])
+
   // ✅ FIX 1: restore from localStorage (CRITICAL)
   useEffect(() => {
     try {
@@ -56,15 +59,15 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
     }
   }, [queryFromURL])
 
-  // 🔥 TRIGGER SEARCH
+  // 🔥 TRIGGER SEARCH (UPDATED with intent)
   useEffect(() => {
     if (!query) return
 
     if (query !== lastQueryRef.current) {
-      search(query)
+      search(query, intent) // 🔥 UPDATED
       lastQueryRef.current = query
     }
-  }, [query, search])
+  }, [query, intent, search])
 
   return (
     <div className="min-h-screen bg-white py-16 px-4">
@@ -72,6 +75,23 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
 
         <div className="mb-8 flex justify-center">
           <SearchBar initialValue={query} />
+        </div>
+
+        {/* 🔥 NEW: INTENT SELECTOR UI */}
+        <div className="flex gap-2 justify-center mb-6 flex-wrap">
+          {["balanced", "gaming", "camera", "battery"].map((type) => (
+            <button
+              key={type}
+              onClick={() => setIntent([type])}
+              className={`px-4 py-2 rounded-full text-sm border ${
+                intent.includes(type)
+                  ? "bg-black text-white"
+                  : "bg-white text-black"
+              }`}
+            >
+              {type}
+            </button>
+          ))}
         </div>
 
         {query && (
@@ -97,7 +117,7 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
             </p>
 
             <button
-              onClick={() => search(query)}
+              onClick={() => search(query, intent)} // 🔥 UPDATED
               className="px-4 py-2 bg-black text-white rounded-lg"
             >
               Retry
@@ -120,13 +140,9 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
         {selected.length >= 2 && (
           <button
             onClick={() => {
-              // save ids
               localStorage.setItem("compare_ids", JSON.stringify(selected))
-
-              // sync event (IMPORTANT)
               window.dispatchEvent(new Event("compare_update"))
 
-              // slight delay to avoid race condition
               setTimeout(() => {
                 window.location.href = "/compare"
               }, 50)

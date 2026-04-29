@@ -6,19 +6,20 @@ export function useSearch() {
   const [data, setData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const search = useCallback(async (query: string) => {
-    setLoading(true)
-    setError(null)
+  // 🔥 UPDATED: intent support added
+  const search = useCallback(async (query: string, intent: string[] = ["balanced"]) => {
+  setLoading(true)
+  setError(null)
 
-    try {
-      const res = await searchProducts(query)
-      setData(res)
-    } catch (err) {
-      setError("Something went wrong")
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  try {
+    const res = await searchProducts(query, intent)
+    setData(res)
+  } catch {
+    setError("Something went wrong")
+  } finally {
+    setLoading(false)
+  }
+}, [])
 
   return { search, loading, data, error }
 }
