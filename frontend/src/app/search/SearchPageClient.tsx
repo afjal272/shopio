@@ -18,26 +18,31 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
 
   const lastQueryRef = useRef("")
 
-
   // 🔥 NEW: intent state
   const [intent, setIntent] = useState<string[]>(["balanced"])
 
+  // 🔥 FIX: hydration safe selected state
+  const [selected, setSelected] = useState<string[]>(() => {
+    if (typeof window === "undefined") return []
 
-  // ✅ FIX 1: restore from localStorage (CRITICAL)
- const [selected, setSelected] = useState<string[]>(() => {
-  try {
-    const stored = JSON.parse(localStorage.getItem("compare_ids") || "[]")
+    try {
+      const stored = JSON.parse(localStorage.getItem("compare_ids") || "[]")
+      if (Array.isArray(stored)) {
+        return stored.map((id) => String(id))
+      }
+    } catch {}
 
-    if (Array.isArray(stored)) {
-      return stored.map((id) => String(id))
-    }
-  } catch {}
+    return []
+  })
 
-  return []
-})
+  // 🔥 FIX: mounted state (CRITICAL for hydration)
+  const [mounted, setMounted] = useState(false)
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  // ✅ FIX 2: normalize ID always
+  // ✅ normalize ID always
   const toggleSelect = (id: string) => {
     const normalized = String(id)
 
@@ -53,21 +58,21 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
   }
 
   // 🔥 SYNC URL → STATE
-const hasSyncedRef = useRef(false)
+  const hasSyncedRef = useRef(false)
 
-useEffect(() => {
-  if (!queryFromURL || hasSyncedRef.current) return
+  useEffect(() => {
+    if (!queryFromURL || hasSyncedRef.current) return
 
-  setQuery(queryFromURL)
-  hasSyncedRef.current = true
-}, [queryFromURL])
+    setQuery(queryFromURL)
+    hasSyncedRef.current = true
+  }, [queryFromURL])
 
-  // 🔥 TRIGGER SEARCH (UPDATED with intent)
+  // 🔥 TRIGGER SEARCH
   useEffect(() => {
     if (!query) return
 
     if (query !== lastQueryRef.current) {
-      search(query, intent) // 🔥 UPDATED
+      search(query, intent)
       lastQueryRef.current = query
     }
   }, [query, intent, search])
@@ -80,7 +85,7 @@ useEffect(() => {
           <SearchBar initialValue={query} />
         </div>
 
-        {/* 🔥 NEW: INTENT SELECTOR UI */}
+        {/* 🔥 INTENT SELECTOR */}
         <div className="flex gap-2 justify-center mb-6 flex-wrap">
           {["balanced", "gaming", "camera", "battery"].map((type) => (
             <button
@@ -120,7 +125,7 @@ useEffect(() => {
             </p>
 
             <button
-              onClick={() => search(query, intent)} // 🔥 UPDATED
+              onClick={() => search(query, intent)}
               className="px-4 py-2 bg-black text-white rounded-lg"
             >
               Retry
@@ -139,8 +144,8 @@ useEffect(() => {
           </div>
         )}
 
-        {/* 🔥 FINAL COMPARE BUTTON */}
-        {selected.length >= 2 && (
+        {/* 🔥 FINAL COMPARE BUTTON (FIXED) */}
+        {mounted && selected.length >= 2 && (
           <button
             onClick={() => {
               localStorage.setItem("compare_ids", JSON.stringify(selected))
