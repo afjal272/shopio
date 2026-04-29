@@ -10,6 +10,7 @@ export default function ComparePage() {
     reasons: string[]
     scores: { id: string; score: number }[]
     intent?: string[]
+    weaknesses?: { id: string; points: string[] }[]
   }
 
   const [mounted, setMounted] = useState(false)
@@ -216,23 +217,35 @@ export default function ComparePage() {
               <p className="font-bold mt-2">₹{p.price}</p>
 
               {/* PROGRESS BAR */}
-              <div className="mt-2">
-                <div className="h-2 bg-gray-200 rounded overflow-hidden">
-                  <div
-                    className="h-2 bg-green-500 rounded"
-                    style={{
-                      width: `${getScorePercent(score)}%`
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Score: {score}
-                </p>
-              </div>
-            </div>
-          )
-        })}
+<div className="mt-2">
+  <div className="h-2 bg-gray-200 rounded overflow-hidden">
+    <div
+      className="h-2 bg-green-500 rounded"
+      style={{
+        width: `${getScorePercent(score)}%`
+      }}
+    />
+  </div>
+  <p className="text-xs text-gray-500 mt-1">
+    Score: {score}
+  </p>
+</div>
+
+{/* 🔥 WEAKNESSES */}
+<div className="mt-3 text-left">
+  {(comparison?.weaknesses || [])
+   .find((w: { id: string; points: string[] }) => String(w.id) === String(p.id))
+   ?.points?.map((point: string, i: number) => (
+      <div key={i} className="text-xs text-red-500">
+        ⚠ {point}
       </div>
+    ))}
+</div>
+
+</div>
+)
+})}
+</div>
 
       {/* 📊 TABLE */}
       <div className="bg-white border rounded-xl overflow-hidden text-sm">

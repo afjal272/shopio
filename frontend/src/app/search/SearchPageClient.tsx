@@ -18,24 +18,24 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
 
   const lastQueryRef = useRef("")
 
-  // 🔥 compare state
-  const [selected, setSelected] = useState<string[]>([])
 
   // 🔥 NEW: intent state
   const [intent, setIntent] = useState<string[]>(["balanced"])
 
-  // ✅ FIX 1: restore from localStorage (CRITICAL)
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("compare_ids") || "[]")
 
-      if (Array.isArray(stored)) {
-        setSelected(stored.map((id: any) => String(id)))
-      }
-    } catch {
-      setSelected([])
+  // ✅ FIX 1: restore from localStorage (CRITICAL)
+ const [selected, setSelected] = useState<string[]>(() => {
+  try {
+    const stored = JSON.parse(localStorage.getItem("compare_ids") || "[]")
+
+    if (Array.isArray(stored)) {
+      return stored.map((id) => String(id))
     }
-  }, [])
+  } catch {}
+
+  return []
+})
+
 
   // ✅ FIX 2: normalize ID always
   const toggleSelect = (id: string) => {
@@ -53,11 +53,14 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
   }
 
   // 🔥 SYNC URL → STATE
-  useEffect(() => {
-    if (queryFromURL && queryFromURL !== query) {
-      setQuery(queryFromURL)
-    }
-  }, [queryFromURL])
+const hasSyncedRef = useRef(false)
+
+useEffect(() => {
+  if (!queryFromURL || hasSyncedRef.current) return
+
+  setQuery(queryFromURL)
+  hasSyncedRef.current = true
+}, [queryFromURL])
 
   // 🔥 TRIGGER SEARCH (UPDATED with intent)
   useEffect(() => {

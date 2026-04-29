@@ -200,15 +200,41 @@ export function compareProducts(
     }
   }
 
+  function getWeaknesses(p: Product) {
+  const specs = p.specs || {}
+  const weaknesses: string[] = []
+
+  if ((specs.battery || 0) < 4500) {
+    weaknesses.push("Battery life is below average")
+  }
+
+  if ((specs.ram || 0) < 6) {
+    weaknesses.push("Limited RAM for heavy usage")
+  }
+
+  if ((specs.processorScore || 0) < 6) {
+    weaknesses.push("Processor is not ideal for gaming")
+  }
+
+  if ((p.rating || 0) < 4) {
+    weaknesses.push("User ratings are relatively low")
+  }
+
+  return weaknesses.slice(0, 2)
+}
+
   const reasons = compareTwo(winner, runnerUp, safeIntent)
 
   return {
-    winner: winner.id,
-    reasons,
-    scores: sorted.map((p) => ({
-      id: p.id,
-      score: p.score || 0
-    })),
-    intent: safeIntent
-  }
+  winner: winner.id,
+  reasons,
+  scores: sorted.map((p) => ({
+    id: p.id,
+    score: p.score || 0
+  })),
+  weaknesses: sorted.map((p) => ({
+    id: p.id,
+    points: getWeaknesses(p)
+  }))
+}
 }
