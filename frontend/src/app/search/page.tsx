@@ -1,8 +1,13 @@
 import { Suspense } from "react"
 import SearchPageClient from "./SearchPageClient"
 
-export function generateMetadata({ searchParams }: any) {
-  const query = searchParams?.q || "products"
+type PageProps = {
+  searchParams: Promise<{ q?: string }>
+}
+
+export async function generateMetadata({ searchParams }: PageProps) {
+  const params = await searchParams
+  const query = params.q || "products"
 
   return {
     title: `Best ${query} | Shopio`,
@@ -10,8 +15,9 @@ export function generateMetadata({ searchParams }: any) {
   }
 }
 
-export default function Page({ searchParams }: any) {
-  const query = searchParams?.q || ""
+export default async function Page({ searchParams }: PageProps) {
+  const params = await searchParams
+  const query = params.q || ""
 
   return (
     <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
