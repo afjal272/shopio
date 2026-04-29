@@ -160,7 +160,7 @@ export default function ComparePage() {
             Score: {Number(scoreMap.get(String(winner?.id)) || 0)}
           </p>
 
-          {comparison?.reasons?.length > 0 && (
+          {comparison?.reasons && comparison.reasons.length > 0 && (
             <div className="mt-3 bg-green-50 border border-green-200 p-3 rounded-lg">
               {comparison.reasons.map((r: string, i: number) => (
                 <div key={i} className="text-sm">

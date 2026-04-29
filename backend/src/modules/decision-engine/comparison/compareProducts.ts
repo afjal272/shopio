@@ -23,7 +23,7 @@ const normalizeCamera = (rating: number, reviews: number) => {
 }
 
 const normalizeValue = (score: number, price: number) => {
-  return Math.min((score / price) * 10000, 10)
+  return price ? Math.min((score / price) * 10000, 10) : 0
 }
 
 // 🔥 WEIGHTS (NEW)
@@ -146,9 +146,9 @@ export function compareProducts(
   }
 
   const safeIntent: IntentType[] =
-  Array.isArray(intent) && intent.length > 0
-    ? (intent as IntentType[])
-    : ["balanced"]
+    Array.isArray(intent) && intent.length > 0
+      ? (intent as IntentType[])
+      : ["balanced"]
 
   const primaryIntent: IntentType = (safeIntent[0] as IntentType) || "balanced"
   const w = weights[primaryIntent]
@@ -169,12 +169,19 @@ export function compareProducts(
 
     const value = normalizeValue(baseScore, p.price || 1)
 
+    // 🔥 FIX: intent influence ko subtle banaya (overpower na kare)
+    const intentBoost =
+      (safeIntent.includes("gaming") ? cpu * 1 + ram * 0.5 : 0) +
+      (safeIntent.includes("battery") ? battery * 1 : 0) +
+      (safeIntent.includes("camera") ? camera * 1 : 0)
+
     const finalScore =
       cpu * w.cpu +
       ram * w.ram +
       battery * w.battery +
       camera * w.camera +
-      value * w.value
+      value * w.value +
+      intentBoost
 
     return { ...p, score: Number(finalScore.toFixed(2)) }
   })

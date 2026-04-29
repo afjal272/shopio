@@ -210,7 +210,7 @@ export default function Results({
         </div>
       )}
 
-      {data.suggestions?.length > 0 && (
+      {data.suggestions && data.suggestions.length > 0 && (
         <div className="p-5 border border-blue-100 bg-blue-50 rounded-2xl">
           <h3 className="text-blue-600 font-semibold mb-3">
             Try refining your search

@@ -1,3 +1,5 @@
+import { Suspense } from "react"
+
 import Hero from "@/components/Hero"
 import Features from "@/components/Features"
 import HowItWorks from "@/components/HowItWorks"
@@ -9,7 +11,9 @@ export default function Home() {
     <main className="min-h-screen bg-white">
 
       {/* HERO */}
-      <Hero />
+      <Suspense fallback={<div>Loading...</div>}>
+        <Hero />
+      </Suspense>
 
       {/* FEATURES */}
       <Features />
