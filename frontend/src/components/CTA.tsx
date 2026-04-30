@@ -1,24 +1,39 @@
+"use client"
+
+import { motion } from "framer-motion"
+
 export default function CTA() {
   return (
-    <section className="w-full py-24 bg-red-50 text-white">
-      <div className="max-w-4xl mx-auto px-6 text-center">
+    <section className="w-full py-24 bg-black text-white text-center">
+      <div className="max-w-3xl mx-auto px-4">
 
-        <h2 className="text-4xl   text-black font-bold">
-          Stop wasting time comparing.
-        </h2>
+        <motion.h2
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-4xl font-bold tracking-tight"
+        >
+          Stop wasting time comparing products.
+        </motion.h2>
 
-        <p className="mt-4 text-black text-lg">
-          Let AI pick the best product for you in seconds.
-        </p>
+        <motion.p
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mt-4 text-gray-300 text-lg"
+        >
+          Let AI instantly find the best option for you.
+        </motion.p>
 
-        <div className="mt-8">
-          <a
-            href="#"
-            className="bg-white text-black px-6 py-3 rounded-lg font-medium hover:opacity-90 transition"
-          >
-            Try Shopio Now
-          </a>
-        </div>
+        <motion.button
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.97 }}
+          className="mt-8 bg-white text-black px-6 py-3 rounded-xl font-medium shadow-md hover:shadow-lg transition"
+        >
+          Try Shopio Now
+        </motion.button>
 
       </div>
     </section>
