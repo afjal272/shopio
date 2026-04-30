@@ -121,8 +121,8 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
         {loading === false && error && (
           <div className="text-center py-10 space-y-3">
             <p className="text-red-500 font-medium">
-              Something went wrong
-            </p>
+             {error || "Something went wrong"}
+           </p>
 
             <button
               onClick={() => search(query, intent)}
