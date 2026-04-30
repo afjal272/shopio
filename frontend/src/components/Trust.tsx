@@ -1,47 +1,76 @@
+"use client"
+
+import { motion } from "framer-motion"
+import { ShieldCheck, Zap, BadgeCheck } from "lucide-react"
+
 export default function Trust() {
+  const items = [
+    {
+      title: "No Bias",
+      desc: "We don’t push sponsored products. Only what fits your needs.",
+      icon: ShieldCheck,
+    },
+    {
+      title: "Fast Decisions",
+      desc: "Skip hours of research and get instant recommendations.",
+      icon: Zap,
+    },
+    {
+      title: "Verified Picks",
+      desc: "Every suggestion is filtered for quality and relevance.",
+      icon: BadgeCheck,
+    },
+  ]
+
   return (
     <section className="w-full py-24 bg-gray-50">
-      <div className="max-w-5xl mx-auto px-6 text-center">
+      <div className="max-w-7xl mx-auto px-4">
 
-        <h2 className="text-3xl font-bold text-black">
-          Why trust Shopio?
-        </h2>
+        {/* Heading */}
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold tracking-tight text-gray-900">
+            Why Trust Shopio
+          </h2>
+          <p className="text-gray-500 mt-3 text-lg">
+            Built for clarity, not confusion.
+          </p>
+        </div>
 
-        <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
-          We don’t just list products. We analyze your needs and give you the
-          best possible decision instantly.
-        </p>
+        {/* Grid */}
+        <div className="grid md:grid-cols-3 gap-10">
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-10 text-left">
+          {items.map((item, i) => {
+            const Icon = item.icon
 
-          <div>
-            <h3 className="font-semibold text-black mb-2">
-              No bias
-            </h3>
-            <p className="text-gray-600 text-sm">
-              We don’t push sponsored products. Only what fits your needs.
-            </p>
-          </div>
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                className="flex gap-4 items-start"
+              >
+                {/* Icon */}
+                <div className="bg-white border border-gray-200 p-3 rounded-xl shadow-sm">
+                  <Icon className="w-5 h-5 text-gray-700" />
+                </div>
 
-          <div>
-            <h3 className="font-semibold text-black mb-2">
-              Built for decisions
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Not another comparison site. We help you decide faster.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-black mb-2">
-              AI + logic
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Combines intelligent parsing with real product data.
-            </p>
-          </div>
+                {/* Text */}
+                <div>
+                  <h4 className="font-semibold text-gray-900">
+                    {item.title}
+                  </h4>
+                  <p className="text-gray-500 text-sm mt-1 leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              </motion.div>
+            )
+          })}
 
         </div>
+
       </div>
     </section>
   )
