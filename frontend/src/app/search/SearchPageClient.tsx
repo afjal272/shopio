@@ -91,10 +91,10 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
             <button
               key={type}
               onClick={() => setIntent([type])}
-              className={`px-4 py-2 rounded-full text-sm border ${
-                intent.includes(type)
-                  ? "bg-black text-white"
-                  : "bg-white text-black"
+              className={`px-4 py-2 rounded-full text-sm border transition ${
+                 intent.includes(type)
+                   ? "bg-black text-white shadow-md"
+                   : "bg-white text-black hover:bg-gray-100"
               }`}
             >
               {type}

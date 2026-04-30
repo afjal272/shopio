@@ -14,8 +14,6 @@ export function useSearch() {
 
       try {
         const res = await searchProducts(query, intent)
-
-        console.log("API RES:", res) // debug
         setData(res)
       } catch (err: unknown) {
         console.error("SEARCH ERROR:", err)
