@@ -1,58 +1,75 @@
+"use client"
+
+import { motion } from "framer-motion"
+
 export default function HowItWorks() {
   const steps = [
     {
-      title: "Tell your need",
-      desc: "Describe what you are looking for in simple language.",
+      title: "Tell us what you need",
+      desc: "Describe your requirement, budget, or use-case.",
     },
     {
-      title: "AI analyzes",
-      desc: "Our engine understands your budget, use-case and preferences.",
+      title: "AI analyzes options",
+      desc: "We scan and compare products intelligently.",
     },
     {
-      title: "Get best choice",
-      desc: "Receive the most suitable product instantly with explanation.",
+      title: "Get the best pick",
+      desc: "Receive a single, optimized recommendation instantly.",
     },
   ]
 
   return (
     <section className="w-full py-24 bg-white">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4">
 
         {/* Heading */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-black">
+          <h2 className="text-4xl font-bold tracking-tight text-gray-900">
             How it works
           </h2>
-          <p className="text-gray-500 mt-2">
-            Simple. Fast. Smart.
+          <p className="text-gray-500 mt-3 text-lg">
+            Simple steps. Smart results.
           </p>
         </div>
 
         {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={{
+            hidden: {},
+            visible: {
+              transition: { staggerChildren: 0.2 }
+            }
+          }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8"
+        >
           {steps.map((step, i) => (
-            <div key={i} className="text-center">
+            <motion.div
+              key={i}
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0 }
+              }}
+              className="bg-gray-50 rounded-2xl p-6 border border-gray-200 hover:shadow-md transition"
+            >
+              {/* Step label */}
+              <span className="text-sm text-gray-400 font-medium">
+                Step {i + 1}
+              </span>
 
-              {/* Step number */}
-              <div className="w-12 h-12 mx-auto flex items-center justify-center rounded-full bg-black text-white font-semibold mb-4">
-                {i + 1}
-              </div>
-
-              {/* Title */}
-              <h3 className="text-lg font-semibold text-black mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 mt-2">
                 {step.title}
               </h3>
 
-              {/* Desc */}
-              <p className="text-gray-600 text-sm max-w-xs mx-auto">
+              <p className="text-gray-500 text-sm mt-2 leading-relaxed">
                 {step.desc}
               </p>
-
-            </div>
+            </motion.div>
           ))}
+        </motion.div>
 
-        </div>
       </div>
     </section>
   )
