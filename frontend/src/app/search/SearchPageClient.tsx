@@ -109,7 +109,7 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
         )}
 
         {/* 🔥 LOADING */}
-        {Boolean(loading) && (
+        {loading === true && (
           <div className="space-y-4 p-4">
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-24 w-full" />
@@ -118,7 +118,7 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
         )}
 
         {/* 🔥 ERROR */}
-        {!Boolean(loading) && error && (
+        {loading === false && error && (
           <div className="text-center py-10 space-y-3">
             <p className="text-red-500 font-medium">
               Something went wrong
@@ -134,7 +134,7 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
         )}
 
         {/* 🔥 RESULTS */}
-        {!Boolean(loading) && !error && data && (
+        {loading === false && !error && data && (
           <div className="mt-6 flex justify-center">
             <Results
               data={data}

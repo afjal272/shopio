@@ -1,10 +1,9 @@
 import { useState, useCallback } from "react"
 import { searchProducts } from "../services/search.service"
-
-type SearchResponse = unknown
+import { SearchResponse } from "@/types/search"
 
 export function useSearch() {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<boolean>(false)
   const [data, setData] = useState<SearchResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
