@@ -1,3 +1,7 @@
+"use client"
+
+import { motion } from "framer-motion"
+
 export default function Features() {
   const features = [
     {
@@ -18,43 +22,43 @@ export default function Features() {
   ]
 
   return (
-    <section className="w-full py-24 bg-gray-50">
-      <div className="max-w-6xl mx-auto px-6">
+    <section className="w-full py-24 bg-gradient-to-b from-white to-gray-50">
+      <div className="max-w-7xl mx-auto px-4">
 
         {/* Heading */}
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-bold text-black">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold tracking-tight text-gray-900">
             Why Shopio?
           </h2>
-          <p className="text-gray-500 mt-2">
+          <p className="text-gray-500 mt-3 text-lg">
             Stop guessing. Start deciding.
           </p>
         </div>
 
-        {/* OUTER BOX */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+        {/* Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
-          {/* Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-            {features.map((f, i) => (
-              <div
-                key={i}
-                className="p-6 rounded-xl bg-gray-50 hover:bg-white hover:shadow-md transition border border-transparent hover:border-gray-200"
-              >
-                <div className="text-3xl mb-4">{f.icon}</div>
-
-                <h3 className="text-lg font-semibold text-black mb-2">
-                  {f.title}
-                </h3>
-
-                <p className="text-gray-600 text-sm">
-                  {f.desc}
-                </p>
+          {features.map((f, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ y: -5 }}   // only lift, no scale
+              transition={{ duration: 0.5 }}
+              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300"
+            >
+              {/* Icon */}
+              <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-xl mb-4 text-2xl">
+                {f.icon}
               </div>
-            ))}
 
-          </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {f.title}
+              </h3>
+
+              <p className="text-gray-500 text-sm leading-relaxed">
+                {f.desc}
+              </p>
+            </motion.div>
+          ))}
 
         </div>
 
