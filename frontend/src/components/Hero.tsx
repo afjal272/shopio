@@ -27,17 +27,17 @@ export default function Hero() {
           budget and usage — instantly.
         </p>
 
-       {/* Search */}
-<div className="mt-8 w-full max-w-md mx-auto">
-  <div className="flex items-center bg-white rounded-full shadow-lg border border-gray-200 overflow-hidden">
-    <SearchBar />
-  </div>
+        {/* Search */}
+        <div className="mt-8 w-full max-w-md mx-auto">
+          <div className="p-2 bg-white rounded-2xl shadow-lg border border-gray-200">
+            <SearchBar />
+          </div>
 
-  {/* Hint */}
-  <p className="text-xs text-gray-400 mt-3">
-    Try: “best phone under 20000 for gaming”
-  </p>
-</div>
+          {/* Hint */}
+          <p className="text-xs text-gray-400 mt-3">
+            Try: “best phone under 20000 for gaming”
+          </p>
+        </div>
 
       </div>
 
