@@ -128,7 +128,6 @@ export default function ResultCard({
     // 🔥 UI SYNC
     setCompared(updated.includes(id))
 
-    console.log("COMPARE IDS:", updated)
 
     // 🔥 EVENT SYNC
     setTimeout(() => {
@@ -160,7 +159,7 @@ export default function ResultCard({
 
   return (
     <div
-      className={`relative rounded-2xl p-5 bg-white transition border ${
+      className={`relative rounded-2xl p-6 bg-white transition border shadow-sm ${
         highlight
           ? "border-black shadow-xl scale-[1.02]"
           : "border-gray-200 hover:shadow-md"
@@ -188,11 +187,11 @@ export default function ResultCard({
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = "/placeholder.png"
           }}
-          className="w-16 h-16 object-cover rounded-xl border"
+          className="w-20 h-20 object-contain rounded-xl border bg-white"
         />
 
         <div className="flex-1">
-          <h3 className="font-semibold text-black text-base leading-tight">
+          <h3 className="font-semibold text-black text-sm leading-tight line-clamp-2">
             {index !== undefined && `#${index + 1} `}
             {item.title || "Untitled product"}
           </h3>
@@ -238,7 +237,7 @@ export default function ResultCard({
       </p>
 
       {item.explanation && (
-        <p className="text-sm text-gray-700 mt-3 leading-relaxed">
+        <p className="text-sm text-gray-700 mt-3 leading-relaxed line-clamp-3">
           {item.explanation}
         </p>
       )}
@@ -257,7 +256,7 @@ export default function ResultCard({
       )}
 
       {item.breakdown && (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-1">
           {Object.entries(item.breakdown).map(([key, value]) => {
             const safeValue = Math.max(0, Math.min(100, Number(value) || 0))
             const isBest = key === bestKey
@@ -283,14 +282,14 @@ export default function ResultCard({
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-5 flex items-center justify-between gap-3">
         {item.confidence !== undefined && (
           <span className="text-xs text-gray-500">
             Confidence: {item.confidence}%
           </span>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
 
           <button
             onClick={toggleSave}
@@ -314,7 +313,7 @@ export default function ResultCard({
               toggleCompare()
               onSelect?.()
             }}
-            className={`px-3 py-2 text-xs rounded-lg ${
+            className={`px-4 py-2 text-xs rounded-lg font-medium ${
               compared
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200 text-gray-700"
@@ -323,7 +322,7 @@ export default function ResultCard({
             {compared ? "Added" : "Compare"}
           </button>
 
-          <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 active:scale-95 transition">
+          <button className="bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:opacity-90 active:scale-95 transition">
             Buy Now
           </button>
 
