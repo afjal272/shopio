@@ -204,29 +204,34 @@ function getWeaknesses(p: Product, all: Product[]) {
   const specs = p.specs || {}
   const weaknesses: string[] = []
 
-  const maxBattery = Math.max(...all.map(x => x.specs?.battery || 0))
-  const maxRam = Math.max(...all.map(x => x.specs?.ram || 0))
-  const maxCPU = Math.max(...all.map(x => x.specs?.processorScore || 0))
-  const maxRating = Math.max(...all.map(x => x.rating || 0))
+  const topProduct = all[0]
 
-  if ((specs.battery || 0) < maxBattery) {
-    weaknesses.push("Battery weaker than top competitor")
+  // ✅ IMPORTANT: winner ko skip karo
+  if (p.id === topProduct.id) {
+    return []
   }
 
-  if ((specs.ram || 0) < maxRam) {
-    weaknesses.push("Less RAM compared to competitors")
+  const topSpecs = topProduct.specs || {}
+
+  if ((specs.battery || 0) < (topSpecs.battery || 0)) {
+    weaknesses.push(`Battery weaker than ${topProduct.title}`)
   }
 
-  if ((specs.processorScore || 0) < maxCPU) {
-    weaknesses.push("Lower performance than top device")
+  if ((specs.ram || 0) < (topSpecs.ram || 0)) {
+    weaknesses.push(`Less RAM than ${topProduct.title}`)
   }
 
-  if ((p.rating || 0) < maxRating) {
-    weaknesses.push("Not the highest rated option")
+  if ((specs.processorScore || 0) < (topSpecs.processorScore || 0)) {
+    weaknesses.push(`Performance lower than ${topProduct.title}`)
+  }
+
+  if ((p.rating || 0) < (topProduct.rating || 0)) {
+    weaknesses.push(`Lower rating than ${topProduct.title}`)
   }
 
   return weaknesses.slice(0, 2)
 }
+
 
   const reasons = compareTwo(winner, runnerUp, safeIntent)
 
