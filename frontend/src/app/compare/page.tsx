@@ -54,14 +54,17 @@ export default function ComparePage() {
         return
       }
 
-      const res = await fetch("http://localhost:5000/api/search/compare", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productIds: ids.slice(0, 4),
-          intent: ["balanced"]
-        })
-      })
+      const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+
+const res = await fetch(`${BASE_URL}/api/search/compare`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    productIds: ids.slice(0, 4),
+    intent: ["balanced"],
+  }),
+})
 
       if (!res.ok) {
         setProducts([])
@@ -149,7 +152,7 @@ export default function ComparePage() {
         />
 
         <div className="flex-1">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-bold text-green-700">
             🏆 {winner?.title}
           </h2>
 
@@ -176,9 +179,20 @@ export default function ComparePage() {
       {/* 🔥 PRODUCT CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {sorted.map((p) => {
-          const score = Number(scoreMap.get(String(p.id)) || 0)
+        const score = Number(scoreMap.get(String(p.id)) || 0)
 
-          return (
+          console.log("CURRENT ID:", p.id)
+
+              if (comparison?.weaknesses) {
+               const match = comparison.weaknesses.find(
+               (w) => String(w.id) === String(p.id)
+             )
+
+             console.log("MATCHED WEAKNESS:", match)
+             }
+
+             return (
+
             <div
               key={p.id}
               className={`rounded-xl p-4 bg-white shadow-md border hover:shadow-lg transition ${
@@ -220,11 +234,17 @@ export default function ComparePage() {
 <div className="mt-2">
   <div className="h-2 bg-gray-200 rounded overflow-hidden">
     <div
-      className="h-2 bg-green-500 rounded"
-      style={{
-        width: `${getScorePercent(score)}%`
-      }}
-    />
+  className={`h-2 rounded ${
+    score > 80
+      ? "bg-green-500"
+      : score > 60
+      ? "bg-yellow-500"
+      : "bg-red-500"
+  }`}
+  style={{
+    width: `${getScorePercent(score)}%`
+  }}
+/>
   </div>
   <p className="text-xs text-gray-500 mt-1">
     Score: {score}
@@ -232,14 +252,21 @@ export default function ComparePage() {
 </div>
 
 {/* 🔥 WEAKNESSES */}
-<div className="mt-3 text-left">
-  {(comparison?.weaknesses || [])
-   .find((w: { id: string; points: string[] }) => String(w.id) === String(p.id))
-   ?.points?.map((point: string, i: number) => (
-      <div key={i} className="text-xs text-red-500">
+<div className="mt-3 text-left space-y-1">
+  {(() => {
+    const weaknessItem = (comparison?.weaknesses || []).find(
+      (w) => String(w.id) === String(p.id)
+    )
+
+    return weaknessItem?.points?.slice(0, 2).map((point, i) => (
+      <div
+        key={i}
+        className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded"
+      >
         ⚠ {point}
       </div>
-    ))}
+    ))
+  })()}
 </div>
 
 </div>
@@ -247,8 +274,9 @@ export default function ComparePage() {
 })}
 </div>
 
+
       {/* 📊 TABLE */}
-      <div className="bg-white border rounded-xl overflow-hidden text-sm">
+      <div className="bg-white border rounded-xl overflow-x-auto text-sm">
 
         <div className="grid grid-cols-5 bg-gray-100 p-3 font-semibold">
           <div>Spec</div>

@@ -200,24 +200,29 @@ export function compareProducts(
     }
   }
 
-  function getWeaknesses(p: Product) {
+function getWeaknesses(p: Product, all: Product[]) {
   const specs = p.specs || {}
   const weaknesses: string[] = []
 
-  if ((specs.battery || 0) < 4500) {
-    weaknesses.push("Battery life is below average")
+  const maxBattery = Math.max(...all.map(x => x.specs?.battery || 0))
+  const maxRam = Math.max(...all.map(x => x.specs?.ram || 0))
+  const maxCPU = Math.max(...all.map(x => x.specs?.processorScore || 0))
+  const maxRating = Math.max(...all.map(x => x.rating || 0))
+
+  if ((specs.battery || 0) < maxBattery) {
+    weaknesses.push("Battery weaker than top competitor")
   }
 
-  if ((specs.ram || 0) < 6) {
-    weaknesses.push("Limited RAM for heavy usage")
+  if ((specs.ram || 0) < maxRam) {
+    weaknesses.push("Less RAM compared to competitors")
   }
 
-  if ((specs.processorScore || 0) < 6) {
-    weaknesses.push("Processor is not ideal for gaming")
+  if ((specs.processorScore || 0) < maxCPU) {
+    weaknesses.push("Lower performance than top device")
   }
 
-  if ((p.rating || 0) < 4) {
-    weaknesses.push("User ratings are relatively low")
+  if ((p.rating || 0) < maxRating) {
+    weaknesses.push("Not the highest rated option")
   }
 
   return weaknesses.slice(0, 2)
@@ -234,7 +239,7 @@ export function compareProducts(
   })),
   weaknesses: sorted.map((p) => ({
     id: p.id,
-    points: getWeaknesses(p)
+     points: getWeaknesses(p, sorted)
   }))
 }
 }
