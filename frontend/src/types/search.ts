@@ -61,3 +61,8 @@ export type SearchResponse = {
 
   isRelaxed?: boolean
 }
+
+//
+// 🔥 ADD THIS (IMPORTANT FIX)
+//
+export type Product = ProductItem

@@ -159,7 +159,8 @@ export default function ResultCard({
 
   return (
     <div
-      className={`relative rounded-2xl p-6 bg-white transition border shadow-sm ${
+       onClick={() => router.push(`/product/${id}`)}
+       className={`relative rounded-2xl p-6 bg-white transition border shadow-sm cursor-pointer ${
         highlight
           ? "border-black shadow-xl scale-[1.02]"
           : "border-gray-200 hover:shadow-md"
@@ -291,40 +292,50 @@ export default function ResultCard({
 
         <div className="flex gap-2 items-center">
 
-          <button
-            onClick={toggleSave}
-            className={`p-2 rounded-lg transition ${
-              saved
-                ? "bg-black text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            <Heart
-              size={16}
-              className={`transition ${
-                saved ? "fill-white scale-110" : "hover:scale-110"
-              }`}
-            />
-          </button>
+<button
+  onClick={(e) => {
+    e.stopPropagation()
+    toggleSave()
+  }}
+  className={`p-2 rounded-lg transition ${
+    saved
+      ? "bg-black text-white"
+      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+  }`}
+>
+  <Heart
+    size={16}
+    className={`transition ${
+      saved ? "fill-white scale-110" : "hover:scale-110"
+    }`}
+  />
+</button>
 
-          {/* 🔥 FIXED BUTTON SYNC */}
-          <button
-            onClick={() => {
-              toggleCompare()
-              onSelect?.()
-            }}
-            className={`px-4 py-2 text-xs rounded-lg font-medium ${
-              compared
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            {compared ? "Added" : "Compare"}
-          </button>
+{/* 🔥 FIXED BUTTON SYNC */}
+<button
+  onClick={(e) => {
+    e.stopPropagation()
+    toggleCompare()
+    onSelect?.()
+  }}
+  className={`px-4 py-2 text-xs rounded-lg font-medium ${
+    compared
+      ? "bg-blue-600 text-white"
+      : "bg-gray-200 text-gray-700"
+  }`}
+>
+  {compared ? "Added" : "Compare"}
+</button>
 
-          <button className="bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:opacity-90 active:scale-95 transition">
-            Buy Now
-          </button>
+<button
+  onClick={(e) => {
+    e.stopPropagation()
+    // future: redirect to affiliate / checkout
+  }}
+  className="bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:opacity-90 active:scale-95 transition"
+>
+  Buy Now
+</button>
 
         </div>
       </div>
