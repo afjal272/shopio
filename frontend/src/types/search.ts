@@ -25,9 +25,10 @@ export type Specs = {
 
 export type ProductItem = {
   id: string
-  title: string
+  name: string
   price: number
-  image?: string
+
+  images?: string[]
 
   score: number
   confidence?: number
@@ -37,17 +38,14 @@ export type ProductItem = {
 
   breakdown?: Breakdown
 
-  // 🔥 ADD THIS (CRITICAL)
   specs?: Specs
 
-  // 🔥 ADD THIS (compareProducts ke liye)
   rating?: number
   reviewsCount?: number
 }
-
 export type NotRecommendedItem = {
   id: string
-  title: string
+  name: string
   reason: string
 }
 

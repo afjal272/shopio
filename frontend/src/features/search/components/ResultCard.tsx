@@ -182,21 +182,20 @@ export default function ResultCard({
       )}
 
       <div className="flex gap-4 items-center">
-        <img
-          src={item.image || "/placeholder.png"}
-          alt={item.title || "product"}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = "/placeholder.png"
-          }}
-          className="w-20 h-20 object-contain rounded-xl border bg-white"
-        />
+  <img
+    src={item.images?.[0] || "/placeholder.png"}
+    alt={item.name || "product"}
+    onError={(e) => {
+      (e.currentTarget as HTMLImageElement).src = "/placeholder.png"
+    }}
+    className="w-20 h-20 object-contain rounded-xl border bg-white"
+  />
 
-        <div className="flex-1">
-          <h3 className="font-semibold text-black text-sm leading-tight line-clamp-2">
-            {index !== undefined && `#${index + 1} `}
-            {item.title || "Untitled product"}
-          </h3>
-
+  <div className="flex-1">
+    <h3 className="font-semibold text-black text-sm leading-tight line-clamp-2">
+      {index !== undefined && `#${index + 1} `}
+      {item.name || "Untitled product"}
+    </h3>
           <p className="text-sm text-gray-500 mt-1">
             ₹{formattedPrice}
           </p>

@@ -6,30 +6,48 @@ async function main() {
   await prisma.product.createMany({
     data: [
       {
-        title: "iQOO Neo 7",
+        name: "iQOO Neo 7",
+        brand: "iQOO",
+
         price: 21000,
+        discountPrice: 19000,
+
         rating: 4.5,
         reviewsCount: 1800,
+
+        images: [
+          "https://via.placeholder.com/300",
+          "https://via.placeholder.com/300"
+        ],
+
+        description: "Gaming focused smartphone",
+        category: "smartphone",
+
         tags: ["gaming"],
-        image: "https://via.placeholder.com/150",
-        specs: {
-          ram: 12,
-          processorScore: 9,
-          battery: 5000
-        }
+        highlights: ["High performance", "Fast charging"],
+        weaknesses: ["Average camera"],
       },
       {
-        title: "Samsung M34",
+        name: "Samsung M34",
+        brand: "Samsung",
+
         price: 19000,
+        discountPrice: 17500,
+
         rating: 4.4,
         reviewsCount: 2000,
+
+        images: [
+          "https://via.placeholder.com/300",
+          "https://via.placeholder.com/300"
+        ],
+
+        description: "Battery focused smartphone",
+        category: "smartphone",
+
         tags: ["battery"],
-        image: "https://via.placeholder.com/150",
-        specs: {
-          ram: 8,
-          processorScore: 7,
-          battery: 6000
-        }
+        highlights: ["Huge battery", "Good display"],
+        weaknesses: ["Slow charging"],
       }
     ]
   })
@@ -41,7 +59,6 @@ main()
   })
   .catch((e) => {
     console.error(e)
-    process.exit(1)
   })
   .finally(async () => {
     await prisma.$disconnect()

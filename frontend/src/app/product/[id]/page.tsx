@@ -41,54 +41,58 @@ export default async function ProductPage({
     return <div className="p-6 text-center">No product data</div>
   }
 
-  // ⭐ derived flags (smart UI)
-  const isHighRating = (product.rating ?? 0) >= 4
-  const isStrongBattery = (product.specs?.battery ?? 0) >= 4500
-  const isGoodRam = (product.specs?.ram ?? 0) >= 8
+  // ⭐ derived flags
+  const ram = product.specs?.ram ?? 0
+  const battery = product.specs?.battery ?? 0
+  const rating = product.rating ?? 0
+
+  const isHighRating = rating >= 4
+  const isStrongBattery = battery >= 4500
+  const isGoodRam = ram >= 8
 
   return (
     <div className="max-w-6xl mx-auto p-6 grid md:grid-cols-2 gap-10">
 
-      {/* LEFT - IMAGE */}
+      {/* IMAGE */}
       <div className="bg-gray-100 rounded-xl p-6 flex items-center justify-center h-[550px]">
         <img
-         src={product.image || "/placeholder.png"}
-         alt={product.title}
-         className="h-full w-full object-contain"
-         />
+          src={product.images?.[0] || "/placeholder.png"}
+          alt={product.name}
+          className="h-full w-full object-contain"
+        />
       </div>
 
-      {/* RIGHT - DETAILS */}
+      {/* DETAILS */}
       <div>
 
         {/* TITLE */}
-        <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
+        <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
 
         {/* PRICE */}
         <p className="text-2xl font-semibold text-green-600 mb-3">
           ₹{product.price}
         </p>
 
-        {/* ⭐ RATING */}
+        {/* RATING */}
         <div className="flex items-center gap-2 mb-4">
           <div className="flex">
             {Array.from({ length: 5 }).map((_, i) => (
               <span key={i}>
-                {i < Math.round(product.rating ?? 0) ? "⭐" : "☆"}
+                {i < Math.round(rating) ? "⭐" : "☆"}
               </span>
             ))}
           </div>
           <span className="text-sm text-gray-600">
-            ({product.rating ?? "N/A"})
+            ({rating || "N/A"})
           </span>
         </div>
 
-        {/* SPECS CARD */}
+        {/* SPECS */}
         <div className="border rounded-xl p-4 mb-6 space-y-2 text-sm">
-          <p>⚡ RAM: {product.specs?.ram ?? "N/A"} GB</p>
-          <p>🔋 Battery: {product.specs?.battery ?? "N/A"} mAh</p>
+          <p>⚡ RAM: {ram || "N/A"} GB</p>
+          <p>🔋 Battery: {battery || "N/A"} mAh</p>
           <p>🚀 Performance: {product.specs?.processorScore ?? "N/A"}</p>
-          <p>⭐ Rating: {product.rating ?? "N/A"}</p>
+          <p>⭐ Rating: {rating || "N/A"}</p>
         </div>
 
         {/* WHY GOOD */}
@@ -101,20 +105,24 @@ export default async function ProductPage({
           </ul>
         </div>
 
-        {/* WEAKNESSES (always show something) */}
+        {/* WEAKNESSES */}
         <div className="mb-6">
           <h2 className="font-semibold mb-2">Things to consider</h2>
           <ul className="text-sm space-y-1 text-red-500">
-            {(product.specs?.ram ?? 0) < 8 && <li>⚠ Not ideal for heavy multitasking</li>}
-            {(product.specs?.battery ?? 0) < 4500 && <li>⚠ Battery not the best</li>}
-            {(product.rating ?? 0) < 4 && <li>⚠ Average user rating</li>}
 
-            {/* fallback so empty na ho */}
-            {(product.specs?.ram ?? 0) >= 8 &&
-              (product.specs?.battery ?? 0) >= 4500 &&
-              (product.rating ?? 0) >= 4 && (
-                <li>⚠ No major weaknesses, but depends on your use case</li>
-              )}
+            {ram < 8 && <li>⚠ Not ideal for heavy multitasking</li>}
+            {battery < 4500 && <li>⚠ Battery not the best</li>}
+            {rating < 4 && <li>⚠ Average user rating</li>}
+
+            {/* SAFE fallback */}
+            {!(
+              ram < 8 ||
+              battery < 4500 ||
+              rating < 4
+            ) && (
+              <li>⚠ No major weaknesses, but depends on your use case</li>
+            )}
+
           </ul>
         </div>
 

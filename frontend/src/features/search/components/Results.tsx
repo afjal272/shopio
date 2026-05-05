@@ -197,7 +197,7 @@ export default function Results({
               >
                 <div className="flex flex-col">
                   <span className="font-medium text-black">
-                    ❌ {item.title}
+                    ❌ {item.name}
                   </span>
 
                   <span className="text-red-600 text-xs mt-1">

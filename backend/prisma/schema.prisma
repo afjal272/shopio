@@ -9,13 +9,24 @@ datasource db {
 
 model Product {
   id            String   @id @default(uuid())
-  title         String
-  brand         String?
+
+  name          String   // was title
+  brand         String   // now required
+
   price         Int
+  discountPrice Int?     // new
+
   rating        Float
   reviewsCount  Int      @default(0)
-  image         String?
+
+  images        String[] // replaced image
+
+  description   String   // new (important for detail page)
+  category      String   // new
+
   tags          String[]
-  specs         Json
+  highlights    String[] // new
+  weaknesses    String[] // new
+
   createdAt     DateTime @default(now())
 }

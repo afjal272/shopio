@@ -6,6 +6,27 @@ import { getRejectionReason } from "./explanation/getRejectionReason"
 import { compareProducts } from "./comparison/compareProducts"
 import { generateSuggestions } from "./suggestions"
 
+// 🔥 ADD: SAFE MAPPER (no external file needed)
+function mapProduct(p: any) {
+  return {
+    ...p,
+
+    // ✅ normalize name
+    name: p.name || p.title || "Unknown",
+
+    // ✅ normalize images
+    images: p.images || (p.image ? [p.image] : []),
+
+    // ✅ safety defaults
+    price: p.price ?? 0,
+    rating: p.rating ?? 0,
+    specs: p.specs ?? {},
+    tags: p.tags ?? [],
+    score: p.score ?? 0,
+    confidence: p.confidence ?? 0,
+  }
+}
+
 export function runEngine(parsed: ParsedQuery, products: Product[]) {
 
   // 🔥 CONVERT weightedIntent → simple intent
@@ -96,7 +117,7 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
 
   return {
     best: {
-      ...best,
+      ...mapProduct(best), // ✅ FIX
       explanation: generateExplanation(
         best,
         finalIntent,
@@ -106,7 +127,7 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
     },
 
     top3: ranked.slice(1, 9).map((p) => ({
-      ...p,
+      ...mapProduct(p), // ✅ FIX
       explanation: generateExplanation(
         p,
         finalIntent,
@@ -116,7 +137,8 @@ export function runEngine(parsed: ParsedQuery, products: Product[]) {
     })),
 
     notRecommended: ranked.slice(4, 7).map((p) => ({
-      ...p,
+      id: p.id,
+      name: (p as any).name || (p as any).title || "Unknown product", // ✅ already correct
       reason: getRejectionReason(
         p,
         finalIntent,

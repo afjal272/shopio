@@ -1,23 +1,31 @@
 import { Router, Request, Response } from "express"
-import { products } from "../../data/products"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 export const productRouter = Router()
 
 // 🔥 GET ALL PRODUCTS
-productRouter.get("/products", (_: Request, res: Response) => {
-  console.log("GET /api/products")
+productRouter.get("/products", async (_: Request, res: Response) => {
+  try {
+    const products = await prisma.product.findMany()
 
-  return res.status(200).json({
-    success: true,
-    data: products
-  })
+    return res.status(200).json({
+      success: true,
+      data: products
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch products"
+    })
+  }
 })
 
 // 🔥 GET SINGLE PRODUCT
-productRouter.get("/products/:id", (req: Request, res: Response) => {
+productRouter.get("/products/:id", async (req: Request, res: Response) => {
   const { id } = req.params
 
-  // ✅ VALIDATION
   if (!id) {
     return res.status(400).json({
       success: false,
@@ -25,21 +33,26 @@ productRouter.get("/products/:id", (req: Request, res: Response) => {
     })
   }
 
-  const product = products.find(
-    (p) => String(p.id) === String(id)
-  )
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
-  // ❌ NOT FOUND
-  if (!product) {
-    return res.status(404).json({
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: product
+    })
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: "Product not found"
+      message: "Error fetching product"
     })
   }
-
-  // ✅ SUCCESS
-  return res.status(200).json({
-    success: true,
-    data: product
-  })
 })
