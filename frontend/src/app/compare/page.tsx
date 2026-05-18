@@ -181,16 +181,7 @@ const res = await fetch(`${BASE_URL}/api/search/compare`, {
         {sorted.map((p) => {
         const score = Number(scoreMap.get(String(p.id)) || 0)
 
-          console.log("CURRENT ID:", p.id)
-
-              if (comparison?.weaknesses) {
-               const match = comparison.weaknesses.find(
-               (w) => String(w.id) === String(p.id)
-             )
-
-             console.log("MATCHED WEAKNESS:", match)
-             }
-
+          
              return (
 
             <div
@@ -251,29 +242,10 @@ const res = await fetch(`${BASE_URL}/api/search/compare`, {
   </p>
 </div>
 
-{/* 🔥 WEAKNESSES */}
-<div className="mt-3 text-left space-y-1">
-  {(() => {
-    const weaknessItem = (comparison?.weaknesses || []).find(
-      (w) => String(w.id) === String(p.id)
-    )
-
-    return weaknessItem?.points?.slice(0, 2).map((point, i) => (
-      <div
-        key={i}
-        className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded"
-      >
-        ⚠ {point}
-      </div>
-    ))
-  })()}
-</div>
-
 </div>
 )
 })}
 </div>
-
 
       {/* 📊 TABLE */}
       <div className="bg-white border rounded-xl overflow-x-auto text-sm">
