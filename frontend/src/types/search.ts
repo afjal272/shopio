@@ -3,6 +3,7 @@ export type Parsed = {
   budget: number | null
 
   category?: string | null
+
   constraints?: {
     minRam?: number | null
     minBattery?: number | null
@@ -25,15 +26,19 @@ export type Specs = {
 
 export type ProductItem = {
   id: string
+
   name: string
+
   price: number
 
   images?: string[]
 
   score: number
+
   confidence?: number
 
   explanation?: string
+
   tags?: string[]
 
   breakdown?: Breakdown
@@ -41,8 +46,10 @@ export type ProductItem = {
   specs?: Specs
 
   rating?: number
+
   reviewsCount?: number
 }
+
 export type NotRecommendedItem = {
   id: string
   name: string
@@ -51,16 +58,19 @@ export type NotRecommendedItem = {
 
 export type SearchResponse = {
   best: ProductItem
+
   top3: ProductItem[]
+
   notRecommended: NotRecommendedItem[]
+
   comparison: string[]
+
   parsed: Parsed
+
   suggestions?: string[]
 
   isRelaxed?: boolean
 }
 
-//
-// 🔥 ADD THIS (IMPORTANT FIX)
-//
+// Product alias
 export type Product = ProductItem
