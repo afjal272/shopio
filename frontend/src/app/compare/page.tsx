@@ -147,7 +147,7 @@ const res = await fetch(`${BASE_URL}/api/search/compare`, {
       <div className="bg-gradient-to-r from-green-50 to-white border rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center gap-6">
 
         <img
-          src={winner?.image || "https://via.placeholder.com/150"}
+          src={winner?.images?.[0] || "https://via.placeholder.com/150"}
           className="w-40 h-40 object-contain bg-white rounded-xl p-3"
         />
 
@@ -201,7 +201,7 @@ const res = await fetch(`${BASE_URL}/api/search/compare`, {
             >
               <div className="relative">
                 <img
-                  src={p.image || "https://via.placeholder.com/150"}
+                  src={p.images?.[0] || "https://via.placeholder.com/150"}
                   className="w-full h-36 object-contain bg-gray-50 rounded-lg p-2"
                 />
 
