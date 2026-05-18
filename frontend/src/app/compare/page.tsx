@@ -153,7 +153,7 @@ const res = await fetch(`${BASE_URL}/api/search/compare`, {
 
         <div className="flex-1">
           <h2 className="text-2xl font-bold text-green-700">
-            🏆 {winner?.title}
+            {winner?.name}
           </h2>
 
           <p className="text-lg font-semibold mt-1 text-green-600">
@@ -218,7 +218,7 @@ const res = await fetch(`${BASE_URL}/api/search/compare`, {
                 )}
               </div>
 
-              <h3 className="font-semibold mt-3 text-sm">{p.title}</h3>
+              <h3 className="font-semibold mt-3 text-sm">{p.name}</h3>
 
               <div className="flex flex-wrap gap-1 mt-2">
                 {getTags(p, score).map((tag, i) => (
@@ -281,7 +281,7 @@ const res = await fetch(`${BASE_URL}/api/search/compare`, {
         <div className="grid grid-cols-5 bg-gray-100 p-3 font-semibold">
           <div>Spec</div>
           {sorted.map((p) => (
-            <div key={p.id}>{p.title}</div>
+            <div key={p.id}>{p.name}</div>
           ))}
         </div>
 
