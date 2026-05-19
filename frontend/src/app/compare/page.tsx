@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { ProductItem } from "@/types/search"
+import { API_BASE_URL } from "@/config/api"
 
 export default function ComparePage() {
 
@@ -54,10 +55,8 @@ export default function ComparePage() {
         return
       }
 
-      const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
-const res = await fetch(`${BASE_URL}/api/search/compare`, {
+const res = await fetch(`${API_BASE_URL}/api/search/compare`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({

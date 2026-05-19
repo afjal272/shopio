@@ -6,13 +6,13 @@ import { productRouter } from "./routes/product.route"
 
 const app = express()
 
-// 🔥 ALLOWED ORIGINS
+// ALLOWED ORIGINS
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
-]
+].filter(Boolean) as string[]
 
-// 🔥 MIDDLEWARES
+// MIDDLEWARES
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -26,7 +26,7 @@ app.use(
         return callback(null, true)
       }
 
-      return callback(new Error("Not allowed by CORS"))
+      return callback(new Error("CORS blocked"))
     },
     credentials: true,
   })
@@ -34,16 +34,16 @@ app.use(
 
 app.use(express.json())
 
-// 🔥 HEALTH CHECK (production must-have)
+// HEALTH CHECK
 app.get("/health", (_: Request, res: Response) => {
   res.json({ status: "ok" })
 })
 
-// 🔥 API ROUTES
+// API ROUTES
 app.use("/api/search", searchRouter)
 app.use("/api", productRouter)
 
-// 🔥 GLOBAL ERROR HANDLER
+// GLOBAL ERROR HANDLER
 app.use(
   (
     err: unknown,
@@ -51,7 +51,7 @@ app.use(
     res: Response,
     next: NextFunction
   ) => {
-    console.error("❌ SERVER ERROR:", err)
+    console.error("SERVER ERROR:", err)
 
     res.status(500).json({
       message: "Internal Server Error",
@@ -59,9 +59,9 @@ app.use(
   }
 )
 
-// 🔥 START SERVER
+// START SERVER
 const PORT = process.env.PORT || 5000
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(`Server running on port ${PORT}`)
 })
