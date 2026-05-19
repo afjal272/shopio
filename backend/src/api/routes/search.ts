@@ -1,4 +1,4 @@
-=import { Router } from "express"
+import { Router } from "express"
 import { PrismaClient } from "@prisma/client"
 import { runEngine } from "../../modules/decision-engine/engine"
 import { parseQuery } from "../../modules/decision-engine/parser/queryParser"
