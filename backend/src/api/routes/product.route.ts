@@ -26,7 +26,10 @@ productRouter.get("/products", async (_: Request, res: Response) => {
 
 // GET SINGLE PRODUCT
 productRouter.get("/products/:id", async (req: Request, res: Response) => {
-  const id = req.params.id?.trim()
+  const id =
+    typeof req.params.id === "string"
+      ? req.params.id.trim()
+      : ""
 
   // VALIDATE ID
   if (!id) {
