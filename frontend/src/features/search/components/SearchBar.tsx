@@ -152,15 +152,28 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     )
   }
 
-
   return (
   <div className="relative w-full">
 
-    {/* Search Row */}
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+    {/* SEARCH ROW */}
+    <div className="flex items-center gap-2 w-full">
 
       <input
-        className="w-full min-w-0 flex-1 border px-4 py-3 rounded-xl outline-none text-sm md:text-base focus:ring-2 focus:ring-black/20 focus:border-black transition"
+        className="
+          flex-1
+          min-w-0
+          border
+          px-4
+          py-3
+          rounded-xl
+          outline-none
+          text-sm
+          md:text-base
+          focus:ring-2
+          focus:ring-black/20
+          focus:border-black
+          transition
+        "
         placeholder="e.g. best phone under 20000 for gaming"
         value={query}
         onChange={(e) => {
@@ -183,7 +196,6 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
 
           if (e.key === "ArrowDown") {
             e.preventDefault()
-
             setActiveIndex((prev) =>
               prev < filteredSuggestions.length - 1
                 ? prev + 1
@@ -193,11 +205,8 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
 
           if (e.key === "ArrowUp") {
             e.preventDefault()
-
             setActiveIndex((prev) =>
-              prev > 0
-                ? prev - 1
-                : -1
+              prev > 0 ? prev - 1 : -1
             )
           }
         }}
@@ -206,13 +215,27 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
       <button
         onClick={handleSearch}
         disabled={loading}
-        className="w-full sm:w-auto shrink-0 bg-black text-white px-5 py-3 rounded-xl hover:opacity-90 active:scale-95 transition disabled:opacity-60 text-sm md:text-base"
+        className="
+          shrink-0
+          bg-black
+          text-white
+          px-4
+          md:px-5
+          py-3
+          rounded-xl
+          hover:opacity-90
+          active:scale-95
+          transition
+          disabled:opacity-60
+          text-sm
+          md:text-base
+        "
       >
         {loading ? "..." : "Search"}
       </button>
     </div>
 
-    {/* Suggestions */}
+    {/* SUGGESTIONS */}
     {showSuggestions && filteredSuggestions.length > 0 && (
       <div className="absolute top-full left-0 w-full mt-2 bg-white border rounded-xl shadow-md z-10 overflow-hidden">
 
