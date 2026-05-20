@@ -20,7 +20,7 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full bg-white sticky top-0 z-50">
+    <header className="w-full bg-white/95 backdrop-blur sticky top-0 z-50 border-b border-gray-100 md:border-none">
       <div className="max-w-6xl mx-auto px-3 md:px-6 py-3 md:py-4 flex items-center justify-between">
 
         {/* Logo */}
