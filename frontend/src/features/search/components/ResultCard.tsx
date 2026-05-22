@@ -282,14 +282,14 @@ export default function ResultCard({
         </div>
       )}
 
-     <div className="mt-5 flex flex-col gap-4">
+     <div className="mt-5">
         {item.confidence !== undefined && (
           <span className="text-xs text-gray-500">
             Confidence: {item.confidence}%
           </span>
         )}
 
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex gap-2 items-center">
 
 <button
   onClick={(e) => {
