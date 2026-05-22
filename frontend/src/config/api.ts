@@ -1,9 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+const FALLBACK_API_URL = "http://localhost:5000"
 
-if (!API_URL) {
-  throw new Error(
-    "NEXT_PUBLIC_API_URL is missing. Check your environment variables."
-  )
-}
-
-export const API_BASE_URL = API_URL
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL?.trim() ||
+  FALLBACK_API_URL
