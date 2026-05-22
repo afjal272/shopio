@@ -160,7 +160,7 @@ export default function ResultCard({
   return (
     <div
        onClick={() => router.push(`/product/${id}`)}
-       className={`relative rounded-2xl p-6 bg-white transition border shadow-sm cursor-pointer ${
+       className={`relative rounded-2xl p-4 md:p-6 bg-white transition border shadow-sm cursor-pointer ${
         highlight
           ? "border-black shadow-xl scale-[1.02]"
           : "border-gray-200 hover:shadow-md"
@@ -181,18 +181,18 @@ export default function ResultCard({
         />
       )}
 
-      <div className="flex gap-4 items-center">
+      <div className="flex gap-3 md:gap-4 items-start">
   <img
     src={item.images?.[0] || "/placeholder.png"}
     alt={item.name || "product"}
     onError={(e) => {
       (e.currentTarget as HTMLImageElement).src = "/placeholder.png"
     }}
-    className="w-20 h-20 object-contain rounded-xl border bg-white"
+    className="w-16 h-16 md:w-20 md:h-20 shrink-0 object-contain rounded-xl border bg-white"
   />
 
-  <div className="flex-1">
-    <h3 className="font-semibold text-black text-sm leading-tight line-clamp-2">
+  <div className="flex-1 min-w-0">
+    <h3 className="font-semibold text-black text-sm leading-tight line-clamp-2 break-words">
       {index !== undefined && `#${index + 1} `}
       {item.name || "Untitled product"}
     </h3>
@@ -205,15 +205,15 @@ export default function ResultCard({
           </p>
 
           {bestKey && (
-            <span className="inline-block mt-1 text-[10px] bg-black text-white px-2 py-[2px] rounded-full">
+            <span className="inline-block mt-2 text-[10px] bg-black text-white px-2 py-[3px] rounded-full">
               Best in {bestKey}
             </span>
           )}
         </div>
 
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <div
-            className={`text-sm font-semibold text-white px-3 py-1 rounded-full ${scoreColor}`}
+            className={`text-xs md:text-sm font-semibold text-white px-2 md:px-3 py-1 rounded-full ${scoreColor}`}
           >
             {safeScore}
           </div>
@@ -282,14 +282,14 @@ export default function ResultCard({
         </div>
       )}
 
-      <div className="mt-5 flex items-center justify-between gap-3">
+     <div className="mt-5 flex flex-col gap-4">
         {item.confidence !== undefined && (
           <span className="text-xs text-gray-500">
             Confidence: {item.confidence}%
           </span>
         )}
 
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
 
 <button
   onClick={(e) => {
@@ -317,7 +317,7 @@ export default function ResultCard({
     toggleCompare()
     onSelect?.()
   }}
-  className={`px-4 py-2 text-xs rounded-lg font-medium ${
+  className={`flex-1 sm:flex-none min-w-[110px] px-4 py-2 text-xs rounded-lg font-medium ${
     compared
       ? "bg-blue-600 text-white"
       : "bg-gray-200 text-gray-700"
@@ -331,7 +331,7 @@ export default function ResultCard({
     e.stopPropagation()
     // future: redirect to affiliate / checkout
   }}
-  className="bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:opacity-90 active:scale-95 transition"
+  className="flex-1 sm:flex-none min-w-[120px] bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:opacity-90 active:scale-95 transition"
 >
   Buy Now
 </button>
