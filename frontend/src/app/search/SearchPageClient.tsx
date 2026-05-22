@@ -81,17 +81,17 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
     <div className="min-h-screen bg-white py-16 px-4">
       <div className="max-w-4xl mx-auto">
 
-        <div className="mb-8 flex justify-center">
+        <div className="mb-6 md:mb-8 flex justify-center">
           <SearchBar initialValue={query} />
         </div>
 
         {/* 🔥 INTENT SELECTOR */}
-        <div className="flex gap-2 justify-center mb-6 flex-wrap">
+        <div className="flex gap-2 justify-center mb-5 md:mb-6 flex-wrap px-1">
           {["balanced", "gaming", "camera", "battery"].map((type) => (
             <button
               key={type}
               onClick={() => setIntent([type])}
-              className={`px-4 py-2 rounded-full text-sm border transition ${
+              className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm border transition whitespace-nowrap active:scale-95 ${
                  intent.includes(type)
                    ? "bg-black text-white shadow-md"
                    : "bg-white text-black hover:bg-gray-100"
@@ -103,14 +103,14 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
         </div>
 
         {query && (
-          <h1 className="text-xl font-semibold text-black mb-6 text-center">
+          <h1 className="text-lg md:text-xl font-semibold text-black mb-5 md:mb-6 text-center break-words px-2">
             Showing results for "{query}"
           </h1>
         )}
 
         {/* 🔥 LOADING */}
         {loading === true && (
-          <div className="space-y-4 p-4">
+          <div className="space-y-3 md:space-y-4 p-2 md:p-4">
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-24 w-full" />
@@ -135,7 +135,7 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
 
         {/* 🔥 RESULTS */}
         {loading === false && !error && data && (
-          <div className="mt-6 flex justify-center">
+          <div className="mt-5 md:mt-6 flex justify-center">
             <Results
               data={data}
               selected={selected}
@@ -155,7 +155,7 @@ export default function SearchPageClient({ initialQuery = "" }: { initialQuery?:
                 window.location.href = "/compare"
               }, 50)
             }}
-            className="fixed bottom-6 right-6 bg-black text-white px-6 py-3 rounded-lg shadow-lg"
+            className="fixed bottom-4 right-4 md:bottom-6 md:right-6 bg-black text-white px-5 md:px-6 py-3 rounded-2xl shadow-xl text-sm md:text-base z-50 active:scale-95 transition"
           >
             Compare ({selected.length}/4)
           </button>
