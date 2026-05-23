@@ -289,7 +289,7 @@ export default function ResultCard({
           </span>
         )}
 
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center md:justify-end">
 
 <button
   onClick={(e) => {
