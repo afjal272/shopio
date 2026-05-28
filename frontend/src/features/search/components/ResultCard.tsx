@@ -42,7 +42,7 @@ export default function ResultCard({
   const [saved, setSaved] = useState(false)
   const [compared, setCompared] = useState(false)
 
-  // ✅ Sync saved state
+  //  Sync saved state
   useEffect(() => {
     try {
       const stored = JSON.parse(localStorage.getItem("saved_products") || "[]")
@@ -52,7 +52,7 @@ export default function ResultCard({
     }
   }, [id])
 
-  // 🔥 FIXED: compare sync (no stale bug)
+  //  FIXED: compare sync (no stale bug)
   useEffect(() => {
     const sync = () => {
       try {
@@ -122,14 +122,14 @@ export default function ResultCard({
       toast.success("Added to comparison")
     }
 
-    // 🔥 SAVE
+    //  SAVE
     localStorage.setItem("compare_ids", JSON.stringify(updated))
 
-    // 🔥 UI SYNC
+    //  UI SYNC
     setCompared(updated.includes(id))
 
 
-    // 🔥 EVENT SYNC
+    //  EVENT SYNC
     setTimeout(() => {
       window.dispatchEvent(new Event("compare_update"))
     }, 0)
@@ -154,7 +154,7 @@ export default function ResultCard({
     (Math.max(item.price || 1, 1) / 1000)
 
   let valueLabel = "Balanced"
-  if (valueScore > 12) valueLabel = "🔥 Great Value"
+  if (valueScore > 12) valueLabel = " Great Value"
   else if (valueScore < 6) valueLabel = "Overpriced"
 
   return (
@@ -167,7 +167,7 @@ export default function ResultCard({
       }`}
     >
 
-      {/* 🔥 FIXED CHECKBOX SYNC */}
+      {/*  FIXED CHECKBOX SYNC */}
       {onSelect && (
         <input
           type="checkbox"

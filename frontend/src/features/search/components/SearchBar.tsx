@@ -11,16 +11,16 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
   const [loading, setLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  // 🔥 NEW: dynamic suggestions
+  //  NEW: dynamic suggestions
   const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>([])
 
-  // 🔥 NEW: keyboard navigation
+  //  NEW: keyboard navigation
   const [activeIndex, setActiveIndex] = useState(-1)
 
-  // 🔥 NEW: recent searches
+  //  NEW: recent searches
   const [recentSearches, setRecentSearches] = useState<string[]>([])
 
-  // 🔥 NEW: click tracking data
+  //  NEW: click tracking data
   const [clickData, setClickData] = useState<Record<string, number>>({})
 
   const suggestions = [
@@ -30,21 +30,21 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     "best laptop for coding",
   ]
 
-  // 🔥 LOAD recent searches
+  // LOAD recent searches
   useEffect(() => {
     const stored = localStorage.getItem("recent_searches")
     if (stored) {
       setRecentSearches(JSON.parse(stored))
     }
 
-    // 🔥 LOAD click data
+    //  LOAD click data
     const clicks = localStorage.getItem("search_clicks")
     if (clicks) {
       setClickData(JSON.parse(clicks))
     }
   }, [])
 
-  // 🔥 SAVE recent searches
+  //  SAVE recent searches
   const saveRecent = (value: string) => {
     let updated = [value, ...recentSearches.filter((v) => v !== value)]
     updated = updated.slice(0, 5)
@@ -53,7 +53,7 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     localStorage.setItem("recent_searches", JSON.stringify(updated))
   }
 
-  // 🔥 NEW: track click
+  //  NEW: track click
   const trackClick = (value: string) => {
     const updated = {
       ...clickData,
@@ -64,7 +64,7 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     localStorage.setItem("search_clicks", JSON.stringify(updated))
   }
 
-  // 🔥 FIX: query sync + loading reset
+ 
   useEffect(() => {
     const q = params.get("q")
 
@@ -75,7 +75,7 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     setLoading(false)
   }, [params])
 
-  // 🔥 NEW: debounce + dynamic suggestions
+  
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!query || query.length < 2) {
@@ -105,7 +105,7 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     setShowSuggestions(false)
 
     saveRecent(query)
-    trackClick(query) // 🔥 ADD
+    trackClick(query) 
 
     router.push(`/search?q=${encodeURIComponent(query)}`)
   }
@@ -116,12 +116,12 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
     setLoading(true)
 
     saveRecent(value)
-    trackClick(value) // 🔥 ADD
+    trackClick(value) 
 
     router.push(`/search?q=${encodeURIComponent(value)}`)
   }
 
-  // 🔥 MERGE + RANKING (NEW)
+  //  MERGE + RANKING (NEW)
   const filteredSuggestions = Array.from(
     new Set([
       ...recentSearches,
@@ -134,7 +134,7 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
   .sort((a, b) => (clickData[b] || 0) - (clickData[a] || 0)) // 🔥 KEY
   .slice(0, 8)
 
-  // 🔥 NEW: highlight function
+  //  NEW: highlight function
   const highlightMatch = (text: string, query: string) => {
     if (!query) return text
 

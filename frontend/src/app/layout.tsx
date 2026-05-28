@@ -45,7 +45,7 @@ export default function RootLayout({
         {/* FOOTER */}
         <Footer />
 
-        {/* 🔥 TOASTER ADD (IMPORTANT) */}
+        {/*  TOASTER ADD (IMPORTANT) */}
         <Toaster position="top-center" richColors />
 
       </body>

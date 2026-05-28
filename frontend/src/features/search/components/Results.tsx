@@ -19,7 +19,7 @@ export default function Results({
 
   const { best, top3, parsed, notRecommended, comparison, isRelaxed } = data
 
-  // 🔥 SAVE LAST RESULTS (NO CHANGE)
+  //  SAVE LAST RESULTS (NO CHANGE)
   useEffect(() => {
     if (best) {
       const all = [best, ...(top3 || [])]
@@ -153,7 +153,7 @@ export default function Results({
             </div>
           )}
 
-          {/* 🔥 FIXED */}
+          {/*  FIXED */}
           <ResultCard
             item={best}
             highlight
@@ -197,7 +197,7 @@ export default function Results({
               >
                 <div className="flex flex-col">
                   <span className="font-medium text-black">
-                    ❌ {item.name}
+                     {item.name}
                   </span>
 
                   <span className="text-red-600 text-xs mt-1">

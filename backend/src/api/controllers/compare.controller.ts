@@ -1,20 +1,20 @@
 import { Request, Response } from "express"
 import { compareProducts } from "../../modules/decision-engine/comparison/compareProducts"
-import { products } from "../../data/products" // ✅ FIXED IMPORT
+import { products } from "../../data/products" //  FIXED IMPORT
 
 export const compareController = async (req: Request, res: Response) => {
   try {
     const body = req.body ?? {}
     const productIds = body.productIds
 
-    // 🔥 NEW: INTENT INPUT (OPTIONAL)
+    //  NEW: INTENT INPUT (OPTIONAL)
     const intent = body.intent || ["balanced"]
 
     console.log("COMPARE BODY:", body)
     console.log("PRODUCT IDS:", productIds)
     console.log("INTENT:", intent)
 
-    // ✅ HARD VALIDATION
+    //  HARD VALIDATION
     if (!Array.isArray(productIds)) {
       return res.status(400).json({
         message: "productIds must be an array",
@@ -22,7 +22,7 @@ export const compareController = async (req: Request, res: Response) => {
       })
     }
 
-    // ✅ CLEAN IDS
+    //  CLEAN IDS
     const ids = [...new Set(productIds.map((id: any) => String(id)))]
       .filter(Boolean)
       .slice(0, 4)
@@ -34,7 +34,7 @@ export const compareController = async (req: Request, res: Response) => {
       })
     }
 
-    // ✅ SAFETY CHECK (CRITICAL)
+    //  SAFETY CHECK (CRITICAL)
     if (!Array.isArray(products)) {
       console.error("❌ PRODUCTS DATA INVALID:", products)
       return res.status(500).json({
@@ -59,22 +59,22 @@ export const compareController = async (req: Request, res: Response) => {
       })
     }
 
-    // 🔥 ENGINE CALL SAFE (WITH INTENT)
+    //  ENGINE CALL SAFE (WITH INTENT)
     const comparison = compareProducts(selectedProducts, intent)
 
-    // ✅ FINAL SAFETY
+    //  FINAL SAFETY
     if (!comparison) {
       return res.status(500).json({
         message: "Comparison failed"
       })
     }
 
-    // 🔥 NEW: RESPONSE ENRICHMENT
+    //  NEW: RESPONSE ENRICHMENT
     return res.json({
       products: selectedProducts,
       comparison: {
         ...comparison,
-        intent // 👈 frontend ke liye important
+        intent //  frontend ke liye important
       }
     })
 

@@ -55,7 +55,7 @@ async function main() {
 
 main()
   .then(() => {
-    console.log("🌱 Seed done")
+    console.log(" Seed done")
   })
   .catch((e) => {
     console.error(e)

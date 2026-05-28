@@ -1,6 +1,6 @@
 import { Product, IntentType } from "../types"
 
-// 🔥 NORMALIZATION FUNCTIONS (NEW - ADDED, NOTHING REMOVED)
+//  NORMALIZATION FUNCTIONS (NEW - ADDED, NOTHING REMOVED)
 const normalizeCPU = (score: number) => {
   return Math.min(score / 10, 10)
 }
@@ -26,7 +26,7 @@ const normalizeValue = (score: number, price: number) => {
   return price ? Math.min((score / price) * 10000, 10) : 0
 }
 
-// 🔥 WEIGHTS (NEW)
+//  WEIGHTS (NEW)
 const weights = {
   gaming:   { cpu: 4, ram: 3, battery: 2, camera: 1, value: 1 },
   battery:  { cpu: 1, ram: 1, battery: 4, camera: 1, value: 2 },
@@ -35,7 +35,7 @@ const weights = {
 }
 
 
-// 🔥 SAFE COMPARE TWO (UNCHANGED)
+//  SAFE COMPARE TWO (UNCHANGED)
 function compareTwo(
   a: Product,
   b: Product,
@@ -130,7 +130,7 @@ function compareTwo(
 }
 
 
-// 🔥 MAIN FUNCTION (UPDATED SCORING ONLY)
+//  MAIN FUNCTION (UPDATED SCORING ONLY)
 export function compareProducts(
   products: Product[],
   intent: IntentType[] = ["balanced"]
@@ -169,7 +169,7 @@ export function compareProducts(
 
     const value = normalizeValue(baseScore, p.price || 1)
 
-    // 🔥 FIX: intent influence ko subtle banaya (overpower na kare)
+    //  FIX: intent influence ko subtle banaya (overpower na kare)
     const intentBoost =
       (safeIntent.includes("gaming") ? cpu * 1 + ram * 0.5 : 0) +
       (safeIntent.includes("battery") ? battery * 1 : 0) +

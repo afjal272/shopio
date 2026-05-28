@@ -1,9 +1,6 @@
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
-// ❗ NOTE:
-// intent param intentionally ignore kiya ja raha hai abhi
-// backend GET accept karta hai, POST nahi
 
 export async function searchProducts(
   query: string,

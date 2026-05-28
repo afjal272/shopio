@@ -139,120 +139,133 @@ const res = await fetch(`${API_BASE_URL}/api/search/compare`, {
     ...products.map((p) => Number(scoreMap.get(String(p.id)) || 0))
   )
 
-  return (
-    <div className="p-10 max-w-7xl mx-auto space-y-12">
+ return (
+  <div className="px-4 py-6 md:p-10 max-w-7xl mx-auto space-y-8 md:space-y-12">
 
-      {/* 🏆 HERO */}
-      <div className="bg-gradient-to-r from-green-50 to-white border rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center gap-6">
+    {/* 🏆 HERO */}
+    <div className="bg-gradient-to-r from-green-50 to-white border rounded-2xl p-4 md:p-6 shadow-md flex flex-col md:flex-row items-center gap-4 md:gap-6">
 
-        <img
-          src={winner?.images?.[0] || "https://via.placeholder.com/150"}
-          className="w-40 h-40 object-contain bg-white rounded-xl p-3"
-        />
+      <img
+        src={winner?.images?.[0] || "https://via.placeholder.com/150"}
+        className="w-32 h-32 md:w-40 md:h-40 object-contain bg-white rounded-xl p-3"
+      />
 
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold text-green-700">
-            {winner?.name}
-          </h2>
+      <div className="flex-1 w-full text-center md:text-left">
+        <h2 className="text-2xl font-bold text-green-700">
+          {winner?.name}
+        </h2>
 
-          <p className="text-lg font-semibold mt-1 text-green-600">
-            ₹{winner?.price}
-          </p>
+        <p className="text-lg font-semibold mt-1 text-green-600">
+          ₹{winner?.price}
+        </p>
 
-          <p className="text-sm mt-2 text-gray-600">
-            Score: {Number(scoreMap.get(String(winner?.id)) || 0)}
-          </p>
+        <p className="text-sm mt-2 text-gray-600">
+          Score: {Number(scoreMap.get(String(winner?.id)) || 0)}
+        </p>
 
-          {comparison?.reasons && comparison.reasons.length > 0 && (
-            <div className="mt-3 bg-green-50 border border-green-200 p-3 rounded-lg">
-              {comparison.reasons.map((r: string, i: number) => (
-                <div key={i} className="text-sm">
-                  ✔ {r}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {comparison?.reasons && comparison.reasons.length > 0 && (
+          <div className="mt-3 bg-green-50 border border-green-200 p-3 rounded-lg text-left">
+            {comparison.reasons.map((r: string, i: number) => (
+              <div key={i} className="text-sm">
+                ✔ {r}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+    </div>
 
-      {/* 🔥 PRODUCT CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {sorted.map((p) => {
+    {/* 🔥 PRODUCT CARDS */}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+
+      {sorted.map((p) => {
         const score = Number(scoreMap.get(String(p.id)) || 0)
 
-          
-             return (
+        return (
+          <div
+            key={p.id}
+            className={`rounded-2xl md:rounded-xl p-3 md:p-4 bg-white shadow-md border hover:shadow-lg transition min-w-0 ${
+              p.id === winner?.id ? "ring-2 ring-green-400" : ""
+            }`}
+          >
 
-            <div
-              key={p.id}
-              className={`rounded-xl p-4 bg-white shadow-md border hover:shadow-lg transition ${
-                p.id === winner?.id ? "ring-2 ring-green-400" : ""
-              }`}
-            >
-              <div className="relative">
-                <img
-                  src={p.images?.[0] || "https://via.placeholder.com/150"}
-                  className="w-full h-36 object-contain bg-gray-50 rounded-lg p-2"
+            <div className="relative">
+              <img
+                src={p.images?.[0] || "https://via.placeholder.com/150"}
+                className="w-full h-28 md:h-36 object-contain bg-gray-50 rounded-lg p-2"
+              />
+
+              {p.id === winner?.id && (
+                <span className="absolute top-2 right-2 text-[10px] md:text-xs bg-green-500 text-white px-2 py-1 rounded">
+                  Best
+                </span>
+              )}
+
+              {Number(p.price) === minPrice && (
+                <span className="absolute top-2 left-2 text-[10px] md:text-xs bg-blue-500 text-white px-2 py-1 rounded">
+                  Cheapest
+                </span>
+              )}
+            </div>
+
+            <h3 className="font-semibold mt-3 text-sm md:text-base line-clamp-2">
+              {p.name}
+            </h3>
+
+            <div className="flex flex-wrap gap-1 mt-2">
+              {getTags(p, score).map((tag, i) => (
+                <span
+                  key={i}
+                  className="text-[10px] md:text-xs bg-gray-100 px-2 py-1 rounded"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <p className="font-bold mt-2 text-lg">
+              ₹{p.price}
+            </p>
+
+            {/* PROGRESS BAR */}
+            <div className="mt-2">
+              <div className="h-2 bg-gray-200 rounded overflow-hidden">
+                <div
+                  className={`h-2 rounded ${
+                    score > 80
+                      ? "bg-green-500"
+                      : score > 60
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
+                  }`}
+                  style={{
+                    width: `${getScorePercent(score)}%`
+                  }}
                 />
-
-                {p.id === winner?.id && (
-                  <span className="absolute top-2 right-2 text-xs bg-green-500 text-white px-2 py-1 rounded">
-                    Best
-                  </span>
-                )}
-
-                {Number(p.price) === minPrice && (
-                  <span className="absolute top-2 left-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">
-                    Cheapest
-                  </span>
-                )}
               </div>
 
-              <h3 className="font-semibold mt-3 text-sm">{p.name}</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Score: {score}
+              </p>
+            </div>
 
-              <div className="flex flex-wrap gap-1 mt-2">
-                {getTags(p, score).map((tag, i) => (
-                  <span key={i} className="text-xs bg-gray-100 px-2 py-1 rounded">
-                    {tag}
-                  </span>
-                ))}
-              </div>
+          </div>
+        )
+      })}
+    </div>
 
-              <p className="font-bold mt-2">₹{p.price}</p>
+    {/* 📊 TABLE */}
+    <div className="bg-white border rounded-xl overflow-x-auto">
 
-              {/* PROGRESS BAR */}
-<div className="mt-2">
-  <div className="h-2 bg-gray-200 rounded overflow-hidden">
-    <div
-  className={`h-2 rounded ${
-    score > 80
-      ? "bg-green-500"
-      : score > 60
-      ? "bg-yellow-500"
-      : "bg-red-500"
-  }`}
-  style={{
-    width: `${getScorePercent(score)}%`
-  }}
-/>
-  </div>
-  <p className="text-xs text-gray-500 mt-1">
-    Score: {score}
-  </p>
-</div>
-
-</div>
-)
-})}
-</div>
-
-      {/* 📊 TABLE */}
-      <div className="bg-white border rounded-xl overflow-x-auto text-sm">
+      <div className="min-w-[700px] text-sm">
 
         <div className="grid grid-cols-5 bg-gray-100 p-3 font-semibold">
           <div>Spec</div>
+
           {sorted.map((p) => (
-            <div key={p.id}>{p.name}</div>
+            <div key={p.id}>
+              {p.name}
+            </div>
           ))}
         </div>
 
@@ -266,17 +279,24 @@ const res = await fetch(`${API_BASE_URL}/api/search/compare`, {
           <div
             key={i}
             className={`grid grid-cols-5 p-3 border-t ${
-              isImportant(row.label) ? "bg-yellow-50 font-semibold" : ""
+              isImportant(row.label)
+                ? "bg-yellow-50 font-semibold"
+                : ""
             }`}
           >
             <div>{row.label}</div>
+
             {sorted.map((p) => (
-              <div key={p.id}>{String(row.get(p) ?? "-")}</div>
+              <div key={p.id}>
+                {String(row.get(p) ?? "-")}
+              </div>
             ))}
           </div>
         ))}
-      </div>
 
+      </div>
     </div>
-  )
+
+  </div>
+)
 }

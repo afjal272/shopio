@@ -3,7 +3,7 @@ import { ParsedQuery, IntentType } from "../types"
 export function parseQuery(query: string): ParsedQuery {
   const q = query.toLowerCase().trim()
 
-  // 🔥 IMPROVED BUDGET PARSER
+  // IMPROVED BUDGET PARSER
   const budgetMatch =
     q.match(/under\s?₹?\s?(\d+[kK]?)/) ||
     q.match(/below\s?₹?\s?(\d+[kK]?)/) ||
@@ -24,7 +24,7 @@ export function parseQuery(query: string): ParsedQuery {
     }
   }
 
-  // 🔥 CATEGORY DETECTION
+  //  CATEGORY DETECTION
   let category: ParsedQuery["category"] = "general"
 
   if (q.includes("phone") || q.includes("mobile")) {
@@ -33,7 +33,7 @@ export function parseQuery(query: string): ParsedQuery {
     category = "laptop"
   }
 
-  // 🔥 STRICT INTENT TYPE (existing logic preserved)
+  //  STRICT INTENT TYPE (existing logic preserved)
   const intent: IntentType[] = []
 
   const intentMap: Record<IntentType, string[]> = {
@@ -54,7 +54,7 @@ export function parseQuery(query: string): ParsedQuery {
     }
   })
 
-  // 🔥 REMOVE DUPLICATES
+  //  REMOVE DUPLICATES
   const uniqueIntent: IntentType[] = [...new Set(intent)]
 
   // ⚡ DEFAULT FALLBACK
@@ -63,7 +63,7 @@ export function parseQuery(query: string): ParsedQuery {
   }
 
   // =====================================================
-  // 🔥 NEW: NEGATIVE INTENT (NO BREAKING CHANGE)
+  //  NEW: NEGATIVE INTENT (NO BREAKING CHANGE)
   // =====================================================
 
   const negativeIntent: IntentType[] = []
@@ -87,7 +87,7 @@ export function parseQuery(query: string): ParsedQuery {
     }
   })
 
-  // 🔥 REMOVE NEGATIVE FROM INTENT
+  //  REMOVE NEGATIVE FROM INTENT
   const filteredIntent = uniqueIntent.filter(
     (i) => !negativeIntent.includes(i)
   )
@@ -97,7 +97,7 @@ export function parseQuery(query: string): ParsedQuery {
   }
 
   // =====================================================
-  // 🔥 NEW: WEIGHTED INTENT SYSTEM
+  //  NEW: WEIGHTED INTENT SYSTEM
   // =====================================================
 
   const intentWeights: Record<IntentType, number> = {
@@ -132,7 +132,7 @@ export function parseQuery(query: string): ParsedQuery {
       }))
   }
 
-  // 🔥 FILTER NEGATIVE FROM WEIGHTED
+  //  FILTER NEGATIVE FROM WEIGHTED
   weightedIntent = weightedIntent.filter(
     (i) => !negativeIntent.includes(i.type)
   )
@@ -142,7 +142,7 @@ export function parseQuery(query: string): ParsedQuery {
   }
 
   // =====================================================
-  // 🔥 NEW: CONSTRAINTS PARSER (IMPROVED, NOT REMOVED)
+  //  NEW: CONSTRAINTS PARSER (IMPROVED, NOT REMOVED)
   // =====================================================
 
   const constraints = {
@@ -151,21 +151,21 @@ export function parseQuery(query: string): ParsedQuery {
     minRating: null as number | null
   }
 
-  // 🔥 RAM (strict: only when "ram" present)
+  //  RAM (strict: only when "ram" present)
   const ramMatch = q.match(/(\d+)\s?gb\s?ram/)
   if (ramMatch) {
     const val = Number(ramMatch[1])
     if (!isNaN(val)) constraints.minRam = val
   }
 
-  // 🔥 Battery (safe)
+  //  Battery (safe)
   const batteryMatch = q.match(/(\d+)\s?mah/)
   if (batteryMatch) {
     const val = Number(batteryMatch[1])
     if (!isNaN(val)) constraints.minBattery = val
   }
 
-  // 🔥 Rating (safe)
+  //  Rating (safe)
   const ratingMatch = q.match(/(\d+(\.\d+)?)\s?(rating|stars?)/)
   if (ratingMatch) {
     const val = Number(ratingMatch[1])

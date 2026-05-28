@@ -3,12 +3,12 @@ import { Product, ParsedQuery } from "../types"
 export function applyFilters(products: Product[], parsed: ParsedQuery) {
   return products.filter(p => {
 
-    // 🔥 BUDGET FILTER (slight flexibility)
+    // BUDGET FILTER (slight flexibility)
     if (parsed.budget && p.price > parsed.budget * 1.2) {
       return false
     }
 
-    // 🔥 CATEGORY FILTER (safer)
+    //  CATEGORY FILTER (safer)
     if (
       parsed.category &&
       parsed.category !== "general" &&
@@ -19,13 +19,13 @@ export function applyFilters(products: Product[], parsed: ParsedQuery) {
     }
 
     // =====================================================
-    // 🔥 CONSTRAINT FILTERS (REAL INTELLIGENCE)
+    //  CONSTRAINT FILTERS (REAL INTELLIGENCE)
     // =====================================================
 
     if (parsed.constraints) {
       const specs = p.specs || {}
 
-      // 🔥 RAM (strict + safe)
+      //  RAM (strict + safe)
       if (
         parsed.constraints.minRam !== null &&
         parsed.constraints.minRam !== undefined &&
@@ -34,7 +34,7 @@ export function applyFilters(products: Product[], parsed: ParsedQuery) {
         return false
       }
 
-      // 🔥 BATTERY
+      //  BATTERY
       if (
         parsed.constraints.minBattery !== null &&
         parsed.constraints.minBattery !== undefined &&
@@ -43,7 +43,7 @@ export function applyFilters(products: Product[], parsed: ParsedQuery) {
         return false
       }
 
-      // 🔥 RATING
+      //  RATING
       if (
         parsed.constraints.minRating !== null &&
         parsed.constraints.minRating !== undefined &&

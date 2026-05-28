@@ -19,7 +19,7 @@ export function generateExplanation(
   const reasons: string[] = []
 
   // =====================================================
-  // 🔥 NEW: CONSTRAINT-AWARE REASONS (ADDED)
+  //  NEW: CONSTRAINT-AWARE REASONS (ADDED)
   // =====================================================
 
   if (constraints?.minRam) {
@@ -46,7 +46,7 @@ export function generateExplanation(
     }
   }
 
-  // 🎮 GAMING
+  //  GAMING
   if (intent.includes("gaming")) {
     if (processor >= 8) {
       reasons.push(`strong processor (${processor}/10) ensures smooth gaming`)
@@ -61,7 +61,7 @@ export function generateExplanation(
     }
   }
 
-  // 📸 CAMERA
+  //  CAMERA
   if (intent.includes("camera")) {
     if (rating >= 4.3) {
       reasons.push(`high user rating (${rating}⭐) indicates good camera performance`)
@@ -74,7 +74,7 @@ export function generateExplanation(
     }
   }
 
-  // 🔋 BATTERY
+  //  BATTERY
   if (intent.includes("battery")) {
     if (battery >= 6000) {
       reasons.push(`${battery}mAh battery easily lasts more than a day`)
@@ -85,25 +85,25 @@ export function generateExplanation(
     }
   }
 
-  // ⚖️ BALANCED (fallback)
+  //  BALANCED (fallback)
   if (intent.includes("balanced") && reasons.length === 0) {
     reasons.push(`${ram}GB RAM and stable performance for everyday use`)
     reasons.push(`${battery}mAh battery for regular usage`)
   }
 
-  // 🔥 TRUST SIGNAL
+  //  TRUST SIGNAL
   if (reviews > 1000) {
     reasons.push(`${reviews}+ reviews indicate strong market trust`)
   } else if (reviews > 100) {
     reasons.push(`${reviews}+ reviews provide reasonable confidence`)
   }
 
-  // 🔥 SAFETY
+  //  SAFETY
   if (reasons.length === 0) {
     reasons.push(`balanced specifications for general usage`)
   }
 
-  // 🔥 CLEAN INTENT TEXT
+  //  CLEAN INTENT TEXT
   const intentText =
     intent.length > 1
       ? intent.join(" & ")

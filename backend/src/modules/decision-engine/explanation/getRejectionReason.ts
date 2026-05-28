@@ -19,7 +19,7 @@ export function getRejectionReason(
   const reasons: string[] = []
 
   // =====================================================
-  // 🔥 NEW: CONSTRAINT FAIL REASONS (MOST IMPORTANT)
+  //  NEW: CONSTRAINT FAIL REASONS (MOST IMPORTANT)
   // =====================================================
 
   if (constraints?.minRam && ram < constraints.minRam) {
@@ -34,7 +34,7 @@ export function getRejectionReason(
     reasons.push(`rating (${rating}⭐) below expected level`)
   }
 
-  // 💰 BUDGET (strong signal)
+  //  BUDGET (strong signal)
   if (budget && product.price > budget) {
     reasons.push(`over budget (₹${product.price})`)
   }
@@ -49,33 +49,33 @@ export function getRejectionReason(
     }
   }
 
-  // 🔋 BATTERY
+  //  BATTERY
   if (intent.includes("battery")) {
     if (battery < 5000) {
       reasons.push(`battery (${battery}mAh) is below ideal`)
     }
   }
 
-  // 📸 CAMERA
+  //  CAMERA
   if (intent.includes("camera")) {
     if (rating < 4.2) {
       reasons.push(`average camera performance (${rating}⭐)`)
     }
   }
 
-  // 🔥 TRUST (more realistic)
+  //  TRUST (more realistic)
   if (reviews < 200) {
     reasons.push(`very low user trust (${reviews} reviews)`)
   } else if (reviews < 800) {
     reasons.push(`less proven than top options`)
   }
 
-  // ⚠️ GENERAL WEAKNESS
+  //  GENERAL WEAKNESS
   if (!intent.includes("gaming") && processor < 5) {
     reasons.push(`overall performance is below average`)
   }
 
-  // 🔥 FINAL OUTPUT
+  //  FINAL OUTPUT
   if (reasons.length === 0) {
     return `weaker value compared to better-ranked alternatives`
   }
