@@ -6,7 +6,7 @@ import { compareController } from "../controllers/compare.controller"
 
 export const searchRouter = Router()
 
-// 🔍 SEARCH API
+//  SEARCH API
 searchRouter.get("/", (req, res) => {
   try {
     const query = (req.query.q as string)?.trim()
@@ -17,13 +17,13 @@ searchRouter.get("/", (req, res) => {
       })
     }
 
-    // 🔥 PARSE QUERY
+    //  PARSE QUERY
     const parsed = parseQuery(query)
 
-    // 🔥 RUN ENGINE WITH PARSED INPUT
+    //  RUN ENGINE WITH PARSED INPUT
     const result = runEngine(parsed, products)
 
-    // 🔥 RESPONSE
+    //  RESPONSE
     res.json(result)
 
   } catch (err) {
@@ -34,6 +34,5 @@ searchRouter.get("/", (req, res) => {
   }
 })
 
-
-// 🆚 COMPARE API (NEW)
+// COMPARE API (NEW)
 searchRouter.post("/compare", compareController)
