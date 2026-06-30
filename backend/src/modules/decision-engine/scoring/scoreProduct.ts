@@ -1,11 +1,15 @@
-import { Product } from "../types"
+import { Product, IntentType } from "../types"
 
-export type IntentType = "gaming" | "camera" | "battery" | "balanced"
+import {
+  normalize,
+  calculateTrustScore,
+  calculateValueScore,
+} from "./helpers"
 
-function normalize(value: number, max: number) {
-  if (!value || max === 0) return 0
-  return Math.min(1, value / max)
-}
+import {
+  SCORE_WEIGHTS,
+  BRAND_BOOST,
+} from "./weights"
 
 export function scoreProduct(
   product: Product,
@@ -34,20 +38,12 @@ export function scoreProduct(
     weightedIntent = [{ type: "balanced", weight: 1 }]
   }
 
-  const ram = normalize(product.specs.ram || 0, 16)
-  const cpu = normalize(product.specs.processorScore || 0, 10)
-  const batt = normalize(product.specs.battery || 0, 6000)
-  const rating = normalize(product.rating || 0, 5)
+  const ram = normalize(product.specs.ram ?? 0, 16)
+  const cpu = normalize(product.specs.processorScore ?? 0, 10)
+  const batt = normalize(product.specs.battery ?? 0, 6000)
+  const rating = normalize(product.rating ?? 0, 5)
 
-  const W: Record<
-    IntentType,
-    { ram: number; cpu: number; batt: number; rating: number }
-  > = {
-    gaming:   { ram: 0.30, cpu: 0.40, batt: 0.10, rating: 0.20 },
-    camera:   { ram: 0.10, cpu: 0.20, batt: 0.10, rating: 0.60 },
-    battery:  { ram: 0.10, cpu: 0.10, batt: 0.60, rating: 0.20 },
-    balanced: { ram: 0.25, cpu: 0.25, batt: 0.20, rating: 0.30 }
-  }
+  const W = SCORE_WEIGHTS
 
   // 🔥 CORE SCORE
   let core = 0
@@ -67,7 +63,7 @@ export function scoreProduct(
   // ---------- ADJUSTMENTS ----------
   let adj = 0
 
-  const tags = product.tags || []
+  const tags = product.tags ?? []
   const intentTypes = weightedIntent.map((i) => i.type)
 
   // TAG BOOST
@@ -75,34 +71,26 @@ export function scoreProduct(
   if (intentTypes.includes("battery") && tags.includes("battery")) adj += 0.08
   if (intentTypes.includes("camera") && tags.includes("camera")) adj += 0.08
 
-  // BRAND BOOST
-  const brandMap: Record<string, number> = {
-    samsung: 0.06,
-    apple: 0.10,
-    iqoo: 0.05,
-    realme: 0.04,
-    redmi: 0.04,
-    poco: 0.05
-  }
 
-  const brand = (product as any).brand?.toLowerCase?.() || ""
-  adj += brandMap[brand] || 0
+  const brand = product.brand.toLowerCase()
+  adj += BRAND_BOOST[brand] ?? 0
 
   // PENALTIES
-  if ((product.specs.ram || 0) < 6) adj -= 0.12
-  if (intentTypes.includes("gaming") && (product.specs.processorScore || 0) < 6) adj -= 0.15
-  if ((product.rating || 0) < 4) adj -= 0.08
+  if ((product.specs.ram ?? 0) < 6) adj -= 0.12
+  if (intentTypes.includes("gaming") && (product.specs.processorScore ?? 0) < 6) adj -= 0.15
+  if ((product.rating ?? 0) < 4) adj -= 0.08
 
   // TRUST
   const reviews = product.reviewsCount ?? 100
-  const trust = Math.min(1, Math.log10(reviews + 1) / 2.3)
+  const trust = calculateTrustScore(reviews)
   adj += trust * 0.12
 
   // VALUE
-  const safePrice = Math.max(product.price || 1, 1)
-  const rawValue =
-    ((product.specs.processorScore || 0) + (product.specs.ram || 0)) /
-    safePrice
+  const rawValue = calculateValueScore(
+  product.specs.processorScore ?? 0,
+  product.specs.ram ?? 0,
+  product.price
+)
 
   adj += Math.min(rawValue * 4, 0.08)
 
@@ -127,7 +115,7 @@ export function scoreProduct(
 
     // 🔥 RAM
     if (constraints.minRam !== null && constraints.minRam !== undefined) {
-      if ((specs.ram || 0) >= constraints.minRam) {
+      if ((specs.ram ?? 0) >= constraints.minRam) {
         adj += 0.06 // boost
       } else {
         adj -= 0.12 // penalty (important)
@@ -136,7 +124,7 @@ export function scoreProduct(
 
     // 🔥 BATTERY
     if (constraints.minBattery !== null && constraints.minBattery !== undefined) {
-      if ((specs.battery || 0) >= constraints.minBattery) {
+      if ((specs.battery ?? 0) >= constraints.minBattery) {
         adj += 0.05
       } else {
         adj -= 0.10
@@ -145,7 +133,7 @@ export function scoreProduct(
 
     // 🔥 RATING
     if (constraints.minRating !== null && constraints.minRating !== undefined) {
-      if ((product.rating || 0) >= constraints.minRating) {
+      if ((product.rating ?? 0) >= constraints.minRating) {
         adj += 0.04
       } else {
         adj -= 0.08
@@ -155,8 +143,8 @@ export function scoreProduct(
 
   // TIE BREAKERS
   adj += Math.log10(reviews || 1) * 0.02
-  adj += (product.rating || 0) * 0.01
-  adj += (product.specs.processorScore || 0) * 0.002
+  adj += (product.rating ?? 0) * 0.01
+  adj += (product.specs.processorScore ?? 0) * 0.002
 
   // clamp
   adj = Math.max(-0.25, Math.min(0.25, adj))

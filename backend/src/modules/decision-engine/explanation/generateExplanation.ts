@@ -103,11 +103,14 @@ export function generateExplanation(
     reasons.push(`balanced specifications for general usage`)
   }
 
-  //  CLEAN INTENT TEXT
-  const intentText =
-    intent.length > 1
-      ? intent.join(" & ")
-      : intent[0] || "general use"
+  /// PRODUCT NAME (supports old & new data models)
+const productName = product.name || product.title || "This product"
 
-  return `${product.title} is a good fit for ${intentText} because it offers ${reasons.join(", ")}.`
+// CLEAN INTENT TEXT
+const intentText =
+  intent.length > 1
+    ? intent.join(" & ")
+    : intent[0] || "general use"
+
+return `${productName} is a good fit for ${intentText} because it offers ${reasons.join(", ")}.`
 }

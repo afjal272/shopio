@@ -10,12 +10,12 @@ export function getRejectionReason(
     minRating?: number | null
   }
 ) {
-  const ram = product.specs.ram || 0
-  const battery = product.specs.battery || 0
-  const processor = product.specs.processorScore || 0
-  const rating = product.rating || 0
-  const reviews = product.reviewsCount || 0
-
+  const ram = product.specs?.ram ?? 0
+  const battery = product.specs?.battery ?? 0
+  const processor = product.specs?.processorScore ?? 0
+  const rating = product.rating ?? 0
+  const reviews = product.reviewsCount ?? 0
+  
   const reasons: string[] = []
 
   // =====================================================

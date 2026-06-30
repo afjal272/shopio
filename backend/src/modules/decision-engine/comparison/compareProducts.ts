@@ -1,250 +1,157 @@
-import { Product, IntentType } from "../types"
+import { IntentType, Product } from "../types"
 
-//  NORMALIZATION FUNCTIONS (NEW - ADDED, NOTHING REMOVED)
-const normalizeCPU = (score: number) => {
-  return Math.min(score / 10, 10)
-}
+import { ComparisonResult } from "./comparison.types"
 
-const normalizeRAM = (ram: number) => {
-  return Math.min(ram / 2, 10)
-}
+import { calculateScores } from "./calculateScores"
+import { calculateWinner } from "./calculateWinner"
+import { calculateWeaknesses } from "./calculateWeaknesses"
 
-const normalizeBattery = (battery: number, cpuScore: number) => {
-  let base = battery / 1000
-  if (cpuScore > 8) base += 1
-  return Math.min(base, 10)
-}
-
-const normalizeCamera = (rating: number, reviews: number) => {
-  let base = rating * 2
-  if (reviews > 5000) base += 0.5
-  if (reviews > 20000) base += 1
-  return Math.min(base, 10)
-}
-
-const normalizeValue = (score: number, price: number) => {
-  return price ? Math.min((score / price) * 10000, 10) : 0
-}
-
-//  WEIGHTS (NEW)
-const weights = {
-  gaming:   { cpu: 4, ram: 3, battery: 2, camera: 1, value: 1 },
-  battery:  { cpu: 1, ram: 1, battery: 4, camera: 1, value: 2 },
-  camera:   { cpu: 1, ram: 1, battery: 1, camera: 4, value: 2 },
-  balanced: { cpu: 3, ram: 2, battery: 2, camera: 2, value: 2 }
-}
-
-
-//  SAFE COMPARE TWO (UNCHANGED)
 function compareTwo(
-  a: Product,
-  b: Product,
-  intent: IntentType[] = ["balanced"]
-) {
-  const result: string[] = []
+  winner: Product,
+  runnerUp: Product,
+  intent: IntentType[]
+): string[] {
 
-  if (!a || !b) return result
+  const reasons: string[] = []
 
-  const aSpecs = a.specs || {}
-  const bSpecs = b.specs || {}
-
-  const aRam = aSpecs.ram || 0
-  const bRam = bSpecs.ram || 0
-
-  const aProcessor = aSpecs.processorScore || 0
-  const bProcessor = bSpecs.processorScore || 0
-
-  const aBattery = aSpecs.battery || 0
-  const bBattery = bSpecs.battery || 0
-
-  const aReviews = a.reviewsCount || 0
-  const bReviews = b.reviewsCount || 0
-
-  const aRating = a.rating || 0
-  const bRating = b.rating || 0
-
-  const safePriceA = Math.max(a.price || 1, 1)
-  const safePriceB = Math.max(b.price || 1, 1)
-
-  const pushA = (condition: boolean, text: string) => {
-    if (condition) result.push(text)
-  }
+  const winnerSpecs = winner.specs ?? {}
+  const runnerSpecs = runnerUp.specs ?? {}
 
   if (intent.includes("gaming")) {
-    if (aProcessor > bProcessor) {
-      result.push(`${a.title} delivers smoother gaming performance`)
-    } else if (bProcessor > aProcessor) {
-      result.push(`${b.title} delivers smoother gaming performance`)
+
+    if (
+      (winnerSpecs.processorScore ?? 0) >
+      (runnerSpecs.processorScore ?? 0)
+    ) {
+      reasons.push(
+        `${winner.name} delivers better gaming performance`
+      )
     }
 
-    if (aRam > bRam) {
-      result.push(`${a.title} has better multitasking (${aRam}GB RAM)`)
-    } else if (bRam > aRam) {
-      result.push(`${b.title} has better multitasking (${bRam}GB RAM)`)
+    if (
+      (winnerSpecs.ram ?? 0) >
+      (runnerSpecs.ram ?? 0)
+    ) {
+      reasons.push(
+        `${winner.name} has better multitasking capability`
+      )
     }
 
-    pushA(
-      aProcessor > bProcessor && aRam >= bRam,
-      `${a.title} is better optimized for gaming`
-    )
   }
 
   if (intent.includes("battery")) {
-    if (aBattery > bBattery) {
-      result.push(`${a.title} has better battery (${aBattery}mAh)`)
-    } else if (bBattery > aBattery) {
-      result.push(`${b.title} has better battery (${bBattery}mAh)`)
+
+    if (
+      (winnerSpecs.battery ?? 0) >
+      (runnerSpecs.battery ?? 0)
+    ) {
+      reasons.push(
+        `${winner.name} offers longer battery life`
+      )
     }
 
-    pushA(aBattery > bBattery, `${a.title} lasts longer overall`)
   }
 
   if (intent.includes("camera")) {
-    if (aRating > bRating) {
-      result.push(`${a.title} has better camera performance`)
-    } else if (bRating > aRating) {
-      result.push(`${b.title} has better camera performance`)
+
+    if (winner.rating > runnerUp.rating) {
+
+      reasons.push(
+        `${winner.name} provides a better camera experience`
+      )
+
     }
 
-    pushA(aRating > bRating, `${a.title} is more reliable for photography`)
   }
 
-  const aValue = (aProcessor * 2 + aRam) / safePriceA
-  const bValue = (bProcessor * 2 + bRam) / safePriceB
+  if (winner.score! > runnerUp.score!) {
 
-  if (aValue > bValue) {
-    result.push(`${a.title} offers better value`)
-  } else if (bValue > aValue) {
-    result.push(`${b.title} offers better value`)
+    reasons.push(
+      `${winner.name} delivers better overall value`
+    )
+
   }
 
-  if (result.length === 0) {
-    if (aRating > bRating) {
-      result.push(`${a.title} is overall more reliable`)
-    } else {
-      result.push(`${b.title} is overall more reliable`)
-    }
-  }
+  return [...new Set(reasons)].slice(0, 4)
 
-  return Array.from(new Set(result)).slice(0, 3)
 }
 
-
-//  MAIN FUNCTION (UPDATED SCORING ONLY)
 export function compareProducts(
   products: Product[],
   intent: IntentType[] = ["balanced"]
-) {
+): ComparisonResult {
 
-  if (!Array.isArray(products) || products.length < 2) {
+  if (products.length < 2) {
+
     return {
+
       winner: null,
+
       reasons: [],
+
       scores: [],
-      intent
+
+      weaknesses: [],
+
+      intent,
+
     }
+
   }
 
-  const safeIntent: IntentType[] =
-    Array.isArray(intent) && intent.length > 0
-      ? (intent as IntentType[])
-      : ["balanced"]
+  const scoredProducts =
+    calculateScores(products, intent)
 
-  const primaryIntent: IntentType = (safeIntent[0] as IntentType) || "balanced"
-  const w = weights[primaryIntent]
+  const comparison =
+    calculateWinner(scoredProducts)
 
-  const scored = products.map((p) => {
-    const specs = p.specs || {}
+  if (!comparison) {
 
-    const cpu = normalizeCPU(specs.processorScore || 0)
-    const ram = normalizeRAM(specs.ram || 0)
-    const battery = normalizeBattery(specs.battery || 0, cpu)
-    const camera = normalizeCamera(p.rating || 0, p.reviewsCount || 0)
-
-    const baseScore =
-      cpu * 3 +
-      ram * 2 +
-      battery * 2 +
-      camera * 2
-
-    const value = normalizeValue(baseScore, p.price || 1)
-
-    //  FIX: intent influence ko subtle banaya (overpower na kare)
-    const intentBoost =
-      (safeIntent.includes("gaming") ? cpu * 1 + ram * 0.5 : 0) +
-      (safeIntent.includes("battery") ? battery * 1 : 0) +
-      (safeIntent.includes("camera") ? camera * 1 : 0)
-
-    const finalScore =
-      cpu * w.cpu +
-      ram * w.ram +
-      battery * w.battery +
-      camera * w.camera +
-      value * w.value +
-      intentBoost
-
-    return { ...p, score: Number(finalScore.toFixed(2)) }
-  })
-
-  const sorted = [...scored].sort((a, b) => (b.score || 0) - (a.score || 0))
-
-  const winner = sorted[0]
-  const runnerUp = sorted[1]
-
-  if (!winner || !runnerUp) {
     return {
+
       winner: null,
+
       reasons: [],
+
       scores: [],
-      intent: safeIntent
+
+      weaknesses: [],
+
+      intent,
+
     }
+
   }
 
-function getWeaknesses(p: Product, all: Product[]) {
-  const specs = p.specs || {}
-  const weaknesses: string[] = []
+  const reasons = compareTwo(
+    comparison.winner,
+    comparison.runnerUp,
+    intent
+  )
 
-  const topProduct = all[0]
-
-  // ✅ IMPORTANT: winner ko skip karo
-  if (p.id === topProduct.id) {
-    return []
-  }
-
-  const topSpecs = topProduct.specs || {}
-
-  if ((specs.battery || 0) < (topSpecs.battery || 0)) {
-    weaknesses.push(`Battery weaker than ${topProduct.title}`)
-  }
-
-  if ((specs.ram || 0) < (topSpecs.ram || 0)) {
-    weaknesses.push(`Less RAM than ${topProduct.title}`)
-  }
-
-  if ((specs.processorScore || 0) < (topSpecs.processorScore || 0)) {
-    weaknesses.push(`Performance lower than ${topProduct.title}`)
-  }
-
-  if ((p.rating || 0) < (topProduct.rating || 0)) {
-    weaknesses.push(`Lower rating than ${topProduct.title}`)
-  }
-
-  return weaknesses.slice(0, 2)
-}
-
-
-  const reasons = compareTwo(winner, runnerUp, safeIntent)
+  const weaknesses =
+    calculateWeaknesses(
+      comparison.rankedProducts
+    )
 
   return {
-  winner: winner.id,
-  reasons,
-  scores: sorted.map((p) => ({
-    id: p.id,
-    score: p.score || 0
-  })),
-  weaknesses: sorted.map((p) => ({
-    id: p.id,
-     points: getWeaknesses(p, sorted)
-  }))
-}
+
+    winner: comparison.winner.id,
+
+    reasons,
+
+    scores: comparison.rankedProducts.map((product) => ({
+
+      id: product.id,
+
+      score: product.score,
+
+    })),
+
+    weaknesses,
+
+    intent,
+
+  }
+
 }
