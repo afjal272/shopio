@@ -23,8 +23,22 @@ export type CategoryType =
 
 export interface Constraints {
   minRam?: number
+  maxRam?: number
+
   minBattery?: number
+  maxBattery?: number
+
   minRating?: number
+  maxRating?: number
+
+  minPrice?: number
+  maxPrice?: number
+
+  preferredBrands?: string[]
+  excludedBrands?: string[]
+
+  requiredTags?: string[]
+  excludedTags?: string[]
 }
 
 // =======================================
@@ -41,17 +55,20 @@ export interface WeightedIntent {
 // =======================================
 
 export interface ParsedQuery {
+  // Original user query
+  originalQuery?: string
+
   category: CategoryType | null
 
   budget: number | null
 
-  // Default detected intent
+  // Default detected intents
   intent: IntentType[]
 
-  // AI weighted intent
+  // AI weighted intents
   weightedIntent?: WeightedIntent[]
 
-  // Negative preferences
+  // Negative intents
   negativeIntent?: IntentType[]
 
   // Search constraints
@@ -64,8 +81,40 @@ export interface ParsedQuery {
 
 export interface ProductSpecs {
   ram?: number
+
+  storage?: number
+
   battery?: number
+
   processorScore?: number
+
+  displaySize?: number
+
+  refreshRate?: number
+
+  chargingSpeed?: number
+
+  cameraMp?: number
+
+  frontCameraMp?: number
+
+  // Future-ready specs
+
+  chipset?: string
+
+  displayType?: string
+
+  operatingSystem?: string
+
+  fingerprint?: boolean
+
+  waterproof?: boolean
+
+  wirelessCharging?: boolean
+
+  fastCharging?: boolean
+
+  expandableStorage?: boolean
 
   [key: string]: unknown
 }
@@ -76,9 +125,18 @@ export interface ProductSpecs {
 
 export interface Breakdown {
   ram: number
+
   processor: number
+
   battery: number
+
   rating: number
+
+  trust?: number
+
+  value?: number
+
+  total?: number
 }
 
 // =======================================
@@ -86,11 +144,13 @@ export interface Breakdown {
 // NOTE:
 // This is the ENGINE MODEL.
 // It is intentionally separate from the Prisma Product model.
-// A mapper will convert Database Product -> Engine Product.
+// A mapper converts Database Product -> Engine Product.
 // =======================================
 
 export interface Product {
   id: string
+
+  slug?: string
 
   name: string
 
@@ -101,19 +161,36 @@ export interface Product {
   description: string
 
   price: number
+
   rating: number
+
   reviewsCount: number
 
   images: string[]
 
   tags: string[]
+
   highlights: string[]
+
   weaknesses: string[]
 
   specs: ProductSpecs
 
+  // Engine-generated values
+
   score?: number
+
+  comparisonScore?: number
+
   breakdown?: Breakdown
-  explanation?: string
+
   confidence?: number
+
+  explanation?: string
+
+  rejectionReason?: string
+
+  // Future metadata
+
+  metadata?: Record<string, unknown>
 }

@@ -1,84 +1,184 @@
-import { Product, IntentType } from "../types"
+import {
+  Constraints,
+  IntentType,
+  Product,
+  WeightedIntent,
+} from "../types";
+
+import { EXPLANATION } from "../engine/engine.constants";
 
 export function getRejectionReason(
   product: Product,
-  intent: IntentType[],
+  intent: IntentType[] | WeightedIntent[],
   budget: number | null,
-  constraints?: {
-    minRam?: number | null
-    minBattery?: number | null
-    minRating?: number | null
-  }
-) {
-  const ram = product.specs?.ram ?? 0
-  const battery = product.specs?.battery ?? 0
-  const processor = product.specs?.processorScore ?? 0
-  const rating = product.rating ?? 0
-  const reviews = product.reviewsCount ?? 0
-  
-  const reasons: string[] = []
+  constraints?: Constraints
+): string {
+
+  const specs = product.specs ?? {};
+
+  const ram = specs.ram ?? 0;
+  const battery = specs.battery ?? 0;
+  const processor = specs.processorScore ?? 0;
+
+  const rating = product.rating ?? 0;
+  const reviews = product.reviewsCount ?? 0;
+
+  const intentNames = intent.map((item) =>
+    typeof item === "string"
+      ? item
+      : item.type
+  );
+
+  const reasons: string[] = [];
 
   // =====================================================
-  //  NEW: CONSTRAINT FAIL REASONS (MOST IMPORTANT)
+  // CONSTRAINT FAIL REASONS
   // =====================================================
 
-  if (constraints?.minRam && ram < constraints.minRam) {
-    reasons.push(`does not meet ${constraints.minRam}GB RAM requirement`)
+  if (
+    constraints?.minRam !== undefined &&
+    constraints.minRam !== null &&
+    ram < constraints.minRam
+  ) {
+    reasons.push(
+      `Does not meet ${constraints.minRam}GB RAM requirement`
+    );
   }
 
-  if (constraints?.minBattery && battery < constraints.minBattery) {
-    reasons.push(`battery below required ${constraints.minBattery}mAh`)
+  if (
+    constraints?.minBattery !== undefined &&
+    constraints.minBattery !== null &&
+    battery < constraints.minBattery
+  ) {
+    reasons.push(
+      `Battery below required ${constraints.minBattery}mAh`
+    );
   }
 
-  if (constraints?.minRating && rating < constraints.minRating) {
-    reasons.push(`rating (${rating}⭐) below expected level`)
+  if (
+    constraints?.minRating !== undefined &&
+    constraints.minRating !== null &&
+    rating < constraints.minRating
+  ) {
+    reasons.push(
+      `Rating (${rating}⭐) is below the preferred level`
+    );
   }
 
-  //  BUDGET (strong signal)
-  if (budget && product.price > budget) {
-    reasons.push(`over budget (₹${product.price})`)
+  // =====================================================
+  // BUDGET
+  // =====================================================
+
+  if (
+    budget !== null &&
+    budget > 0 &&
+    product.price > budget
+  ) {
+    reasons.push(
+      `Over budget (₹${product.price})`
+    );
   }
 
-  // 🎮 GAMING (strict)
-  if (intent.includes("gaming")) {
+  // =====================================================
+  // GAMING
+  // =====================================================
+
+  if (intentNames.includes("gaming")) {
+
     if (processor < 6) {
-      reasons.push(`weak processor (${processor}/10) for gaming`)
+      reasons.push(
+        `Weak processor (${processor}/10) for gaming`
+      );
     }
+
     if (ram < 6) {
-      reasons.push(`low RAM (${ram}GB) limits performance`)
+      reasons.push(
+        `Low RAM (${ram}GB) limits gaming performance`
+      );
     }
+
   }
 
-  //  BATTERY
-  if (intent.includes("battery")) {
+  // =====================================================
+  // BATTERY
+  // =====================================================
+
+  if (intentNames.includes("battery")) {
+
     if (battery < 5000) {
-      reasons.push(`battery (${battery}mAh) is below ideal`)
+      reasons.push(
+        `Battery (${battery}mAh) is below ideal`
+      );
     }
+
   }
 
-  //  CAMERA
-  if (intent.includes("camera")) {
+  // =====================================================
+  // CAMERA
+  // =====================================================
+
+  if (intentNames.includes("camera")) {
+
     if (rating < 4.2) {
-      reasons.push(`average camera performance (${rating}⭐)`)
+      reasons.push(
+        `Average camera performance (${rating}⭐)`
+      );
     }
+
   }
 
-  //  TRUST (more realistic)
+  // =====================================================
+  // TRUST SIGNAL
+  // =====================================================
+
   if (reviews < 200) {
-    reasons.push(`very low user trust (${reviews} reviews)`)
+
+    reasons.push(
+      `Very low user trust (${reviews} reviews)`
+    );
+
   } else if (reviews < 800) {
-    reasons.push(`less proven than top options`)
+
+    reasons.push(
+      "Less proven than top-rated alternatives"
+    );
+
   }
 
-  //  GENERAL WEAKNESS
-  if (!intent.includes("gaming") && processor < 5) {
-    reasons.push(`overall performance is below average`)
+  // =====================================================
+  // GENERAL PERFORMANCE
+  // =====================================================
+
+  if (
+    !intentNames.includes("gaming") &&
+    processor < 5
+  ) {
+    reasons.push(
+      "Overall performance is below average"
+    );
   }
 
-  //  FINAL OUTPUT
+  // =====================================================
+  // FALLBACK
+  // =====================================================
+
   if (reasons.length === 0) {
-    return `weaker value compared to better-ranked alternatives`
+    return "Weaker value compared to better-ranked alternatives";
   }
 
-  return reasons.slice(0, 2).join(", ")
+  // =====================================================
+  // REMOVE DUPLICATES
+  // =====================================================
+
+  const uniqueReasons = Array.from(
+    new Set(reasons)
+  );
+
+  // =====================================================
+  // LIMIT REASONS
+  // =====================================================
+
+  return uniqueReasons
+    .slice(0, EXPLANATION.MAX_HIGHLIGHTS)
+    .join(", ");
 }

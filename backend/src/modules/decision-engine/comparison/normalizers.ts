@@ -1,43 +1,45 @@
-export const normalizeCPU = (score: number) =>
-  Math.min(score / 10, 10)
-
-export const normalizeRAM = (ram: number) =>
-  Math.min(ram / 2, 10)
-
-export const normalizeBattery = (
-  battery: number,
-  cpuScore: number
-) => {
-  let base = battery / 1000
-
-  if (cpuScore > 8) {
-    base += 1
-  }
-
-  return Math.min(base, 10)
+export function normalizeCPU(score: number): number {
+  return Math.max(0, Math.min(score / 10, 10))
 }
 
-export const normalizeCamera = (
+export function normalizeRAM(ram: number): number {
+  return Math.max(0, Math.min(ram / 2, 10))
+}
+
+export function normalizeBattery(
+  battery: number,
+  cpuScore: number
+): number {
+  let normalized = battery / 1000
+
+  if (cpuScore > 8) {
+    normalized += 1
+  }
+
+  return Math.min(normalized, 10)
+}
+
+export function normalizeCamera(
   rating: number,
   reviews: number
-) => {
-  let base = rating * 2
+): number {
+  let normalized = rating * 2
 
   if (reviews > 5000) {
-    base += 0.5
+    normalized += 0.5
   }
 
   if (reviews > 20000) {
-    base += 1
+    normalized += 1
   }
 
-  return Math.min(base, 10)
+  return Math.min(normalized, 10)
 }
 
-export const normalizeValue = (
+export function normalizeValue(
   score: number,
   price: number
-) => {
+): number {
   if (price <= 0) {
     return 0
   }

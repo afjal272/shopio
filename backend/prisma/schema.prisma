@@ -9,37 +9,19 @@ datasource db {
 
 model Product {
   id            String   @id @default(uuid())
-
-  // Basic Information
-  name          String
   brand         String
-  category      String
-  description   String
-
-  // Pricing
   price         Int
-  discountPrice Int?
-
-  // Ratings
   rating        Float
   reviewsCount  Int      @default(0)
-
-  // Media
-  images        String[]
-
-  // AI & Search
   tags          String[]
+  specs         Json
+  createdAt     DateTime @default(now())
+  category      String
+  description   String
+  discountPrice Int?
   highlights    String[]
+  images        String[]
+  name          String
+  updatedAt     DateTime @updatedAt
   weaknesses    String[]
-
-  // Flexible specifications for different product categories
-  // Examples:
-  // Mobile  -> { ram: 8, battery: 5000, processorScore: 8 }
-  // Laptop  -> { ram: 16, storage: 512, gpu: "RTX 4060" }
-  // TV       -> { size: 55, panel: "OLED" }
-  specs        Json
-
-  // Timestamps
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 }

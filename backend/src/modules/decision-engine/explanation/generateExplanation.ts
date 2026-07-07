@@ -1,116 +1,237 @@
-import { Product, IntentType } from "../types"
+import {
+  Constraints,
+  IntentType,
+  Product,
+  WeightedIntent,
+} from "../types";
+
+import { EXPLANATION } from "../engine/engine.constants";
 
 export function generateExplanation(
   product: Product,
-  intent: IntentType[],
-  constraints?: {
-    minRam?: number | null
-    minBattery?: number | null
-    minRating?: number | null
-  }
-) {
-  const ram = product.specs.ram || 0
-  const battery = product.specs.battery || 0
-  const processor = product.specs.processorScore || 0
-  const rating = product.rating || 0
-  const reviews = product.reviewsCount || 0
-  const tags = product.tags || []
+  intent: IntentType[] | WeightedIntent[],
+  constraints?: Constraints
+): string {
 
-  const reasons: string[] = []
+  const specs = product.specs ?? {};
+
+  const ram = specs.ram ?? 0;
+  const battery = specs.battery ?? 0;
+  const processor = specs.processorScore ?? 0;
+
+  const rating = product.rating ?? 0;
+  const reviews = product.reviewsCount ?? 0;
+
+  const tags = product.tags ?? [];
+
+  const intentNames = intent.map((item) =>
+    typeof item === "string"
+      ? item
+      : item.type
+  );
+
+  const reasons: string[] = [];
 
   // =====================================================
-  //  NEW: CONSTRAINT-AWARE REASONS (ADDED)
+  // CONSTRAINT-AWARE REASONS
   // =====================================================
 
-  if (constraints?.minRam) {
+  if (
+    constraints?.minRam !== undefined &&
+    constraints.minRam !== null
+  ) {
     if (ram >= constraints.minRam) {
-      reasons.push(`${ram}GB RAM meets your requirement`)
+      reasons.push(
+        `${ram}GB RAM meets your requirement`
+      );
     } else {
-      reasons.push(`RAM is below your preferred ${constraints.minRam}GB`)
+      reasons.push(
+        `RAM is below your preferred ${constraints.minRam}GB`
+      );
     }
   }
 
-  if (constraints?.minBattery) {
+  if (
+    constraints?.minBattery !== undefined &&
+    constraints.minBattery !== null
+  ) {
     if (battery >= constraints.minBattery) {
-      reasons.push(`${battery}mAh battery meets your requirement`)
+      reasons.push(
+        `${battery}mAh battery meets your requirement`
+      );
     } else {
-      reasons.push(`battery is lower than expected ${constraints.minBattery}mAh`)
+      reasons.push(
+        `Battery is lower than expected ${constraints.minBattery}mAh`
+      );
     }
   }
 
-  if (constraints?.minRating) {
+  if (
+    constraints?.minRating !== undefined &&
+    constraints.minRating !== null
+  ) {
     if (rating >= constraints.minRating) {
-      reasons.push(`rating (${rating}⭐) meets your expectation`)
+      reasons.push(
+        `Rating (${rating}⭐) meets your expectation`
+      );
     } else {
-      reasons.push(`rating (${rating}⭐) is below preferred level`)
+      reasons.push(
+        `Rating (${rating}⭐) is below preferred level`
+      );
     }
   }
 
-  //  GAMING
-  if (intent.includes("gaming")) {
+  // =====================================================
+  // GAMING
+  // =====================================================
+
+  if (intentNames.includes("gaming")) {
+
     if (processor >= 8) {
-      reasons.push(`strong processor (${processor}/10) ensures smooth gaming`)
+      reasons.push(
+        `Strong processor (${processor}/10) ensures smooth gaming`
+      );
     } else if (processor >= 6) {
-      reasons.push(`decent processor (${processor}/10) handles moderate gaming`)
+      reasons.push(
+        `Decent processor (${processor}/10) handles moderate gaming`
+      );
     } else {
-      reasons.push(`limited processor performance for heavy gaming`)
+      reasons.push(
+        `Limited processor performance for heavy gaming`
+      );
     }
 
     if (ram >= 8) {
-      reasons.push(`${ram}GB RAM supports multitasking and gaming`)
+      reasons.push(
+        `${ram}GB RAM supports multitasking and gaming`
+      );
     }
+
   }
 
-  //  CAMERA
-  if (intent.includes("camera")) {
+  // =====================================================
+  // CAMERA
+  // =====================================================
+
+  if (intentNames.includes("camera")) {
+
     if (rating >= 4.3) {
-      reasons.push(`high user rating (${rating}⭐) indicates good camera performance`)
+      reasons.push(
+        `High user rating (${rating}⭐) indicates good camera performance`
+      );
     } else {
-      reasons.push(`average rating (${rating}⭐) suggests camera is decent`)
+      reasons.push(
+        `Average rating (${rating}⭐) suggests camera is decent`
+      );
     }
 
     if (tags.includes("camera")) {
-      reasons.push(`optimized for photography`)
+      reasons.push(
+        "Optimized for photography"
+      );
     }
+
   }
 
-  //  BATTERY
-  if (intent.includes("battery")) {
+  // =====================================================
+  // BATTERY
+  // =====================================================
+
+  if (intentNames.includes("battery")) {
+
     if (battery >= 6000) {
-      reasons.push(`${battery}mAh battery easily lasts more than a day`)
+      reasons.push(
+        `${battery}mAh battery easily lasts more than a day`
+      );
     } else if (battery >= 5000) {
-      reasons.push(`${battery}mAh battery is reliable for daily usage`)
+      reasons.push(
+        `${battery}mAh battery is reliable for daily usage`
+      );
     } else {
-      reasons.push(`battery life may be average`)
+      reasons.push(
+        "Battery life may be average"
+      );
     }
+
   }
 
-  //  BALANCED (fallback)
-  if (intent.includes("balanced") && reasons.length === 0) {
-    reasons.push(`${ram}GB RAM and stable performance for everyday use`)
-    reasons.push(`${battery}mAh battery for regular usage`)
+  // =====================================================
+  // BALANCED
+  // =====================================================
+
+  if (
+    intentNames.includes("balanced") &&
+    reasons.length === 0
+  ) {
+
+    reasons.push(
+      `${ram}GB RAM and stable performance for everyday use`
+    );
+
+    reasons.push(
+      `${battery}mAh battery for regular usage`
+    );
+
   }
 
-  //  TRUST SIGNAL
+  // =====================================================
+  // TRUST SIGNAL
+  // =====================================================
+
   if (reviews > 1000) {
-    reasons.push(`${reviews}+ reviews indicate strong market trust`)
+
+    reasons.push(
+      `${reviews}+ reviews indicate strong market trust`
+    );
+
   } else if (reviews > 100) {
-    reasons.push(`${reviews}+ reviews provide reasonable confidence`)
+
+    reasons.push(
+      `${reviews}+ reviews provide reasonable confidence`
+    );
+
   }
 
-  //  SAFETY
+  // =====================================================
+  // SAFETY FALLBACK
+  // =====================================================
+
   if (reasons.length === 0) {
-    reasons.push(`balanced specifications for general usage`)
+
+    reasons.push(
+      "Balanced specifications for general usage"
+    );
+
   }
 
-  /// PRODUCT NAME (supports old & new data models)
-const productName = product.name || product.title || "This product"
+  // =====================================================
+  // LIMIT REASONS
+  // =====================================================
 
-// CLEAN INTENT TEXT
-const intentText =
-  intent.length > 1
-    ? intent.join(" & ")
-    : intent[0] || "general use"
+  const finalReasons = reasons.slice(
+    0,
+    EXPLANATION.MAX_REASONS
+  );
 
-return `${productName} is a good fit for ${intentText} because it offers ${reasons.join(", ")}.`
+  // =====================================================
+  // PRODUCT NAME
+  // =====================================================
+
+  const productName = product.name;
+
+  // =====================================================
+  // INTENT TEXT
+  // =====================================================
+
+  const intentText =
+    intentNames.length > 1
+      ? intentNames.join(" & ")
+      : intentNames[0] ?? "general use";
+
+  // =====================================================
+  // FINAL EXPLANATION
+  // =====================================================
+
+  return `${productName} is a good fit for ${intentText} because it offers ${finalReasons.join(", ")}.`;
+
 }

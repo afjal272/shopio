@@ -1,12 +1,19 @@
-import { IntentType, Product } from "../types"
+import {
+  IntentType,
+  Product,
+  WeightedIntent,
+} from "../types";
 
 // =======================================
 // Comparison Score
 // =======================================
 
 export interface ComparisonScore {
-  id: string
-  score: number
+  id: string;
+
+  score: number;
+
+  confidence?: number;
 }
 
 // =======================================
@@ -14,55 +21,41 @@ export interface ComparisonScore {
 // =======================================
 
 export interface ProductWeakness {
-  id: string
-  points: string[]
+  id: string;
+
+  points: string[];
 }
 
 // =======================================
-// Winner Information
+// Product Strength
 // =======================================
 
-export interface ComparisonWinner {
-  winner: Product
-  runnerUp: Product
-  rankedProducts: (Product & {
-    score: number
-  })[]
+export interface ProductStrength {
+  id: string;
+
+  points: string[];
 }
 
 // =======================================
-// Final Comparison Response
-// =======================================
-
-export interface ComparisonResult {
-  winner: string | null
-
-  reasons: string[]
-
-  scores: ComparisonScore[]
-
-  weaknesses: ProductWeakness[]
-
-  intent: IntentType[]
-}
-
-// =======================================
-// Internal Score Card
-// (Used by calculateScores.ts)
+// Score Card
 // =======================================
 
 export interface ScoreCard {
-  cpu: number
+  cpu: number;
 
-  ram: number
+  ram: number;
 
-  battery: number
+  battery: number;
 
-  camera: number
+  camera: number;
 
-  value: number
+  value: number;
 
-  total: number
+  trust: number;
+
+  priceFit: number;
+
+  total: number;
 }
 
 // =======================================
@@ -70,7 +63,59 @@ export interface ScoreCard {
 // =======================================
 
 export interface ScoredProduct extends Product {
-  score: number
+  score: number;
 
-  scoreCard: ScoreCard
+  scoreCard: ScoreCard;
+}
+
+// =======================================
+// Winner Information
+// =======================================
+
+export interface ComparisonWinner {
+  winner: ScoredProduct;
+
+  runnerUp: ScoredProduct;
+
+  rankedProducts: ScoredProduct[];
+
+  winningMargin: number;
+}
+
+// =======================================
+// Category Winners
+// =======================================
+
+export interface CategoryWinner {
+  gaming?: string;
+
+  battery?: string;
+
+  camera?: string;
+
+  value?: string;
+
+  trust?: string;
+}
+
+// =======================================
+// Final Comparison Response
+// =======================================
+
+export interface ComparisonResult {
+  winner: string | null;
+
+  reasons: string[];
+
+  scores: ComparisonScore[];
+
+  weaknesses: ProductWeakness[];
+
+  strengths: ProductStrength[];
+
+  categoryWinners?: CategoryWinner;
+
+  confidence: number;
+
+  intent: IntentType[] | WeightedIntent[];
 }

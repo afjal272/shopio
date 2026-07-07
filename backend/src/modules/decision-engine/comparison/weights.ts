@@ -1,14 +1,16 @@
 import { IntentType } from "../types"
 
+export interface ComparisonWeight {
+  cpu: number
+  ram: number
+  battery: number
+  camera: number
+  value: number
+}
+
 export const COMPARISON_WEIGHTS: Record<
   IntentType,
-  {
-    cpu: number
-    ram: number
-    battery: number
-    camera: number
-    value: number
-  }
+  ComparisonWeight
 > = {
   gaming: {
     cpu: 4,

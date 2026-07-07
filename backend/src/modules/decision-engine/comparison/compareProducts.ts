@@ -1,23 +1,47 @@
-import { IntentType, Product } from "../types"
+import {
+  IntentType,
+  Product,
+  WeightedIntent,
+} from "../types";
 
-import { ComparisonResult } from "./comparison.types"
+import {
+  CategoryWinner,
+  ComparisonResult,
+  ProductStrength,
+} from "./comparison.types";
 
-import { calculateScores } from "./calculateScores"
-import { calculateWinner } from "./calculateWinner"
-import { calculateWeaknesses } from "./calculateWeaknesses"
+import { calculateScores } from "./calculateScores";
+import { calculateWinner } from "./calculateWinner";
+import { calculateWeaknesses } from "./calculateWeaknesses";
 
-function compareTwo(
+import { COMPARISON } from "../engine/engine.constants";
+
+// ======================================================
+// Build Comparison Reasons
+// ======================================================
+
+function buildReasons(
   winner: Product,
   runnerUp: Product,
-  intent: IntentType[]
+  intent: IntentType[] | WeightedIntent[]
 ): string[] {
 
-  const reasons: string[] = []
+  const reasons: string[] = [];
 
-  const winnerSpecs = winner.specs ?? {}
-  const runnerSpecs = runnerUp.specs ?? {}
+  const winnerSpecs = winner.specs ?? {};
+  const runnerSpecs = runnerUp.specs ?? {};
 
-  if (intent.includes("gaming")) {
+  const intentTypes = intent.map((item) =>
+    typeof item === "string"
+      ? item
+      : item.type
+  );
+
+  // =====================================================
+  // Gaming
+  // =====================================================
+
+  if (intentTypes.includes("gaming")) {
 
     if (
       (winnerSpecs.processorScore ?? 0) >
@@ -25,7 +49,7 @@ function compareTwo(
     ) {
       reasons.push(
         `${winner.name} delivers better gaming performance`
-      )
+      );
     }
 
     if (
@@ -33,55 +57,145 @@ function compareTwo(
       (runnerSpecs.ram ?? 0)
     ) {
       reasons.push(
-        `${winner.name} has better multitasking capability`
-      )
+        `${winner.name} offers smoother multitasking`
+      );
     }
 
   }
 
-  if (intent.includes("battery")) {
+  // =====================================================
+  // Battery
+  // =====================================================
+
+  if (intentTypes.includes("battery")) {
 
     if (
       (winnerSpecs.battery ?? 0) >
       (runnerSpecs.battery ?? 0)
     ) {
       reasons.push(
-        `${winner.name} offers longer battery life`
-      )
+        `${winner.name} provides longer battery life`
+      );
     }
 
   }
 
-  if (intent.includes("camera")) {
+  // =====================================================
+  // Camera
+  // =====================================================
 
-    if (winner.rating > runnerUp.rating) {
+  if (intentTypes.includes("camera")) {
 
+    if (
+      (winner.rating ?? 0) >
+      (runnerUp.rating ?? 0)
+    ) {
       reasons.push(
-        `${winner.name} provides a better camera experience`
-      )
-
+        `${winner.name} delivers a better camera experience`
+      );
     }
 
   }
 
-  if (winner.score! > runnerUp.score!) {
+  // =====================================================
+  // Value
+  // =====================================================
 
+  if (
+    winner.price <= runnerUp.price &&
+    (winner.score ?? 0) >= (runnerUp.score ?? 0)
+  ) {
     reasons.push(
-      `${winner.name} delivers better overall value`
-    )
-
+      `${winner.name} offers better value for money`
+    );
   }
 
-  return [...new Set(reasons)].slice(0, 4)
+  // =====================================================
+  // Trust
+  // =====================================================
+
+  if (
+    (winner.reviewsCount ?? 0) >
+    (runnerUp.reviewsCount ?? 0)
+  ) {
+    reasons.push(
+      `${winner.name} is trusted by more users`
+    );
+  }
+
+  // =====================================================
+  // Overall
+  // =====================================================
+
+  if (
+    (winner.score ?? 0) >
+    (runnerUp.score ?? 0)
+  ) {
+    reasons.push(
+      `${winner.name} delivers stronger overall performance`
+    );
+  }
+
+  return Array.from(
+    new Set(reasons)
+  ).slice(0, COMPARISON.MAX_REASONS);
 
 }
 
+// ======================================================
+// Strength Builder
+// ======================================================
+
+function buildStrengths(
+  winner: Product
+): ProductStrength[] {
+
+  return [
+
+    {
+      id: winner.id,
+
+      points: winner.highlights ?? [],
+    },
+
+  ];
+
+}
+
+// ======================================================
+// Category Winners
+// ======================================================
+
+function buildCategoryWinner(
+  winner: Product
+): CategoryWinner {
+
+  return {
+
+    gaming: winner.id,
+
+    battery: winner.id,
+
+    camera: winner.id,
+
+    value: winner.id,
+
+    trust: winner.id,
+
+  };
+
+}
+
+// ======================================================
+// Compare Products
+// ======================================================
+
 export function compareProducts(
   products: Product[],
-  intent: IntentType[] = ["balanced"]
+  intent: IntentType[] | WeightedIntent[] = ["balanced"]
 ): ComparisonResult {
 
-  if (products.length < 2) {
+  if (!products || products.length < 2) {
 
     return {
 
@@ -93,17 +207,31 @@ export function compareProducts(
 
       weaknesses: [],
 
+      strengths: [],
+
+      categoryWinners: {},
+
+      confidence: 0,
+
       intent,
 
-    }
+    };
 
   }
 
+  // =====================================================
+  // Score Products
+  // =====================================================
+
   const scoredProducts =
-    calculateScores(products, intent)
+    calculateScores(products, intent);
+
+  // =====================================================
+  // Winner
+  // =====================================================
 
   const comparison =
-    calculateWinner(scoredProducts)
+    calculateWinner(scoredProducts);
 
   if (!comparison) {
 
@@ -117,41 +245,87 @@ export function compareProducts(
 
       weaknesses: [],
 
+      strengths: [],
+
+      categoryWinners: {},
+
+      confidence: 0,
+
       intent,
 
-    }
+    };
 
   }
 
-  const reasons = compareTwo(
-    comparison.winner,
-    comparison.runnerUp,
-    intent
-  )
+  // =====================================================
+  // Build
+  // =====================================================
+
+  const reasons =
+    buildReasons(
+      comparison.winner,
+      comparison.runnerUp,
+      intent
+    );
 
   const weaknesses =
     calculateWeaknesses(
       comparison.rankedProducts
-    )
+    );
+
+  const strengths =
+    buildStrengths(
+      comparison.winner
+    );
+
+  const categoryWinners =
+    buildCategoryWinner(
+      comparison.winner
+    );
+
+  const confidence =
+    Math.min(
+      100,
+      Math.round(
+        comparison.winner.confidence ?? 90
+      )
+    );
+
+  // =====================================================
+  // Result
+  // =====================================================
 
   return {
 
-    winner: comparison.winner.id,
+    winner:
+      comparison.winner.id,
 
     reasons,
 
-    scores: comparison.rankedProducts.map((product) => ({
+    scores:
+      comparison.rankedProducts.map(
+        (product) => ({
 
-      id: product.id,
+          id: product.id,
 
-      score: product.score,
+          score: product.score,
 
-    })),
+          confidence:
+            product.confidence,
+
+        })
+      ),
 
     weaknesses,
 
+    strengths,
+
+    categoryWinners,
+
+    confidence,
+
     intent,
 
-  }
+  };
 
 }

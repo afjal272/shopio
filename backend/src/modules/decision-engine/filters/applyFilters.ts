@@ -1,53 +1,107 @@
-import { Product, ParsedQuery } from "../types"
+import { ParsedQuery, Product } from "../types"
 
-export function applyFilters(products: Product[], parsed: ParsedQuery) {
-  return products.filter(p => {
+import {
+  includesAll,
+  includesAny,
+  isBrandAllowed,
+  isCategoryMatch,
+  isWithinBudget,
+} from "./filter.utils"
 
-    // BUDGET FILTER (slight flexibility)
-    if (parsed.budget && p.price > parsed.budget * 1.2) {
+export function applyFilters(
+  products: Product[],
+  parsed: ParsedQuery
+): Product[] {
+  return products.filter((product) => {
+    const specs = product.specs
+    const tags = product.tags
+    const constraints = parsed.constraints
+
+    if (!isWithinBudget(product.price, parsed.budget)) {
       return false
     }
 
-    //  CATEGORY FILTER (safer)
-    if (
-      parsed.category &&
-      parsed.category !== "general" &&
-      p.category &&
-      p.category !== parsed.category
-    ) {
+    if (!isCategoryMatch(product.category, parsed.category)) {
       return false
     }
 
-    // =====================================================
-    //  CONSTRAINT FILTERS (REAL INTELLIGENCE)
-    // =====================================================
-
-    if (parsed.constraints) {
-      const specs = p.specs || {}
-
-      //  RAM (strict + safe)
+    if (constraints) {
       if (
-        parsed.constraints.minRam !== null &&
-        parsed.constraints.minRam !== undefined &&
-        (specs.ram || 0) < parsed.constraints.minRam
+        constraints.minRam !== undefined &&
+        (specs.ram ?? 0) < constraints.minRam
       ) {
         return false
       }
 
-      //  BATTERY
       if (
-        parsed.constraints.minBattery !== null &&
-        parsed.constraints.minBattery !== undefined &&
-        (specs.battery || 0) < parsed.constraints.minBattery
+        constraints.maxRam !== undefined &&
+        (specs.ram ?? 0) > constraints.maxRam
       ) {
         return false
       }
 
-      //  RATING
       if (
-        parsed.constraints.minRating !== null &&
-        parsed.constraints.minRating !== undefined &&
-        (p.rating || 0) < parsed.constraints.minRating
+        constraints.minBattery !== undefined &&
+        (specs.battery ?? 0) < constraints.minBattery
+      ) {
+        return false
+      }
+
+      if (
+        constraints.maxBattery !== undefined &&
+        (specs.battery ?? 0) > constraints.maxBattery
+      ) {
+        return false
+      }
+
+      if (
+        constraints.minRating !== undefined &&
+        (product.rating ?? 0) < constraints.minRating
+      ) {
+        return false
+      }
+
+      if (
+        constraints.maxRating !== undefined &&
+        (product.rating ?? 0) > constraints.maxRating
+      ) {
+        return false
+      }
+
+      if (
+        constraints.minPrice !== undefined &&
+        product.price < constraints.minPrice
+      ) {
+        return false
+      }
+
+      if (
+        constraints.maxPrice !== undefined &&
+        product.price > constraints.maxPrice
+      ) {
+        return false
+      }
+
+      if (
+        !isBrandAllowed(
+          product.brand,
+          constraints.preferredBrands,
+          constraints.excludedBrands
+        )
+      ) {
+        return false
+      }
+
+      if (
+        constraints.requiredTags?.length &&
+        !includesAll(tags, constraints.requiredTags)
+      ) {
+        return false
+      }
+
+      if (
+        constraints.excludedTags?.length &&
+        includesAny(tags, constraints.excludedTags)
       ) {
         return false
       }

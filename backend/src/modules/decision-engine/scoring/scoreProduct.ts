@@ -1,165 +1,519 @@
-import { Product, IntentType } from "../types"
+// ======================================================
+// TEMPORARY V2.5 SCORING ENGINE
+// This file will be modularized in Engine V3.
+// ======================================================
+
+import {
+  Constraints,
+  IntentType,
+  Product,
+  WeightedIntent,
+} from "../types";
 
 import {
   normalize,
   calculateTrustScore,
   calculateValueScore,
-} from "./helpers"
+} from "./helpers";
 
 import {
   SCORE_WEIGHTS,
   BRAND_BOOST,
-} from "./weights"
+} from "./weights";
+
+// ======================================================
+// Types
+// ======================================================
+
+interface ScoreContext {
+  ram: number;
+
+  cpu: number;
+
+  battery: number;
+
+  rating: number;
+
+  reviews: number;
+
+  price: number;
+
+  tags: string[];
+
+  brand: string;
+
+  weightedIntent: WeightedIntent[];
+}
+
+interface ScoreAccumulator {
+  core: number;
+
+  adjustment: number;
+
+  breakdown: {
+    ram: number;
+    processor: number;
+    battery: number;
+    rating: number;
+
+    brand: number;
+    tags: number;
+    trust: number;
+    value: number;
+    priceFit: number;
+    constraints: number;
+    tieBreaker: number;
+
+    total: number;
+  };
+}
+
+// ======================================================
+// Main
+// ======================================================
 
 export function scoreProduct(
   product: Product,
-  intent: IntentType[] | { type: IntentType; weight: number }[],
+  intent: IntentType[] | WeightedIntent[],
   budget: number | null,
-  constraints?: {
-    minRam?: number | null
-    minBattery?: number | null
-    minRating?: number | null
-  }
+  constraints?: Constraints
 ) {
-  // 🔥 BACKWARD + FORWARD COMPAT HANDLING
-  let weightedIntent: { type: IntentType; weight: number }[] = []
 
-  if (Array.isArray(intent) && intent.length > 0) {
-    if (typeof intent[0] === "string") {
-      const weight = 1 / intent.length
-      weightedIntent = (intent as IntentType[]).map((i) => ({
-        type: i,
-        weight
-      }))
+  // ======================================================
+  // Normalize Intent
+  // ======================================================
+
+  const weightedIntent = normalizeIntent(intent);
+
+  // ======================================================
+  // Build Context
+  // ======================================================
+
+  const ctx: ScoreContext = {
+
+    ram: normalize(product.specs.ram ?? 0, 16),
+
+    cpu: normalize(product.specs.processorScore ?? 0, 10),
+
+    battery: normalize(product.specs.battery ?? 0, 6000),
+
+    rating: normalize(product.rating ?? 0, 5),
+
+    reviews: product.reviewsCount ?? 0,
+
+    price: product.price,
+
+    tags: product.tags ?? [],
+
+    brand: product.brand.toLowerCase(),
+
+    weightedIntent,
+
+  };
+
+  // ======================================================
+  // Score Accumulator
+  // ======================================================
+
+  const score: ScoreAccumulator = {
+
+    core: 0,
+
+    adjustment: 0,
+
+    breakdown: {
+
+      ram: 0,
+
+      processor: 0,
+
+      battery: 0,
+
+      rating: 0,
+
+      brand: 0,
+
+      tags: 0,
+
+      trust: 0,
+
+      value: 0,
+
+      priceFit: 0,
+
+      constraints: 0,
+
+      tieBreaker: 0,
+
+      total: 0,
+
+    },
+
+  };
+
+  // ======================================================
+  // PART 2 Starts Here
+  // Core Score Calculation
+  // ======================================================
+
+    // ======================================================
+  // Core Score
+  // ======================================================
+
+  const weights = SCORE_WEIGHTS;
+
+  for (const currentIntent of ctx.weightedIntent) {
+
+    const config = weights[currentIntent.type];
+
+    const weightedScore =
+      ctx.ram * config.ram +
+      ctx.cpu * config.cpu +
+      ctx.battery * config.batt +
+      ctx.rating * config.rating;
+
+    score.core +=
+      weightedScore * currentIntent.weight;
+
+  }
+
+  score.breakdown.ram =
+    Math.round(ctx.ram * 100);
+
+  score.breakdown.processor =
+    Math.round(ctx.cpu * 100);
+
+  score.breakdown.battery =
+    Math.round(ctx.battery * 100);
+
+  score.breakdown.rating =
+    Math.round(ctx.rating * 100);
+
+  // ======================================================
+  // Brand Score
+  // ======================================================
+
+  const brandBoost =
+    BRAND_BOOST[ctx.brand] ?? 0;
+
+  score.adjustment += brandBoost;
+
+  score.breakdown.brand =
+    Math.round(brandBoost * 100);
+
+  // ======================================================
+  // Tag Score
+  // ======================================================
+
+  let tagBoost = 0;
+
+  const intents =
+    ctx.weightedIntent.map(
+      (item) => item.type
+    );
+
+  if (
+    intents.includes("gaming") &&
+    ctx.tags.includes("gaming")
+  ) {
+    tagBoost += 0.08;
+  }
+
+  if (
+    intents.includes("camera") &&
+    ctx.tags.includes("camera")
+  ) {
+    tagBoost += 0.08;
+  }
+
+  if (
+    intents.includes("battery") &&
+    ctx.tags.includes("battery")
+  ) {
+    tagBoost += 0.08;
+  }
+
+  score.adjustment += tagBoost;
+
+  score.breakdown.tags =
+    Math.round(tagBoost * 100);
+
+  // ======================================================
+  // Part 3 Starts Here
+  // ======================================================
+
+    // ======================================================
+  // Trust Score
+  // ======================================================
+
+  const trust =
+    calculateTrustScore(ctx.reviews);
+
+  const trustBoost = trust * 0.12;
+
+  score.adjustment += trustBoost;
+
+  score.breakdown.trust =
+    Math.round(trustBoost * 100);
+
+  // ======================================================
+  // Value Score
+  // ======================================================
+
+  const value =
+    calculateValueScore(
+      product.specs.processorScore ?? 0,
+      product.specs.ram ?? 0,
+      ctx.price
+    );
+
+  const valueBoost =
+    Math.min(value * 4, 0.08);
+
+  score.adjustment += valueBoost;
+
+  score.breakdown.value =
+    Math.round(valueBoost * 100);
+
+  // ======================================================
+  // Price Fit
+  // ======================================================
+
+  if (
+    budget !== null &&
+    budget > 0
+  ) {
+
+    const utilization =
+      ctx.price / budget;
+
+    let priceBoost = 0;
+
+    if (utilization > 1.20) {
+
+      priceBoost -= 0.22;
+
+    } else if (utilization > 1.05) {
+
+      priceBoost -= 0.15;
+
+    } else if (utilization > 1) {
+
+      priceBoost -= 0.08;
+
+    } else if (utilization >= 0.90) {
+
+      priceBoost += 0.09;
+
+    } else if (utilization >= 0.75) {
+
+      priceBoost += 0.07;
+
+    } else if (utilization >= 0.60) {
+
+      priceBoost += 0.05;
+
     } else {
-      weightedIntent = intent as { type: IntentType; weight: number }[]
+
+      priceBoost += 0.02;
+
     }
-  } else {
-    weightedIntent = [{ type: "balanced", weight: 1 }]
+
+    score.adjustment += priceBoost;
+
+    score.breakdown.priceFit =
+      Math.round(priceBoost * 100);
+
   }
 
-  const ram = normalize(product.specs.ram ?? 0, 16)
-  const cpu = normalize(product.specs.processorScore ?? 0, 10)
-  const batt = normalize(product.specs.battery ?? 0, 6000)
-  const rating = normalize(product.rating ?? 0, 5)
-
-  const W = SCORE_WEIGHTS
-
-  // 🔥 CORE SCORE
-  let core = 0
-
-  weightedIntent.forEach(({ type, weight }) => {
-    const w = W[type]
-
-    const part =
-      ram * w.ram +
-      cpu * w.cpu +
-      batt * w.batt +
-      rating * w.rating
-
-    core += part * weight
-  })
-
-  // ---------- ADJUSTMENTS ----------
-  let adj = 0
-
-  const tags = product.tags ?? []
-  const intentTypes = weightedIntent.map((i) => i.type)
-
-  // TAG BOOST
-  if (intentTypes.includes("gaming") && tags.includes("gaming")) adj += 0.08
-  if (intentTypes.includes("battery") && tags.includes("battery")) adj += 0.08
-  if (intentTypes.includes("camera") && tags.includes("camera")) adj += 0.08
-
-
-  const brand = product.brand.toLowerCase()
-  adj += BRAND_BOOST[brand] ?? 0
-
-  // PENALTIES
-  if ((product.specs.ram ?? 0) < 6) adj -= 0.12
-  if (intentTypes.includes("gaming") && (product.specs.processorScore ?? 0) < 6) adj -= 0.15
-  if ((product.rating ?? 0) < 4) adj -= 0.08
-
-  // TRUST
-  const reviews = product.reviewsCount ?? 100
-  const trust = calculateTrustScore(reviews)
-  adj += trust * 0.12
-
-  // VALUE
-  const rawValue = calculateValueScore(
-  product.specs.processorScore ?? 0,
-  product.specs.ram ?? 0,
-  product.price
-)
-
-  adj += Math.min(rawValue * 4, 0.08)
-
-  // PRICE FIT
-  if (budget && budget > 0) {
-    const u = product.price / budget
-
-    if (u > 1) adj -= 0.18
-    else if (u >= 0.8) adj += 0.08
-    else if (u >= 0.6) adj += 0.05
-    else adj += 0.03
-
-    adj += (1 - u) * 0.05
-  }
-
-  // =====================================================
-  // 🔥 CONSTRAINT BOOST + PENALTY (UPGRADED)
-  // =====================================================
+  // ======================================================
+  // Constraint Score
+  // ======================================================
 
   if (constraints) {
-    const specs = product.specs || {}
 
-    // 🔥 RAM
-    if (constraints.minRam !== null && constraints.minRam !== undefined) {
-      if ((specs.ram ?? 0) >= constraints.minRam) {
-        adj += 0.06 // boost
+    let constraintAdjustment = 0;
+
+    if (
+      constraints.minRam != null
+    ) {
+
+      if (
+        (product.specs.ram ?? 0) >=
+        constraints.minRam
+      ) {
+
+        constraintAdjustment += 0.06;
+
       } else {
-        adj -= 0.12 // penalty (important)
+
+        constraintAdjustment -= 0.12;
+
       }
+
     }
 
-    // 🔥 BATTERY
-    if (constraints.minBattery !== null && constraints.minBattery !== undefined) {
-      if ((specs.battery ?? 0) >= constraints.minBattery) {
-        adj += 0.05
+    if (
+      constraints.minBattery != null
+    ) {
+
+      if (
+        (product.specs.battery ?? 0) >=
+        constraints.minBattery
+      ) {
+
+        constraintAdjustment += 0.05;
+
       } else {
-        adj -= 0.10
+
+        constraintAdjustment -= 0.10;
+
       }
+
     }
 
-    // 🔥 RATING
-    if (constraints.minRating !== null && constraints.minRating !== undefined) {
-      if ((product.rating ?? 0) >= constraints.minRating) {
-        adj += 0.04
+    if (
+      constraints.minRating != null
+    ) {
+
+      if (
+        product.rating >=
+        constraints.minRating
+      ) {
+
+        constraintAdjustment += 0.04;
+
       } else {
-        adj -= 0.08
+
+        constraintAdjustment -= 0.08;
+
       }
+
     }
+
+    score.adjustment +=
+      constraintAdjustment;
+
+    score.breakdown.constraints =
+      Math.round(
+        constraintAdjustment * 100
+      );
+
   }
 
-  // TIE BREAKERS
-  adj += Math.log10(reviews || 1) * 0.02
-  adj += (product.rating ?? 0) * 0.01
-  adj += (product.specs.processorScore ?? 0) * 0.002
+  // ======================================================
+  // Tie Breaker
+  // ======================================================
 
-  // clamp
-  adj = Math.max(-0.25, Math.min(0.25, adj))
+  let tieBreaker = 0;
 
-  // FINAL
-  const final01 = Math.max(0, Math.min(1, core * 0.8 + adj))
-  const total = Math.round(Math.pow(final01, 1.4) * 100)
+  tieBreaker +=
+    Math.log10(
+      Math.max(ctx.reviews, 1)
+    ) * 0.02;
+
+  tieBreaker +=
+    product.rating * 0.01;
+
+  tieBreaker +=
+    (product.specs.processorScore ?? 0) *
+    0.002;
+
+  score.adjustment += tieBreaker;
+
+  score.breakdown.tieBreaker =
+    Math.round(
+      tieBreaker * 100
+    );
+
+  // ======================================================
+  // Clamp Adjustment
+  // ======================================================
+
+  score.adjustment = Math.max(
+    -0.25,
+    Math.min(
+      0.25,
+      score.adjustment
+    )
+  );
+
+  // ======================================================
+  // Part 4 Starts Here
+  // ======================================================
+
+
+    // ======================================================
+  // Final Score
+  // ======================================================
+
+  const finalScore = Math.max(
+    0,
+    Math.min(
+      1,
+      score.core * 0.8 +
+        score.adjustment
+    )
+  );
+
+  const total = Math.round(
+    Math.pow(finalScore, 1.4) * 100
+  );
+
+  // ======================================================
+  // Final Breakdown
+  // ======================================================
+
+  score.breakdown.total = total;
+
+  // ======================================================
+  // Return
+  // ======================================================
 
   return {
+
     total,
+
     breakdown: {
-      ram: Math.round(ram * 100),
-      processor: Math.round(cpu * 100),
-      battery: Math.round(batt * 100),
-      rating: Math.round(rating * 100)
-    }
-  }
+
+      ram:
+        score.breakdown.ram,
+
+      processor:
+        score.breakdown.processor,
+
+      battery:
+        score.breakdown.battery,
+
+      rating:
+        score.breakdown.rating,
+
+      brand:
+        score.breakdown.brand,
+
+      tags:
+        score.breakdown.tags,
+
+      trust:
+        score.breakdown.trust,
+
+      value:
+        score.breakdown.value,
+
+      priceFit:
+        score.breakdown.priceFit,
+
+      constraints:
+        score.breakdown.constraints,
+
+      tieBreaker:
+        score.breakdown.tieBreaker,
+
+      total:
+        score.breakdown.total,
+
+    },
+
+  };
+
 }
