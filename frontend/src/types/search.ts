@@ -5,9 +5,9 @@ export type Parsed = {
   category?: string | null
 
   constraints?: {
-    minRam?: number | null
-    minBattery?: number | null
-    minRating?: number | null
+    minRam?: number
+    minBattery?: number
+    minRating?: number
   }
 }
 
@@ -16,6 +16,12 @@ export type Breakdown = {
   processor?: number
   battery?: number
   rating?: number
+  trust?: number
+  value?: number
+  priceFit?: number
+  constraints?: number
+  tieBreaker?: number
+  total?: number
 }
 
 export type Specs = {
@@ -29,6 +35,12 @@ export type ProductItem = {
 
   name: string
 
+  brand?: string
+
+  category?: string
+
+  description?: string
+
   price: number
 
   images?: string[]
@@ -40,6 +52,10 @@ export type ProductItem = {
   explanation?: string
 
   tags?: string[]
+
+  highlights?: string[]
+
+  weaknesses?: string[]
 
   breakdown?: Breakdown
 
@@ -56,10 +72,28 @@ export type NotRecommendedItem = {
   reason: string
 }
 
-export type SearchResponse = {
-  best: ProductItem
+export type SuggestionItem = {
+  id: string
 
-  top3: ProductItem[]
+  category: string
+
+  priority: string
+
+  title: string
+
+  description: string
+
+  confidence: number
+
+  impactScore: number
+
+  action?: string
+}
+
+export type SearchResponse = {
+  best: ProductItem | null
+
+  recommendations: ProductItem[]
 
   notRecommended: NotRecommendedItem[]
 
@@ -67,10 +101,9 @@ export type SearchResponse = {
 
   parsed: Parsed
 
-  suggestions?: string[]
+  suggestions: SuggestionItem[]
 
-  isRelaxed?: boolean
+  isRelaxed: boolean
 }
 
-// Product alias
 export type Product = ProductItem

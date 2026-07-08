@@ -1,237 +1,477 @@
-"use client"
+"use client";
 
-import ResultCard from "./ResultCard"
-import { SearchResponse } from "@/types/search"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+import ResultCard from "./ResultCard";
+
+import {
+  SearchResponse,
+  SuggestionItem,
+} from "@/types/search";
+
+// ======================================================
+// Props
+// ======================================================
+
+interface ResultsProps {
+  data: SearchResponse;
+
+  selected?: string[];
+
+  onSelect?: (id: string) => void;
+}
+
+// ======================================================
+// Component
+// ======================================================
 
 export default function Results({
+
   data,
+
   selected = [],
+
   onSelect,
-}: {
-  data: SearchResponse
-  selected?: string[]
-  onSelect?: (id: string) => void
-}) {
 
-  const router = useRouter()
+}: ResultsProps) {
 
-  const { best, top3, parsed, notRecommended, comparison, isRelaxed } = data
+  const router = useRouter();
 
-  //  SAVE LAST RESULTS (NO CHANGE)
+  const {
+
+    best,
+
+    recommendations,
+
+    parsed,
+
+    comparison,
+
+    notRecommended,
+
+    suggestions,
+
+    isRelaxed,
+
+  } = data;
+
+  // ====================================================
+  // Persist Results
+  // ====================================================
+
   useEffect(() => {
-    if (best) {
-      const all = [best, ...(top3 || [])]
-      localStorage.setItem("last_results", JSON.stringify(all))
-    }
-  }, [best, top3])
+
+    if (!best) return;
+
+    localStorage.setItem(
+
+      "last_results",
+
+      JSON.stringify([
+
+        best,
+
+        ...recommendations,
+
+      ])
+
+    );
+
+  }, [
+
+    best,
+
+    recommendations,
+
+  ]);
+
+  // ====================================================
+  // Derived Values
+  // ====================================================
+
+  const hasRecommendations =
+    recommendations.length > 0;
 
   const noResults =
-    (!best || best.score === 0) &&
-    (!top3 || top3.length === 0) &&
-    !isRelaxed
+    !best &&
+    !hasRecommendations &&
+    !isRelaxed;
 
   const intentText =
-    parsed?.intent?.length > 1
+    parsed.intent.length > 1
       ? parsed.intent.join(" & ")
-      : parsed?.intent?.[0] || "general use"
+      : parsed.intent[0] ?? "general";
+
+  // ====================================================
+  // Empty State
+  // ====================================================
 
   if (noResults) {
+
     return (
-      <div className="w-full max-w-3xl mx-auto text-center py-12 space-y-4">
-        <p className="text-lg font-semibold text-black">
-          No exact match found
+
+      <div className="w-full max-w-3xl mx-auto py-16 text-center space-y-5">
+
+        <h2 className="text-2xl font-bold">
+
+          No matching products found
+
+        </h2>
+
+        <p className="text-gray-500">
+
+          Try increasing your budget or changing
+          your search preferences.
+
         </p>
 
-        <p className="text-sm text-gray-500">
-          Try increasing your budget or changing preferences
-        </p>
-
-        <div className="flex justify-center gap-2 flex-wrap">
-          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm cursor-pointer">
-            best phone under 30000
-          </span>
-          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm cursor-pointer">
-            best gaming phone
-          </span>
-        </div>
       </div>
-    )
+
+    );
+
   }
 
+  // ====================================================
+  // UI
+  // ====================================================
+
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-12">
+
+    <div className="w-full max-w-3xl mx-auto space-y-10">
+
+      {/* Relaxed Search */}
 
       {isRelaxed && (
-        <div className="text-center text-sm text-orange-600">
-          Budget too low — showing closest available options
+
+        <div className="rounded-xl bg-orange-50 border border-orange-200 p-4 text-sm text-orange-700">
+
+          Budget was too restrictive.
+          Showing closest matching products.
+
         </div>
+
       )}
 
-      {parsed && (
-        <div className="text-sm text-gray-500 text-center">
-          Results for{" "}
-          <span className="text-black font-medium">
-            {intentText}
-          </span>{" "}
-          {parsed.budget && (
-            <>
-              under <span className="font-medium">₹{parsed.budget}</span>
-            </>
-          )}
-        </div>
-      )}
+      {/* Search Context */}
 
-      {best && best.score > 0 && (
-        <div className="p-4 rounded-2xl bg-black text-white text-center text-sm">
-          Best for{" "}
-          <span className="font-semibold">
-            {intentText}
-          </span>{" "}
-          {parsed?.budget && <>under ₹{parsed.budget}</>} with strong overall performance
-        </div>
-      )}
+      <div className="text-center text-gray-500 text-sm">
 
-      {best && best.score <= 40 && (
-        <div className="text-center text-sm text-orange-500">
-          Not an ideal match, but best available in this range
-        </div>
-      )}
+        Results for
+
+        <span className="font-semibold text-black mx-1">
+
+          {intentText}
+
+        </span>
+
+        {parsed.budget && (
+
+          <>
+
+            under
+
+            <span className="font-semibold text-black ml-1">
+
+              ₹{parsed.budget}
+
+            </span>
+
+          </>
+
+        )}
+
+      </div>
+
+      {/* ================================================= */}
+      {/* Best Product */}
+      {/* ================================================= */}
 
       {best && (
-        <div className="p-6 rounded-3xl bg-gradient-to-b from-gray-50 to-white border border-black shadow-lg space-y-4">
+
+        <section className="rounded-3xl border border-black bg-white shadow-lg p-6 space-y-5">
 
           <div className="flex items-center justify-between">
-            <h2 className="text-black font-bold text-xl">
-              🏆 Best Choice
-            </h2>
+
+            <div>
+
+              <h2 className="text-2xl font-bold">
+
+                🏆 Best Choice
+
+              </h2>
+
+              <p className="text-sm text-gray-500">
+
+                Highest ranked recommendation
+
+              </p>
+
+            </div>
 
             <div className="text-right">
-              <div className="text-xs bg-black text-white px-3 py-1 rounded-full">
-                {best.score} match
+
+              <div className="rounded-full bg-black text-white px-4 py-2 text-sm font-semibold">
+
+                {best.score}% Match
+
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+
+              <p className="mt-2 text-xs text-gray-500">
+
                 Confidence {best.confidence}%
+
               </p>
+
             </div>
+
           </div>
 
           {best.breakdown && (
-            <div className="text-xs text-gray-600 bg-black/5 px-3 py-2 rounded-lg">
-              Strongest area:{" "}
-              <span className="font-medium text-black">
-                {Object.entries(best.breakdown)
-                  .sort((a, b) => (b[1] as number) - (a[1] as number))[0][0]}
-              </span>
+
+            <div className="rounded-xl bg-gray-50 border p-4">
+
+              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">
+
+                Strongest Area
+
+              </div>
+
+              <div className="font-semibold">
+
+                {
+
+                  Object.entries(best.breakdown)
+
+                    .sort(
+
+                      (a, b) =>
+
+                        Number(b[1]) -
+
+                        Number(a[1])
+
+                    )[0][0]
+
+                }
+
+              </div>
+
             </div>
+
           )}
 
-          {best.breakdown && (
-            <div className="text-xs text-gray-500 text-center">
-              Balanced score across specs improves overall ranking
-            </div>
-          )}
+          {comparison.length > 0 && (
 
-          {comparison?.length > 0 && (
-            <div className="p-5 border border-green-200 bg-green-50 rounded-2xl">
-              <h3 className="text-green-700 font-semibold mb-3">
-                Why this beats next option
+            <div className="rounded-xl border border-green-200 bg-green-50 p-5">
+
+              <h3 className="font-semibold text-green-700 mb-3">
+
+                Why this wins
+
               </h3>
 
               <div className="space-y-2">
-                {comparison.map((point, i) => (
+
+                {comparison.map((reason, index) => (
+
                   <div
-                    key={i}
-                    className="flex items-start gap-2 bg-white border border-green-100 rounded-lg px-3 py-2 text-sm text-gray-700"
+
+                    key={index}
+
+                    className="rounded-lg bg-white border border-green-100 p-3 text-sm"
+
                   >
-                    <span className="text-green-600 font-bold">✔</span>
-                    <span className="leading-relaxed">{point}</span>
+
+                    ✅ {reason}
+
                   </div>
+
                 ))}
+
               </div>
+
             </div>
+
           )}
 
-          {/*  FIXED */}
           <ResultCard
+
             item={best}
+
             highlight
-            selected={selected?.includes(String(best.id))}
-            onSelect={onSelect ? () => onSelect(String(best.id)) : undefined}
+
+            selected={selected.includes(best.id)}
+
+            onSelect={
+
+              onSelect
+
+                ? () => onSelect(best.id)
+
+                : undefined
+
+            }
+
           />
-        </div>
+
+        </section>
+
       )}
 
-      {top3?.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-black">
-            Other good options
+      {/* ================================================= */}
+      {/* Recommendations */}
+      {/* ================================================= */}
+
+      {recommendations.length > 0 && (
+
+        <section className="space-y-5">
+
+          <h3 className="text-xl font-bold">
+
+            Other Good Options
+
           </h3>
 
-          <div className="flex flex-col gap-4">
-            {top3.map((item, index) => (
-              <ResultCard
-                key={item.id}
-                item={item}
-                index={index}
-                selected={selected?.includes(String(item.id))}
-                onSelect={onSelect ? () => onSelect(String(item.id)) : undefined}
-              />
-            ))}
+          <div className="space-y-4">
+
+            {recommendations.map(
+
+              (item, index) => (
+
+                <ResultCard
+
+                  key={item.id}
+
+                  item={item}
+
+                  index={index}
+
+                  selected={selected.includes(item.id)}
+
+                  onSelect={
+
+                    onSelect
+
+                      ? () => onSelect(item.id)
+
+                      : undefined
+
+                  }
+
+                />
+
+              )
+
+            )}
+
           </div>
-        </div>
+
+        </section>
+
       )}
 
-      {notRecommended?.length > 0 && (
-        <div className="p-5 border border-red-100 bg-red-50 rounded-2xl">
-          <h3 className="text-red-600 font-semibold mb-4">
+            {/* ================================================= */}
+      {/* Not Recommended */}
+      {/* ================================================= */}
+
+      {notRecommended.length > 0 && (
+
+        <section className="rounded-2xl border border-red-200 bg-red-50 p-5">
+
+          <h3 className="text-lg font-semibold text-red-700 mb-4">
+
             Why not these?
+
           </h3>
 
-          <div className="flex flex-col gap-3">
+          <div className="space-y-3">
+
             {notRecommended.map((item) => (
+
               <div
                 key={item.id}
-                className="text-sm text-gray-700 border border-red-100 rounded-lg p-3 bg-white hover:bg-red-50 transition flex justify-between items-start"
+                className="rounded-xl border border-red-100 bg-white p-4"
               >
-                <div className="flex flex-col">
-                  <span className="font-medium text-black">
-                     {item.name}
-                  </span>
 
-                  <span className="text-red-600 text-xs mt-1">
-                    {item.reason}
-                  </span>
+                <div className="font-medium text-black">
+
+                  {item.name}
+
                 </div>
+
+                <div className="mt-1 text-sm text-red-600">
+
+                  {item.reason}
+
+                </div>
+
               </div>
+
             ))}
+
           </div>
-        </div>
+
+        </section>
+
       )}
 
-      {data.suggestions && data.suggestions.length > 0 && (
-        <div className="p-5 border border-blue-100 bg-blue-50 rounded-2xl">
-          <h3 className="text-blue-600 font-semibold mb-3">
-            Try refining your search
+      {/* ================================================= */}
+      {/* Suggestions */}
+      {/* ================================================= */}
+
+      {suggestions.length > 0 && (
+
+        <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+
+          <h3 className="text-lg font-semibold text-blue-700 mb-4">
+
+            Refine your search
+
           </h3>
 
-          <div className="flex flex-wrap gap-2">
-            {data.suggestions.map((s, i) => (
-              <span
-                key={i}
+          <div className="flex flex-wrap gap-3">
+
+            {suggestions.map((suggestion: SuggestionItem) => (
+
+              <button
+
+                key={suggestion.id}
+
+                type="button"
+
                 onClick={() => {
-                  router.push(`/search?q=${encodeURIComponent(s)}`)
+
+                  if (!suggestion.action) return;
+
+                  router.push(
+
+                    `/search?q=${encodeURIComponent(
+                      suggestion.action
+                    )}`
+
+                  );
+
                 }}
-                className="px-3 py-1 bg-white border border-blue-200 rounded-full text-sm cursor-pointer hover:bg-blue-100 transition"
+
+                className="rounded-full border border-blue-200 bg-white px-4 py-2 text-sm transition hover:bg-blue-100"
+
               >
-                {s}
-              </span>
+
+                {suggestion.title}
+
+              </button>
+
             ))}
+
           </div>
-        </div>
+
+        </section>
+
       )}
 
     </div>
-  )
+
+  );
+
 }
