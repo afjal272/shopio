@@ -207,24 +207,29 @@ function analyzeBudgetGap(
 
 ): BudgetAnalysis {
 
-  return {
+return {
 
-    currentBudget: null,
+  currentBudget: null,
 
-    recommendedBudget:
-      statistics.recommendedBudget,
+  recommendedBudget:
+    statistics.recommendedBudget,
 
-    budgetGap:
-      statistics.budgetGap,
+  budgetGap:
+    statistics.budgetGap,
 
-    affordabilityScore: 0,
+  budgetStatus:
+    statistics.budgetGap === 0
+      ? "well_matched"
+      : "over_budget",
 
-    averageMatchedPrice:
-      statistics.averageMatchedPrice,
+  affordabilityScore: 0,
 
-    unlockedProducts:
-      statistics.unlockedProducts,
+  averageMatchedPrice:
+    statistics.averageMatchedPrice,
 
-  }
+  unlockedProducts:
+    statistics.unlockedProducts,
+
+}
 
 }

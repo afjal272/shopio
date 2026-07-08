@@ -1,6 +1,12 @@
-import { runEngine } from "./modules/decision-engine/engine"
-import { products } from "./data/products"
-import { parseQuery } from "./modules/decision-engine/parser/queryParser"
+import { PrismaClient } from "@prisma/client";
+
+import { runEngine } from "./modules/decision-engine/engine";
+
+import { parseQuery } from "./modules/decision-engine/parser/queryParser";
+
+import { mapProduct } from "./modules/decision-engine/utils/mapProduct";
+
+const prisma = new PrismaClient();
 
 const queries = [
   "best phone under 20000 for gaming",
@@ -8,30 +14,75 @@ const queries = [
   "best battery phone under 20000",
   "gaming phone under 15000",
 
-  // NEW TEST CASES
   "best phone under 12000 for gaming",
   "camera phone under 18000",
   "best phone under 30000 for gaming and camera",
-]
+];
 
-queries.forEach((query) => {
-  console.log("\n==============================")
-  console.log("QUERY:", query)
+async function main() {
 
-  const parsed = parseQuery(query)
+  const dbProducts =
+    await prisma.product.findMany();
 
-  const result = runEngine(parsed as any, products as any)
+  const products =
+    dbProducts.map(mapProduct);
 
-  console.log("BEST:", result.best?.title || result.best?.name)
-  console.log("SCORE:", result.best?.score)
-  console.log("CONFIDENCE:", result.best?.confidence)
-  console.log("WHY:", result.best?.explanation)
+  for (const query of queries) {
 
-  console.log("TOP 3:")
+    console.log("\n==============================");
 
-  result.top3.forEach((p, i) => {
+    console.log("QUERY:", query);
+
+    const parsed =
+      parseQuery(query);
+
+    const result =
+      runEngine(parsed, products);
+
     console.log(
-      `${i + 1}. ${(p as any).title || (p as any).name} (${p.score})`
-    )
-  })
-})
+      "BEST:",
+      result.best?.name ?? "No Product"
+    );
+
+    console.log(
+      "SCORE:",
+      result.best?.score ?? "-"
+    );
+
+    console.log(
+      "CONFIDENCE:",
+      result.best?.confidence ?? "-"
+    );
+
+    console.log(
+      "WHY:",
+      result.best?.explanation ?? "-"
+    );
+
+    console.log("\nRECOMMENDATIONS:");
+
+    result.recommendations.forEach(
+      (product, index) => {
+
+        console.log(
+          `${index + 1}. ${product.name} (${product.score})`
+        );
+
+      }
+    );
+
+  }
+
+  await prisma.$disconnect();
+
+}
+
+main().catch(async (error) => {
+
+  console.error(error);
+
+  await prisma.$disconnect();
+
+  process.exit(1);
+
+});

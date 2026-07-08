@@ -1,19 +1,48 @@
-export function mapProduct(p: any) {
+import { Product as PrismaProduct } from "@prisma/client";
+
+import {
+  CategoryType,
+  Product,
+} from "../types";
+
+export function mapProduct(
+  product: PrismaProduct
+): Product {
+
   return {
-    id: p.id,
-    name: p.name || p.title || "Unknown",
-    price: p.price ?? 0,
 
-    images: p.images || (p.image ? [p.image] : []),
+    id: product.id,
 
-    rating: p.rating ?? 0,
-    reviewsCount: p.reviewsCount ?? 0,
+    name: product.name,
 
-    specs: p.specs ?? {},
+    brand: product.brand,
 
-    score: p.score ?? 0,
-    confidence: p.confidence ?? 0,
+    category:
+      product.category as CategoryType,
 
-    tags: p.tags ?? [],
-  }
+    description:
+      product.description,
+
+    price: product.price,
+
+    rating: product.rating,
+
+    reviewsCount:
+      product.reviewsCount,
+
+    images: product.images,
+
+    tags: product.tags,
+
+    highlights:
+      product.highlights,
+
+    weaknesses:
+      product.weaknesses,
+
+    specs:
+      product.specs as Product["specs"],
+
+  };
+
 }
