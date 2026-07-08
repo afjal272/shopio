@@ -132,9 +132,19 @@ export interface Breakdown {
 
   rating: number
 
+  brand?: number
+
+  tags?: number
+
   trust?: number
 
   value?: number
+
+  priceFit?: number
+
+  constraints?: number
+
+  tieBreaker?: number
 
   total?: number
 }

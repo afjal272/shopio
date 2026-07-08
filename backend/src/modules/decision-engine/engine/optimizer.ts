@@ -6,9 +6,11 @@ import {
   SCORE,
 } from "./engine.constants";
 
-export function optimizeProduct(
-  product: Product
-): Product {
+export function optimizeProduct<
+  T extends Product
+>(
+  product: T
+): T {
   return {
     ...product,
 

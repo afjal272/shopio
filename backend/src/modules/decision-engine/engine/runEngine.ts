@@ -16,7 +16,7 @@ import { generateSuggestions } from "../suggestions";
 
 import { buildOutput } from "./outputBuilder";
 
-import { ENGINE } from "./engine.constants";
+import {ENGINE,COMPARISON,} from "./engine.constants";
 
 import { EngineResult } from "./engine.types";
 
@@ -88,13 +88,10 @@ export function runEngine(
   // =====================================================
 
   const {
-    best,
-    topPicks,
-    rejected,
-  } =
-    selectCandidates(
-      rankedProducts
-    );
+  best,
+  recommendedProducts,
+  rejectedProducts: rejectedCandidates,
+} = selectCandidates(rankedProducts);
 
   // =====================================================
   // PART 2 STARTS HERE
@@ -117,7 +114,7 @@ export function runEngine(
   // =====================================================
 
   const recommendationReasoning =
-    topPicks.map((product) =>
+    recommendedProducts.map((product) =>
       buildReasoning(
         product,
         parsed
@@ -129,7 +126,7 @@ export function runEngine(
   // =====================================================
 
   const rejectedProducts =
-    rejected.map((product) => {
+  rejectedCandidates.map((product) =>  {
 
       const reasoning =
         buildReasoning(
@@ -156,15 +153,16 @@ export function runEngine(
   // Product Comparison
   // =====================================================
 
-  const comparison =
-    compareProducts(
-      rankedProducts.slice(
-        0,
-        ENGINE.DEFAULT_COMPARISON_PRODUCTS
-      ),
-      intent
-    );
+const comparison =
+  compareProducts(
+    rankedProducts.slice(
+      0,
+      COMPARISON.TOP_PRODUCTS
+    ),
+    intent
+  );
 
+  
   // =====================================================
   // PART 3 STARTS HERE
   // =====================================================
@@ -210,7 +208,7 @@ export function runEngine(
 
     best,
 
-    recommendations: topPicks,
+    recommendations: recommendedProducts,
 
     rejected: rejectedProducts,
 

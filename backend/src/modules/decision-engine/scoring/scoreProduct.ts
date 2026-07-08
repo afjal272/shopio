@@ -83,7 +83,27 @@ export function scoreProduct(
   // Normalize Intent
   // ======================================================
 
-  const weightedIntent = normalizeIntent(intent);
+  let weightedIntent: WeightedIntent[] = [];
+
+if (Array.isArray(intent) && intent.length > 0) {
+  if (typeof intent[0] === "string") {
+    const weight = 1 / intent.length;
+
+    weightedIntent = (intent as IntentType[]).map((type) => ({
+      type,
+      weight,
+    }));
+  } else {
+    weightedIntent = intent as WeightedIntent[];
+  }
+} else {
+  weightedIntent = [
+    {
+      type: "balanced",
+      weight: 1,
+    },
+  ];
+}
 
   // ======================================================
   // Build Context

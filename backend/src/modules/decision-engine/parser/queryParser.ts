@@ -1,4 +1,9 @@
-import { ParsedQuery, IntentType } from "../types"
+import {
+  Constraints,
+  ParsedQuery,
+  IntentType,
+  WeightedIntent,
+} from "../types"
 
 export function parseQuery(query: string): ParsedQuery {
   const q = query.toLowerCase().trim()
@@ -119,7 +124,7 @@ export function parseQuery(query: string): ParsedQuery {
 
   const totalWeight = Object.values(intentWeights).reduce((a, b) => a + b, 0)
 
-  let weightedIntent: { type: IntentType; weight: number }[] = []
+  let weightedIntent: WeightedIntent[] = []
 
   if (totalWeight === 0) {
     weightedIntent = [{ type: "balanced", weight: 1 }]
@@ -145,11 +150,7 @@ export function parseQuery(query: string): ParsedQuery {
   //  NEW: CONSTRAINTS PARSER (IMPROVED, NOT REMOVED)
   // =====================================================
 
-  const constraints = {
-    minRam: null as number | null,
-    minBattery: null as number | null,
-    minRating: null as number | null
-  }
+ const constraints: Constraints = {}
 
   //  RAM (strict: only when "ram" present)
   const ramMatch = q.match(/(\d+)\s?gb\s?ram/)
@@ -176,12 +177,15 @@ export function parseQuery(query: string): ParsedQuery {
   // FINAL RETURN
   // =====================================================
 
-  return {
-    category,
-    budget,
-    intent: filteredIntent,
-    weightedIntent,
-    negativeIntent,
-    constraints
-  }
+ return {
+  category,
+  budget,
+  intent: filteredIntent,
+  weightedIntent,
+  negativeIntent,
+  constraints:
+    Object.keys(constraints).length > 0
+      ? constraints
+      : undefined,
+ }
 }

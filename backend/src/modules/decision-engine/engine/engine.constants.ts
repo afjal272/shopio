@@ -7,9 +7,6 @@ export const ENGINE = {
 
   DEFAULT_INTENT: "balanced",
 
-  DEFAULT_COMPARISON_PRODUCTS: 4,
-
-  DEFAULT_EXECUTION_TIME: 0,
 } as const;
 
 // ======================================================
