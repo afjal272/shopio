@@ -34,10 +34,7 @@ export interface CandidateSelectionResult {
   best: Product | null;
 
   recommendedProducts: Product[];
-
-  rejectedProducts: Product[];
 }
-
 // ======================================================
 // Product Reasoning
 // ======================================================

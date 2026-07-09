@@ -3,6 +3,10 @@ import { Product } from "../types";
 import { CANDIDATE } from "./engine.constants";
 import { CandidateSelectionResult } from "./engine.types";
 
+// ======================================================
+// Candidate Selection
+// ======================================================
+
 export function selectCandidates(
   rankedProducts: Product[]
 ): CandidateSelectionResult {
@@ -15,7 +19,6 @@ export function selectCandidates(
     return {
       best: null,
       recommendedProducts: [],
-      rejectedProducts: [],
     };
   }
 
@@ -23,10 +26,11 @@ export function selectCandidates(
   // Best Product
   // =====================================================
 
-  const best: Product | null = rankedProducts[0] ?? null;
+  const best: Product | null =
+    rankedProducts[0] ?? null;
 
   // =====================================================
-  // Slice Positions
+  // Recommendation Range
   // =====================================================
 
   const recommendationStart = 1;
@@ -34,13 +38,6 @@ export function selectCandidates(
   const recommendationEnd =
     recommendationStart +
     CANDIDATE.MAX_TOP_PICKS;
-
-  const rejectionStart =
-    recommendationEnd;
-
-  const rejectionEnd =
-    rejectionStart +
-    CANDIDATE.MAX_REJECTED_PRODUCTS;
 
   // =====================================================
   // Recommended Products
@@ -53,23 +50,15 @@ export function selectCandidates(
     );
 
   // =====================================================
-  // Rejected Products
-  // =====================================================
-
-  const rejectedProducts =
-    rankedProducts.slice(
-      rejectionStart,
-      rejectionEnd
-    );
-
-  // =====================================================
   // Return
   // =====================================================
 
   return {
+
     best,
+
     recommendedProducts,
-    rejectedProducts,
+
   };
 
 }

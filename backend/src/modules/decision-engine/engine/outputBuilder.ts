@@ -49,6 +49,7 @@ export interface BuildOutputParams {
 export function buildOutput(
   params: BuildOutputParams
 ): EngineResult {
+
   const {
     best,
     recommendations,
@@ -62,8 +63,12 @@ export function buildOutput(
     metadata,
   } = params;
 
-  return {
-    best: best
+  // =====================================================
+  // Best Product
+  // =====================================================
+
+  const bestProduct =
+    best
       ? {
           ...optimizeProduct(best),
 
@@ -75,9 +80,14 @@ export function buildOutput(
             best.confidence ??
             CONFIDENCE.DEFAULT,
         }
-      : null,
+      : null;
 
-    recommendations: recommendations.map(
+  // =====================================================
+  // Recommendations
+  // =====================================================
+
+  const recommendationProducts =
+    recommendations.map(
       (product, index) => ({
         ...optimizeProduct(product),
 
@@ -91,7 +101,18 @@ export function buildOutput(
           product.confidence ??
           CONFIDENCE.DEFAULT,
       })
-    ),
+    );
+
+  // =====================================================
+  // Final Output
+  // =====================================================
+
+  return {
+
+    best: bestProduct,
+
+    recommendations:
+      recommendationProducts,
 
     notRecommended: rejected,
 
@@ -108,19 +129,29 @@ export function buildOutput(
       suggestionResult.suggestions,
 
     metadata: {
-      version: ENGINE.VERSION,
+
+      version:
+        metadata?.version ??
+        ENGINE.VERSION,
 
       executionTime:
-        metadata?.executionTime ?? 0,
+        metadata?.executionTime ??
+        0,
 
       fallbackLevel:
-        metadata?.fallbackLevel ?? 0,
+        metadata?.fallbackLevel ??
+        0,
 
       appliedRules:
-        metadata?.appliedRules ?? [],
+        metadata?.appliedRules ??
+        [],
 
       timestamp:
-        metadata?.timestamp ?? Date.now(),
+        metadata?.timestamp ??
+        Date.now(),
+
     },
+
   };
+
 }

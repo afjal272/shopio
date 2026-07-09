@@ -16,7 +16,7 @@ import { generateSuggestions } from "../suggestions";
 
 import { buildOutput } from "./outputBuilder";
 
-import {ENGINE,COMPARISON,} from "./engine.constants";
+import { ENGINE, COMPARISON } from "./engine.constants";
 
 import { EngineResult } from "./engine.types";
 
@@ -39,11 +39,13 @@ export function runEngine(
   // Filter Products
   // =====================================================
 
-  const filteredProducts =
-    applyFilters(
-      products,
-      parsed
-    );
+  const {
+    matchedProducts,
+    rejectedProducts: filteredRejectedProducts,
+  } = applyFilters(
+    products,
+    parsed
+  );
 
   // =====================================================
   // Fallback Engine
@@ -51,7 +53,7 @@ export function runEngine(
 
   const fallbackResult =
     applyFallback(
-      filteredProducts,
+      matchedProducts,
       products,
       parsed
     );
@@ -88,16 +90,11 @@ export function runEngine(
   // =====================================================
 
   const {
-  best,
-  recommendedProducts,
-  rejectedProducts: rejectedCandidates,
-} = selectCandidates(rankedProducts);
+    best,
+    recommendedProducts,
+  } = selectCandidates(rankedProducts);
 
   // =====================================================
-  // PART 2 STARTS HERE
-  // =====================================================
-
-    // =====================================================
   // Best Product Reasoning
   // =====================================================
 
@@ -126,48 +123,28 @@ export function runEngine(
   // =====================================================
 
   const rejectedProducts =
-  rejectedCandidates.map((product) =>  {
-
-      const reasoning =
-        buildReasoning(
-          product,
-          parsed,
-          true
-        );
-
-      return {
-
+    filteredRejectedProducts.map(
+      ({ product, reason }) => ({
         id: product.id,
-
         name: product.name,
-
-        reason:
-          reasoning.rejectionReason ??
-          "Not recommended",
-
-      };
-
-    });
+        reason,
+      })
+    );
 
   // =====================================================
   // Product Comparison
   // =====================================================
 
-const comparison =
-  compareProducts(
-    rankedProducts.slice(
-      0,
-      COMPARISON.TOP_PRODUCTS
-    ),
-    intent
-  );
+  const comparison =
+    compareProducts(
+      rankedProducts.slice(
+        0,
+        COMPARISON.TOP_PRODUCTS
+      ),
+      intent
+    );
 
-  
   // =====================================================
-  // PART 3 STARTS HERE
-  // =====================================================
-
-    // =====================================================
   // Suggestion Engine
   // =====================================================
 

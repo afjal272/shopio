@@ -1,49 +1,88 @@
 import { generateExplanation } from "../explanation/generateExplanation";
 import { getRejectionReason } from "../explanation/getRejectionReason";
 
-import { ParsedQuery, Product } from "../types";
+import {
+  ParsedQuery,
+  Product,
+  IntentType,
+} from "../types";
 
 import { CONFIDENCE } from "./engine.constants";
 import { ProductReasoning } from "./engine.types";
+
+// ======================================================
+// Reasoning Builder
+// ======================================================
 
 export function buildReasoning(
   product: Product,
   parsed: ParsedQuery,
   rejected = false
 ): ProductReasoning {
-  const intents =
-    parsed.weightedIntent?.map((intent) => intent.type) ??
-    parsed.intent;
 
-  return {
-    explanation: generateExplanation(
+  const intents = extractIntents(parsed);
+
+  const explanation =
+    generateExplanation(
       product,
       intents,
       parsed.constraints
-    ),
+    );
 
-    rejectionReason: rejected
+  const rejectionReason =
+    rejected
       ? getRejectionReason(
           product,
           intents,
           parsed.budget,
           parsed.constraints
         )
-      : undefined,
+      : undefined;
 
-    confidence: normalizeConfidence(
-      product.confidence
-    ),
+  return {
+
+    explanation,
+
+    rejectionReason,
+
+    confidence:
+      normalizeConfidence(
+        product.confidence
+      ),
+
   };
+
 }
 
-// =====================================================
-// Helpers
-// =====================================================
+// ======================================================
+// Intent Extraction
+// ======================================================
+
+function extractIntents(
+  parsed: ParsedQuery
+): IntentType[] {
+
+  if (
+    parsed.weightedIntent &&
+    parsed.weightedIntent.length > 0
+  ) {
+    return parsed.weightedIntent.map(
+      intent => intent.type
+    );
+  }
+
+  return parsed.intent;
+
+}
+
+// ======================================================
+// Confidence
+// ======================================================
 
 function normalizeConfidence(
   confidence?: number
 ): number {
+
   if (confidence == null) {
     return CONFIDENCE.DEFAULT;
   }
@@ -55,4 +94,5 @@ function normalizeConfidence(
       Math.round(confidence)
     )
   );
+
 }
