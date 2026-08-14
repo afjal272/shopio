@@ -1,265 +1,631 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import {
+  FormEvent,
+  KeyboardEvent,
+  useState,
+} from "react";
 
-export default function SearchBar({ initialValue = "" }: { initialValue?: string }) {
-  const router = useRouter()
-  const params = useSearchParams()
+import { usePathname, useRouter } from "next/navigation";
 
-  const [query, setQuery] = useState(initialValue || "")
-  const [loading, setLoading] = useState(false)
-  const [showSuggestions, setShowSuggestions] = useState(false)
+// ======================================================
+// Props
+// ======================================================
 
-  //  NEW: dynamic suggestions
-  const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>([])
+interface SearchBarProps {
+  initialValue?: string;
+}
 
-  //  NEW: keyboard navigation
-  const [activeIndex, setActiveIndex] = useState(-1)
+// ======================================================
+// Constants
+// ======================================================
 
-  //  NEW: recent searches
-  const [recentSearches, setRecentSearches] = useState<string[]>([])
+const STATIC_SUGGESTIONS = [
+  "best gaming phone",
+  "best phone under 20000",
+  "best camera phone",
+  "best laptop for coding",
+];
 
-  //  NEW: click tracking data
-  const [clickData, setClickData] = useState<Record<string, number>>({})
+// ======================================================
+// Component
+// ======================================================
 
-  const suggestions = [
-    "best gaming phone",
-    "best phone under 20000",
-    "best camera phone",
-    "best laptop for coding",
-  ]
+export default function SearchBar({
+  initialValue = "",
+}: SearchBarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // LOAD recent searches
-  useEffect(() => {
-    const stored = localStorage.getItem("recent_searches")
-    if (stored) {
-      setRecentSearches(JSON.parse(stored))
+  // ====================================================
+  // State
+  // ====================================================
+
+  const [query, setQuery] =
+    useState(initialValue);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [showSuggestions, setShowSuggestions] =
+    useState(false);
+
+  const [activeIndex, setActiveIndex] =
+    useState(-1);
+
+  const [recentSearches, setRecentSearches] =
+    useState<string[]>([]);
+
+  const [clickData, setClickData] =
+    useState<Record<string, number>>({});
+
+  // ====================================================
+  // Load Local Search Data
+  // ====================================================
+
+  const loadLocalSearchData = () => {
+    if (typeof window === "undefined") {
+      return;
     }
 
-    //  LOAD click data
-    const clicks = localStorage.getItem("search_clicks")
-    if (clicks) {
-      setClickData(JSON.parse(clicks))
-    }
-  }, [])
+    try {
+      const storedRecent =
+        localStorage.getItem(
+          "recent_searches"
+        );
 
-  //  SAVE recent searches
-  const saveRecent = (value: string) => {
-    let updated = [value, ...recentSearches.filter((v) => v !== value)]
-    updated = updated.slice(0, 5)
+      if (storedRecent) {
+        const parsed =
+          JSON.parse(storedRecent);
 
-    setRecentSearches(updated)
-    localStorage.setItem("recent_searches", JSON.stringify(updated))
-  }
-
-  //  NEW: track click
-  const trackClick = (value: string) => {
-    const updated = {
-      ...clickData,
-      [value]: (clickData[value] || 0) + 1
-    }
-
-    setClickData(updated)
-    localStorage.setItem("search_clicks", JSON.stringify(updated))
-  }
-
- 
-  useEffect(() => {
-    const q = params.get("q")
-
-    if (q) {
-      setQuery(q)
-    }
-
-    setLoading(false)
-  }, [params])
-
-  
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!query || query.length < 2) {
-        setDynamicSuggestions([])
-        return
+        if (Array.isArray(parsed)) {
+          setRecentSearches(
+            parsed
+              .filter(
+                (value): value is string =>
+                  typeof value === "string"
+              )
+              .slice(0, 5)
+          );
+        }
       }
 
-      const generated = [
-        `${query} under 15000`,
-        `${query} under 20000`,
-        `best ${query}`,
-        `${query} with 8GB RAM`,
-        `${query} for gaming`,
-      ]
+      const storedClicks =
+        localStorage.getItem(
+          "search_clicks"
+        );
 
-      setDynamicSuggestions(generated)
-      setActiveIndex(-1)
-    }, 300)
+      if (storedClicks) {
+        const parsed =
+          JSON.parse(storedClicks);
 
-    return () => clearTimeout(timeout)
-  }, [query])
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          !Array.isArray(parsed)
+        ) {
+          setClickData(parsed);
+        }
+      }
+    } catch {
+      setRecentSearches([]);
+      setClickData({});
+    }
+  };
 
-  const handleSearch = () => {
-    if (!query.trim()) return
+  // ====================================================
+  // Save Recent Search
+  // ====================================================
 
-    setLoading(true)
-    setShowSuggestions(false)
+  const saveRecentSearch = (
+    value: string
+  ) => {
+    const normalized =
+      value.trim();
 
-    saveRecent(query)
-    trackClick(query) 
+    if (!normalized) {
+      return;
+    }
 
-    router.push(`/search?q=${encodeURIComponent(query)}`)
-  }
+    const updated = [
+      normalized,
 
-  const handleSelect = (value: string) => {
-    setQuery(value)
-    setShowSuggestions(false)
-    setLoading(true)
-
-    saveRecent(value)
-    trackClick(value) 
-
-    router.push(`/search?q=${encodeURIComponent(value)}`)
-  }
-
-  //  MERGE + RANKING (NEW)
-  const filteredSuggestions = Array.from(
-    new Set([
-      ...recentSearches,
-      ...suggestions.filter((s) =>
-        s.toLowerCase().includes(query.toLowerCase())
+      ...recentSearches.filter(
+        (item) =>
+          item.toLowerCase() !==
+          normalized.toLowerCase()
       ),
-      ...dynamicSuggestions
-    ])
-  )
-  .sort((a, b) => (clickData[b] || 0) - (clickData[a] || 0)) // 🔥 KEY
-  .slice(0, 8)
+    ].slice(0, 5);
 
-  //  NEW: highlight function
-  const highlightMatch = (text: string, query: string) => {
-    if (!query) return text
+    setRecentSearches(updated);
 
-    const regex = new RegExp(`(${query})`, "gi")
-    const parts = text.split(regex)
+    localStorage.setItem(
+      "recent_searches",
+      JSON.stringify(updated)
+    );
+  };
 
-    return parts.map((part, i) =>
-      part.toLowerCase() === query.toLowerCase() ? (
-        <span key={i} className="font-semibold text-black">
-          {part}
-        </span>
-      ) : (
-        part
-      )
+  // ====================================================
+  // Track Search
+  // ====================================================
+
+  const trackSearch = (
+    value: string
+  ) => {
+    const normalized =
+      value.trim();
+
+    if (!normalized) {
+      return;
+    }
+
+    const updated = {
+      ...clickData,
+
+      [normalized]:
+        (clickData[normalized] ?? 0) + 1,
+    };
+
+    setClickData(updated);
+
+    localStorage.setItem(
+      "search_clicks",
+      JSON.stringify(updated)
+    );
+  };
+
+  // ====================================================
+  // Navigate To Search
+  // ====================================================
+
+  const navigateToSearch = (
+    value: string
+  ) => {
+    const normalized =
+      value.trim();
+
+    if (!normalized) {
+      return;
+    }
+
+    const target =
+      `/search?q=${encodeURIComponent(
+        normalized
+      )}`;
+
+    setLoading(true);
+    setShowSuggestions(false);
+    setActiveIndex(-1);
+
+    saveRecentSearch(normalized);
+    trackSearch(normalized);
+
+    /*
+     * IMPORTANT:
+     *
+     * SearchPageClient currently keeps its own query
+     * state and does not fully synchronize that state
+     * after an in-place router.replace() on the same
+     * /search route.
+     *
+     * Therefore, when already on /search, perform a
+     * real browser navigation so the page initializes
+     * from the new URL query.
+     *
+     * This guarantees:
+     *
+     * /search?q=20000
+     *        ->
+     * /search?q=25000
+     *
+     * actually triggers a fresh search.
+     */
+
+    if (pathname === "/search") {
+      window.location.assign(target);
+      return;
+    }
+
+    router.push(target);
+  };
+
+  // ====================================================
+  // Submit
+  // ====================================================
+
+  const handleSubmit = (
+    event?: FormEvent
+  ) => {
+    event?.preventDefault();
+
+    const normalized =
+      query.trim();
+
+    if (!normalized) {
+      return;
+    }
+
+    navigateToSearch(normalized);
+  };
+
+  // ====================================================
+  // Suggestion Selection
+  // ====================================================
+
+  const handleSelect = (
+    value: string
+  ) => {
+    const normalized =
+      value.trim();
+
+    if (!normalized) {
+      return;
+    }
+
+    setQuery(normalized);
+
+    navigateToSearch(normalized);
+  };
+
+  // ====================================================
+  // Generate Dynamic Suggestions
+  // ====================================================
+
+  const normalizedQuery =
+    query.trim();
+
+  const dynamicSuggestions =
+    normalizedQuery.length >= 2
+      ? [
+          `${normalizedQuery} under 15000`,
+          `${normalizedQuery} under 20000`,
+          `best ${normalizedQuery}`,
+          `${normalizedQuery} with 8GB RAM`,
+          `${normalizedQuery} for gaming`,
+        ]
+      : [];
+
+  // ====================================================
+  // Filter Static Suggestions
+  // ====================================================
+
+  const filteredStaticSuggestions =
+    STATIC_SUGGESTIONS.filter(
+      (suggestion) =>
+        !normalizedQuery ||
+        suggestion
+          .toLowerCase()
+          .includes(
+            normalizedQuery.toLowerCase()
+          )
+    );
+
+  // ====================================================
+  // Merge Suggestions
+  // ====================================================
+
+  const filteredSuggestions =
+    Array.from(
+      new Set([
+        ...recentSearches,
+        ...filteredStaticSuggestions,
+        ...dynamicSuggestions,
+      ])
     )
-  }
+      .filter(
+        (value) =>
+          value.trim().length > 0
+      )
+      .sort(
+        (a, b) =>
+          (clickData[b] ?? 0) -
+          (clickData[a] ?? 0)
+      )
+      .slice(0, 8);
+
+  // ====================================================
+  // Keyboard Navigation
+  // ====================================================
+
+  const handleKeyDown = (
+    event: KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (
+      event.key === "ArrowDown"
+    ) {
+      event.preventDefault();
+
+      if (
+        filteredSuggestions.length ===
+        0
+      ) {
+        return;
+      }
+
+      setActiveIndex((current) =>
+        current <
+        filteredSuggestions.length - 1
+          ? current + 1
+          : 0
+      );
+
+      return;
+    }
+
+    if (
+      event.key === "ArrowUp"
+    ) {
+      event.preventDefault();
+
+      if (
+        filteredSuggestions.length ===
+        0
+      ) {
+        return;
+      }
+
+      setActiveIndex((current) =>
+        current > 0
+          ? current - 1
+          : filteredSuggestions.length - 1
+      );
+
+      return;
+    }
+
+    if (
+      event.key === "Escape"
+    ) {
+      setShowSuggestions(false);
+      setActiveIndex(-1);
+
+      return;
+    }
+
+    if (
+      event.key === "Enter"
+    ) {
+      event.preventDefault();
+
+      if (
+        activeIndex >= 0 &&
+        activeIndex <
+          filteredSuggestions.length
+      ) {
+        handleSelect(
+          filteredSuggestions[
+            activeIndex
+          ]
+        );
+
+        return;
+      }
+
+      handleSubmit();
+    }
+  };
+
+  // ====================================================
+  // Highlight Search Match
+  // ====================================================
+
+  const highlightMatch = (
+    text: string
+  ) => {
+    const search =
+      normalizedQuery;
+
+    if (!search) {
+      return text;
+    }
+
+    const escaped =
+      search.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+    const regex =
+      new RegExp(
+        `(${escaped})`,
+        "gi"
+      );
+
+    return text
+      .split(regex)
+      .map((part, index) => {
+        if (
+          part.toLowerCase() ===
+          search.toLowerCase()
+        ) {
+          return (
+            <span
+              key={index}
+              className="font-semibold text-black"
+            >
+              {part}
+            </span>
+          );
+        }
+
+        return (
+          <span key={index}>
+            {part}
+          </span>
+        );
+      });
+  };
+
+  // ====================================================
+  // Render
+  // ====================================================
 
   return (
-  <div className="relative w-full">
-
-    {/* SEARCH ROW */}
-    <div className="flex items-center gap-2 w-full">
-
-      <input
-        className="
-          flex-1
-          min-w-0
-          border
-          px-4
-          py-3
-          rounded-xl
-          outline-none
-          text-sm
-          md:text-base
-          focus:ring-2
-          focus:ring-black/20
-          focus:border-black
-          transition
-        "
-        placeholder="e.g. best phone under 20000 for gaming"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value)
-          setShowSuggestions(true)
-          setActiveIndex(-1)
-        }}
-        onFocus={() => setShowSuggestions(true)}
-        onBlur={() => {
-          setTimeout(() => setShowSuggestions(false), 150)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            if (activeIndex >= 0) {
-              handleSelect(filteredSuggestions[activeIndex])
-            } else {
-              handleSearch()
-            }
-          }
-
-          if (e.key === "ArrowDown") {
-            e.preventDefault()
-            setActiveIndex((prev) =>
-              prev < filteredSuggestions.length - 1
-                ? prev + 1
-                : prev
-            )
-          }
-
-          if (e.key === "ArrowUp") {
-            e.preventDefault()
-            setActiveIndex((prev) =>
-              prev > 0 ? prev - 1 : -1
-            )
-          }
-        }}
-      />
-
-      <button
-        onClick={handleSearch}
-        disabled={loading}
-        className="
-          shrink-0
-          bg-black
-          text-white
-          px-4
-          md:px-5
-          py-3
-          rounded-xl
-          hover:opacity-90
-          active:scale-95
-          transition
-          disabled:opacity-60
-          text-sm
-          md:text-base
-        "
+    <div className="relative w-full">
+      <form
+        onSubmit={handleSubmit}
+        className="flex w-full items-center gap-2"
       >
-        {loading ? "..." : "Search"}
-      </button>
-    </div>
+        {/* ==================================================
+            Input
+            ================================================== */}
 
-    {/* SUGGESTIONS */}
-    {showSuggestions && filteredSuggestions.length > 0 && (
-      <div className="absolute top-full left-0 w-full mt-2 bg-white border rounded-xl shadow-md z-10 overflow-hidden">
+        <input
+          type="search"
+          value={query}
+          autoComplete="off"
+          placeholder="e.g. best phone under 20000 for gaming"
+          aria-label="Search products"
+          className="
+            min-w-0
+            flex-1
+            rounded-xl
+            border
+            border-gray-300
+            bg-white
+            px-4
+            py-3
+            text-sm
+            text-black
+            outline-none
+            transition
+            placeholder:text-gray-400
+            focus:border-black
+            focus:ring-2
+            focus:ring-black/10
+            md:text-base
+          "
+          onChange={(event) => {
+            setQuery(
+              event.target.value
+            );
 
-        {recentSearches.length > 0 && (
-          <div className="px-4 py-2 text-xs text-gray-400">
-            Recent searches
+            setShowSuggestions(true);
+            setActiveIndex(-1);
+
+            /*
+             * If the user edits the query after
+             * a previous search, allow the button
+             * to return to normal immediately.
+             */
+            if (loading) {
+              setLoading(false);
+            }
+          }}
+          onFocus={() => {
+            loadLocalSearchData();
+
+            if (
+              filteredSuggestions.length > 0
+            ) {
+              setShowSuggestions(true);
+            }
+          }}
+          onBlur={() => {
+            setTimeout(() => {
+              setShowSuggestions(false);
+              setActiveIndex(-1);
+            }, 150);
+          }}
+          onKeyDown={handleKeyDown}
+        />
+
+        {/* ==================================================
+            Search Button
+            ================================================== */}
+
+        <button
+          type="submit"
+          disabled={
+            loading ||
+            !query.trim()
+          }
+          className="
+            shrink-0
+            rounded-xl
+            bg-black
+            px-5
+            py-3
+            text-sm
+            font-medium
+            text-white
+            transition
+            hover:bg-gray-800
+            active:scale-95
+            disabled:cursor-not-allowed
+            disabled:opacity-50
+            md:text-base
+          "
+        >
+          {loading
+            ? "Searching..."
+            : "Search"}
+        </button>
+      </form>
+
+      {/* ==================================================
+          Suggestions
+          ================================================== */}
+
+      {showSuggestions &&
+        filteredSuggestions.length > 0 && (
+          <div
+            className="
+              absolute
+              left-0
+              right-0
+              top-full
+              z-50
+              mt-2
+              overflow-hidden
+              rounded-xl
+              border
+              border-gray-200
+              bg-white
+              shadow-xl
+            "
+          >
+            {recentSearches.length > 0 && (
+              <div className="border-b border-gray-100 px-4 py-2 text-xs font-medium text-gray-400">
+                Recent searches
+              </div>
+            )}
+
+            {filteredSuggestions.map(
+              (suggestion, index) => (
+                <button
+                  key={`${suggestion}-${index}`}
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+
+                    handleSelect(
+                      suggestion
+                    );
+                  }}
+                  className={`
+                    block
+                    w-full
+                    px-4
+                    py-3
+                    text-left
+                    text-sm
+                    transition
+                    ${
+                      index === activeIndex
+                        ? "bg-gray-100"
+                        : "hover:bg-gray-50"
+                    }
+                  `}
+                >
+                  {highlightMatch(
+                    suggestion
+                  )}
+                </button>
+              )
+            )}
           </div>
         )}
-
-        {filteredSuggestions.map((s, i) => (
-          <div
-            key={i}
-            onMouseDown={() => handleSelect(s)}
-            className={`px-4 py-3 cursor-pointer text-sm ${
-              i === activeIndex
-                ? "bg-gray-200"
-                : "hover:bg-gray-100"
-            }`}
-          >
-            {highlightMatch(s, query)}
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-)
+    </div>
+  );
 }
