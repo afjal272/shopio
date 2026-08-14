@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "description": "AI Shopping Decision Engine Backend",
 
- "main": "dist/src/api/server.js",
+  "main": "dist/src/api/server.js",
 
   "scripts": {
     "dev": "tsx watch src/api/server.ts",
     "build": "tsc",
-   "start": "node dist/src/api/server.js",
+    "start": "node dist/src/api/server.js",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "sync:amazon": "tsx src/scripts/syncAmazon.ts"
   },
 
   "keywords": [

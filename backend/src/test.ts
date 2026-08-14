@@ -6,9 +6,18 @@ import { parseQuery } from "./modules/decision-engine/parser/queryParser";
 
 import { mapProduct } from "./modules/decision-engine/utils/mapProduct";
 
-const prisma = new PrismaClient();
+// ======================================================
+// Prisma
+// ======================================================
 
-const queries = [
+const prisma =
+  new PrismaClient();
+
+// ======================================================
+// Test Queries
+// ======================================================
+
+const queries: readonly string[] = [
   "best phone under 20000 for gaming",
   "camera phone under 25000",
   "best battery phone under 20000",
@@ -19,50 +28,128 @@ const queries = [
   "best phone under 30000 for gaming and camera",
 ];
 
-async function main() {
+// ======================================================
+// Main
+// ======================================================
+
+async function main(): Promise<void> {
+
+  // ====================================================
+  // Fetch Products With Marketplace Offers
+  // ====================================================
 
   const dbProducts =
-    await prisma.product.findMany();
+    await prisma.product.findMany({
+      include: {
+        offers: {
+          orderBy: {
+            updatedAt: "desc",
+          },
+        },
+      },
+
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+  // ====================================================
+  // Map Database Products
+  // ====================================================
 
   const products =
     dbProducts.map(mapProduct);
 
-  for (const query of queries) {
+  console.log(
+    `Loaded ${products.length} products.`
+  );
 
-    console.log("\n==============================");
+  // ====================================================
+  // Run Decision Engine
+  // ====================================================
 
-    console.log("QUERY:", query);
+  for (
+    const query of queries
+  ) {
+
+    console.log(
+      "\n=============================="
+    );
+
+    console.log(
+      "QUERY:",
+      query
+    );
+
+    // --------------------------------------------------
+    // Parse Query
+    // --------------------------------------------------
 
     const parsed =
       parseQuery(query);
 
+    // --------------------------------------------------
+    // Run Engine
+    // --------------------------------------------------
+
     const result =
-      runEngine(parsed, products);
+      runEngine(
+        parsed,
+        products
+      );
+
+    // --------------------------------------------------
+    // Best Product
+    // --------------------------------------------------
 
     console.log(
       "BEST:",
-      result.best?.name ?? "No Product"
+      result.best?.name ??
+        "No Product"
     );
 
     console.log(
       "SCORE:",
-      result.best?.score ?? "-"
+      result.best?.score ??
+        "-"
     );
 
     console.log(
       "CONFIDENCE:",
-      result.best?.confidence ?? "-"
+      result.best?.confidence ??
+        "-"
     );
 
     console.log(
       "WHY:",
-      result.best?.explanation ?? "-"
+      result.best?.explanation ??
+        "-"
     );
 
-    console.log("\nRECOMMENDATIONS:");
+    // --------------------------------------------------
+    // Recommendations
+    // --------------------------------------------------
+
+    console.log(
+      "\nRECOMMENDATIONS:"
+    );
+
+    if (
+      result.recommendations.length === 0
+    ) {
+
+      console.log(
+        "No recommendations available."
+      );
+
+      continue;
+    }
 
     result.recommendations.forEach(
-      (product, index) => {
+      (
+        product,
+        index
+      ) => {
 
         console.log(
           `${index + 1}. ${product.name} (${product.score})`
@@ -70,19 +157,35 @@ async function main() {
 
       }
     );
-
   }
-
-  await prisma.$disconnect();
-
 }
 
-main().catch(async (error) => {
+// ======================================================
+// Application Lifecycle
+// ======================================================
 
-  console.error(error);
+async function bootstrap(): Promise<void> {
 
-  await prisma.$disconnect();
+  try {
 
-  process.exit(1);
+    await main();
 
-});
+  } catch (
+    error: unknown
+  ) {
+
+    console.error(
+      "Decision engine test failed:",
+      error
+    );
+
+    process.exitCode = 1;
+
+  } finally {
+
+    await prisma.$disconnect();
+
+  }
+}
+
+void bootstrap();

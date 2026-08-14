@@ -1,66 +1,100 @@
-import { Router, Request, Response } from "express"
-import { PrismaClient } from "@prisma/client"
+import {
+  Request,
+  Response,
+  Router,
+} from "express";
 
-const prisma = new PrismaClient()
+import { productService } from "../../services/product.service";
 
-export const productRouter = Router()
+export const productRouter = Router();
 
+// ======================================================
 // GET ALL PRODUCTS
-productRouter.get("/products", async (_: Request, res: Response) => {
-  try {
-    const products = await prisma.product.findMany()
+// ======================================================
 
-    return res.status(200).json({
-      success: true,
-      data: products,
-    })
-  } catch (error) {
-    console.error("GET PRODUCTS ERROR:", error)
+productRouter.get(
+  "/products",
+  async (
+    _req: Request,
+    res: Response
+  ) => {
+    try {
+      const products =
+        await productService.getAllProducts();
 
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch products",
-    })
-  }
-})
+      return res.status(200).json({
+        success: true,
+        data: products,
+      });
+    } catch (error: unknown) {
+      console.error(
+        "GET PRODUCTS ERROR:",
+        error
+      );
 
-// GET SINGLE PRODUCT
-productRouter.get("/products/:id", async (req: Request, res: Response) => {
-  const id =
-    typeof req.params.id === "string"
-      ? req.params.id.trim()
-      : ""
-
-  // VALIDATE ID
-  if (!id) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid product ID",
-    })
-  }
-
-  try {
-    const product = await prisma.product.findUnique({
-      where: { id },
-    })
-
-    if (!product) {
-      return res.status(404).json({
+      return res.status(500).json({
         success: false,
-        message: "Product not found",
-      })
+        message: "Failed to fetch products",
+      });
+    }
+  }
+);
+
+// ======================================================
+// GET SINGLE PRODUCT
+// ======================================================
+
+productRouter.get(
+  "/products/:id",
+  async (
+    req: Request,
+    res: Response
+  ) => {
+    const id =
+      typeof req.params.id === "string"
+        ? req.params.id.trim()
+        : "";
+
+    // --------------------------------------------------
+    // Validate ID
+    // --------------------------------------------------
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product ID",
+      });
     }
 
-    return res.status(200).json({
-      success: true,
-      data: product,
-    })
-  } catch (error) {
-    console.error("GET SINGLE PRODUCT ERROR:", error)
+    try {
+      const product =
+        await productService.getProductById(id);
 
-    return res.status(500).json({
-      success: false,
-      message: "Error fetching product",
-    })
+      // ------------------------------------------------
+      // Product Not Found
+      // ------------------------------------------------
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: product,
+      });
+    } catch (error: unknown) {
+      console.error(
+        "GET SINGLE PRODUCT ERROR:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching product",
+      });
+    }
   }
-})
+);

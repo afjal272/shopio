@@ -1,42 +1,155 @@
-import { Router } from "express"
-import { runEngine } from "../../modules/decision-engine/engine"
-import { parseQuery } from "../../modules/decision-engine/parser/queryParser"
-import { compareController } from "../controllers/compare.controller"
-import { productService } from "../../services/product.service"
+import {
+  Router,
+  Request,
+  Response,
+} from "express";
 
-export const searchRouter = Router()
+import {
+  Marketplace,
+} from "@prisma/client";
 
-// SEARCH API
-searchRouter.get("/", async (req, res) => {
-  try {
-    const query = (req.query.q as string)?.trim()
+import {
+  runEngine,
+} from "../../modules/decision-engine/engine";
 
-    if (!query) {
-      return res.status(400).json({
-        error: "Query is required",
-      })
+import {
+  parseQuery,
+} from "../../modules/decision-engine/parser/queryParser";
+
+import {
+  compareController,
+} from "../controllers/compare.controller";
+
+import {
+  productService,
+} from "../../services/product.service";
+
+// ======================================================
+// Router
+// ======================================================
+
+export const searchRouter =
+  Router();
+
+// ======================================================
+// Search
+// ======================================================
+
+searchRouter.get(
+  "/",
+  async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+
+      const query =
+        typeof req.query.q === "string"
+          ? req.query.q.trim()
+          : "";
+
+      if (!query) {
+        return res.status(400).json({
+          success: false,
+          error: "Query is required",
+        });
+      }
+
+      // ------------------------------------------------
+      // Parse User Query
+      // ------------------------------------------------
+
+      const parsed =
+        parseQuery(query);
+
+      // ------------------------------------------------
+      // Fetch Amazon-Backed Products
+      // ------------------------------------------------
+
+      const products =
+        await productService.getProductsByMarketplace(
+          Marketplace.AMAZON
+        );
+
+      // ------------------------------------------------
+      // No Products
+      // ------------------------------------------------
+
+      if (products.length === 0) {
+        return res.status(200).json({
+          success: true,
+
+          data: {
+            best: null,
+
+            recommendations: [],
+          },
+
+          meta: {
+            query,
+
+            marketplace:
+              Marketplace.AMAZON,
+
+            productCount: 0,
+          },
+        });
+      }
+
+      // ------------------------------------------------
+      // Decision Engine
+      // ------------------------------------------------
+
+      const result =
+        runEngine(
+          parsed,
+          products
+        );
+
+      // ------------------------------------------------
+      // Response
+      // ------------------------------------------------
+
+      return res.status(200).json({
+        success: true,
+
+        data: result,
+
+        meta: {
+          query,
+
+          marketplace:
+            Marketplace.AMAZON,
+
+          productCount:
+            products.length,
+        },
+      });
+
+    } catch (
+      error: unknown
+    ) {
+
+      console.error(
+        "Search error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        error:
+          "Internal server error",
+      });
     }
-
-    // PARSE QUERY
-    const parsed = parseQuery(query)
-
-    // FETCH PRODUCTS FROM DATABASE
-    const products = await productService.getAllProducts()
-
-    // RUN DECISION ENGINE
-    const result = runEngine(parsed, products)
-
-    // RESPONSE
-    return res.status(200).json(result)
-
-  } catch (err) {
-    console.error("Search error:", err)
-
-    return res.status(500).json({
-      error: "Internal server error",
-    })
   }
-})
+);
 
-// COMPARE API
-searchRouter.post("/compare", compareController)
+// ======================================================
+// Compare
+// ======================================================
+
+searchRouter.post(
+  "/compare",
+  compareController
+);

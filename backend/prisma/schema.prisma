@@ -7,21 +7,95 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ======================================================
+// Marketplace
+// ======================================================
+
+enum Marketplace {
+  AMAZON
+  FLIPKART
+}
+
+// ======================================================
+// Product
+// Canonical product used by the Decision Engine
+// ======================================================
+
 model Product {
-  id            String   @id @default(uuid())
-  brand         String
+  id String @id @default(uuid())
+
+  brand       String
+  name        String
+  category    String
+  description String
+
+  // Canonical identity used to match the same
+  // product across different marketplaces.
+  canonicalKey String? @unique
+
   price         Int
-  rating        Float
-  reviewsCount  Int      @default(0)
-  tags          String[]
-  specs         Json
-  createdAt     DateTime @default(now())
-  category      String
-  description   String
   discountPrice Int?
-  highlights    String[]
-  images        String[]
-  name          String
-  updatedAt     DateTime @updatedAt
-  weaknesses    String[]
+
+  rating       Float
+  reviewsCount Int   @default(0)
+
+  tags       String[]
+  highlights String[]
+  weaknesses String[]
+  images     String[]
+
+  specs Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  offers ProductOffer[]
+
+  @@index([brand])
+  @@index([category])
+  @@index([price])
+  @@index([brand, category])
+}
+
+// ======================================================
+// Product Offer
+// Marketplace-specific commercial data
+// ======================================================
+
+model ProductOffer {
+  id String @id @default(uuid())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  marketplace Marketplace
+
+  // Amazon ASIN / Flipkart product identifier.
+  externalId String
+
+  title String?
+
+  price         Int
+  originalPrice Int?
+
+  currency String @default("INR")
+
+  productUrl String
+  imageUrl   String?
+
+  availability String?
+
+  rating       Float?
+  reviewsCount Int?
+
+  lastSyncedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([marketplace, externalId])
+  @@index([productId])
+  @@index([marketplace])
+  @@index([marketplace, productId])
+  @@index([lastSyncedAt])
 }
