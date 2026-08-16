@@ -42,28 +42,47 @@ export async function searchProducts(
     );
   }
 
-  // ----------------------------------------------------
-  // Intent
-  // ----------------------------------------------------
-  //
-  // Intent is currently not sent to the backend.
-  // It remains part of the service contract for future
-  // search-intent support.
-  //
-  void intent;
+  // ====================================================
+  // Normalize Intent
+  // ====================================================
 
-  // ----------------------------------------------------
-  // Build URL
-  // ----------------------------------------------------
+  const normalizedIntent =
+    Array.from(
+      new Set(
+        intent
+          .map((value) => value.trim().toLowerCase())
+          .filter(Boolean)
+      )
+    );
+
+  const finalIntent =
+    normalizedIntent.length > 0
+      ? normalizedIntent
+      : ["balanced"];
+
+  // ====================================================
+  // Build Query Parameters
+  // ====================================================
+
+  const searchParams =
+    new URLSearchParams();
+
+  searchParams.set(
+    "q",
+    normalizedQuery
+  );
+
+  searchParams.set(
+    "intent",
+    finalIntent.join(",")
+  );
 
   const url =
-    `${BASE_URL}/api/search?q=${encodeURIComponent(
-      normalizedQuery
-    )}`;
+    `${BASE_URL}/api/search?${searchParams.toString()}`;
 
-  // ----------------------------------------------------
+  // ====================================================
   // Request
-  // ----------------------------------------------------
+  // ====================================================
 
   let res: Response;
 
@@ -93,9 +112,9 @@ export async function searchProducts(
     );
   }
 
-  // ----------------------------------------------------
+  // ====================================================
   // HTTP Error
-  // ----------------------------------------------------
+  // ====================================================
 
   if (!res.ok) {
 
@@ -132,9 +151,9 @@ export async function searchProducts(
     throw new Error(message);
   }
 
-  // ----------------------------------------------------
+  // ====================================================
   // Parse Response
-  // ----------------------------------------------------
+  // ====================================================
 
   let body: SearchApiResponse;
 
@@ -150,9 +169,9 @@ export async function searchProducts(
     );
   }
 
-  // ----------------------------------------------------
+  // ====================================================
   // API Error
-  // ----------------------------------------------------
+  // ====================================================
 
   if (!body.success) {
 
@@ -162,9 +181,9 @@ export async function searchProducts(
     );
   }
 
-  // ----------------------------------------------------
+  // ====================================================
   // Validate Search Data
-  // ----------------------------------------------------
+  // ====================================================
 
   if (
     !body.data ||
@@ -176,28 +195,9 @@ export async function searchProducts(
     );
   }
 
-  // ----------------------------------------------------
-  // Return Actual Search Result
-  // ----------------------------------------------------
-  //
-  // Backend response:
-  //
-  // {
-  //   success: true,
-  //   data: {
-  //     best,
-  //     recommendations,
-  //     parsed,
-  //     comparison,
-  //     notRecommended,
-  //     suggestions,
-  //     isRelaxed
-  //   }
-  // }
-  //
-  // Results.tsx expects the inner `data` object,
-  // not the complete API wrapper.
-  //
+  // ====================================================
+  // Return Search Result
+  // ====================================================
 
   return body.data;
 }

@@ -17,6 +17,11 @@ import {
 } from "../../modules/decision-engine/parser/queryParser";
 
 import {
+  IntentType,
+  WeightedIntent,
+} from "../../modules/decision-engine/types";
+
+import {
   compareController,
 } from "../controllers/compare.controller";
 
@@ -32,6 +37,17 @@ export const searchRouter =
   Router();
 
 // ======================================================
+// Supported UI Intents
+// ======================================================
+
+const SUPPORTED_INTENTS: readonly IntentType[] = [
+  "gaming",
+  "camera",
+  "battery",
+  "balanced",
+];
+
+// ======================================================
 // Search
 // ======================================================
 
@@ -42,6 +58,10 @@ searchRouter.get(
     res: Response
   ) => {
     try {
+
+      // ==================================================
+      // Query
+      // ==================================================
 
       const query =
         typeof req.query.q === "string"
@@ -55,25 +75,46 @@ searchRouter.get(
         });
       }
 
-      // ------------------------------------------------
+      // ==================================================
       // Parse User Query
-      // ------------------------------------------------
+      // ==================================================
 
       const parsed =
         parseQuery(query);
 
-      // ------------------------------------------------
+      // ==================================================
+      // Apply Explicit UI Intent
+      // ==================================================
+
+      const requestedIntent =
+        parseRequestedIntent(
+          req.query.intent
+        );
+
+      if (
+        requestedIntent.length > 0
+      ) {
+        parsed.intent =
+          requestedIntent;
+
+        parsed.weightedIntent =
+          createWeightedIntent(
+            requestedIntent
+          );
+      }
+
+      // ==================================================
       // Fetch Amazon-Backed Products
-      // ------------------------------------------------
+      // ==================================================
 
       const products =
         await productService.getProductsByMarketplace(
           Marketplace.AMAZON
         );
 
-      // ------------------------------------------------
+      // ==================================================
       // No Products
-      // ------------------------------------------------
+      // ==================================================
 
       if (products.length === 0) {
         return res.status(200).json({
@@ -83,6 +124,16 @@ searchRouter.get(
             best: null,
 
             recommendations: [],
+
+            parsed,
+
+            comparison: [],
+
+            notRecommended: [],
+
+            suggestions: [],
+
+            isRelaxed: false,
           },
 
           meta: {
@@ -92,13 +143,16 @@ searchRouter.get(
               Marketplace.AMAZON,
 
             productCount: 0,
+
+            intent:
+              parsed.intent,
           },
         });
       }
 
-      // ------------------------------------------------
+      // ==================================================
       // Decision Engine
-      // ------------------------------------------------
+      // ==================================================
 
       const result =
         runEngine(
@@ -106,9 +160,9 @@ searchRouter.get(
           products
         );
 
-      // ------------------------------------------------
+      // ==================================================
       // Response
-      // ------------------------------------------------
+      // ==================================================
 
       return res.status(200).json({
         success: true,
@@ -123,6 +177,9 @@ searchRouter.get(
 
           productCount:
             products.length,
+
+          intent:
+            parsed.intent,
         },
       });
 
@@ -153,3 +210,73 @@ searchRouter.post(
   "/compare",
   compareController
 );
+
+// ======================================================
+// Intent Parser
+// ======================================================
+
+function parseRequestedIntent(
+  value: unknown
+): IntentType[] {
+
+  if (
+    typeof value !== "string"
+  ) {
+    return [];
+  }
+
+  const values =
+    value
+      .split(",")
+      .map(
+        (item) =>
+          item.trim().toLowerCase()
+      )
+      .filter(Boolean);
+
+  const validIntents =
+    values.filter(
+      (
+        item
+      ): item is IntentType =>
+        SUPPORTED_INTENTS.includes(
+          item as IntentType
+        )
+    );
+
+  return [
+    ...new Set(
+      validIntents
+    ),
+  ];
+}
+
+// ======================================================
+// Weighted Intent Builder
+// ======================================================
+
+function createWeightedIntent(
+  intents: IntentType[]
+): WeightedIntent[] {
+
+  if (
+    intents.length === 0
+  ) {
+    return [
+      {
+        type: "balanced",
+        weight: 1,
+      },
+    ];
+  }
+
+  const weight =
+    1 / intents.length;
+
+  return intents.map(
+    (type) => ({
+      type,
+      weight,
+    })
+  );
+}
