@@ -426,10 +426,6 @@ function parsePrice(
     return null;
   }
 
-  /*
-   * Reject malformed numeric strings such as:
-   * "12.34.56"
-   */
   if (
     !/^\d+(?:\.\d+)?$/.test(
       normalized
@@ -631,10 +627,7 @@ function detectCategory(
 
 function extractSpecs(
   title: string
-): Record<
-  string,
-  JsonValue
-> {
+): Record<string, JsonValue> {
   const normalized =
     decodeHtmlEntities(
       title
@@ -648,68 +641,22 @@ function extractSpecs(
   // RAM
   // ====================================================
 
-  /*
-   * IMPORTANT:
-   * Only match GB immediately associated with RAM.
-   *
-   * This prevents:
-   * "64 GB Storage"
-   * from becoming:
-   * ram = 64
-   */
-  const ramMatch =
-    normalized.match(
-      /(\d+(?:\.\d+)?)\s*GB\s*RAM\b/i
-    );
+  const ram =
+    extractRam(normalized);
 
-  if (
-    ramMatch?.[1]
-  ) {
-    const ram =
-      Number(
-        ramMatch[1]
-      );
-
-    if (
-      Number.isFinite(ram) &&
-      ram > 0 &&
-      ram <= 256
-    ) {
-      specs.ram = ram;
-    }
+  if (ram !== null) {
+    specs.ram = ram;
   }
 
   // ====================================================
   // Storage
   // ====================================================
 
-  const storageMatch =
-    normalized.match(
-      /(\d+(?:\.\d+)?)\s*(GB|TB)\s*(?:Storage|ROM)\b/i
-    );
+  const storage =
+    extractStorage(normalized);
 
-  if (
-    storageMatch?.[1] &&
-    storageMatch?.[2]
-  ) {
-    const value =
-      Number(
-        storageMatch[1]
-      );
-
-    const unit =
-      storageMatch[2]
-        .toUpperCase();
-
-    if (
-      Number.isFinite(value) &&
-      value > 0
-    ) {
-      specs.storage =
-        unit === "TB"
-          ? value * 1024
-          : value;
-    }
+  if (storage !== null) {
+    specs.storage = storage;
   }
 
   // ====================================================
@@ -862,9 +809,7 @@ function extractSpecs(
       );
 
     if (
-      Number.isFinite(
-        frontCameraMp
-      ) &&
+      Number.isFinite(frontCameraMp) &&
       frontCameraMp > 0
     ) {
       specs.frontCameraMp =
@@ -877,16 +822,51 @@ function extractSpecs(
   // ====================================================
 
   const processorPatterns = [
+    /*
+     * Snapdragon examples:
+     * Snapdragon 8 Gen 3
+     * Snapdragon 8s Gen 3
+     * Snapdragon 7 Gen 4
+     * Snapdragon 6s Gen 4
+     * Snapdragon 695 5G
+     */
     /Snapdragon\s+[A-Za-z0-9+.-]+(?:\s+Gen\s*\d+)?(?:\s+[A-Za-z0-9+.-]+)?/i,
 
-    /Dimensity\s+\d+[A-Za-z0-9+.-]*/i,
+    /*
+     * MediaTek Dimensity examples:
+     * Dimensity 9400
+     * Dimensity 8400 Ultra
+     * Dimensity 7400
+     */
+    /Dimensity\s+\d+[A-Za-z0-9+.-]*(?:\s+(?:Ultra|Pro|Max))?/i,
 
+    /*
+     * MediaTek Helio examples:
+     * MediaTek Helio G99
+     * MediaTek Helio G100
+     */
     /MediaTek\s+Helio\s+[A-Za-z0-9+.-]+/i,
 
+    /*
+     * Unisoc examples:
+     * Unisoc T820
+     * Unisoc T760
+     */
     /Unisoc\s+[A-Za-z0-9+.-]+/i,
 
+    /*
+     * Apple examples:
+     * Apple A18 Pro
+     * Apple A17 Pro
+     * Apple A16 Bionic
+     */
     /Apple\s+A\d+\s*(?:Bionic|Pro)?/i,
 
+    /*
+     * Exynos examples:
+     * Exynos 2400
+     * Exynos 1580
+     */
     /Exynos\s+[A-Za-z0-9+.-]+/i,
   ];
 
@@ -902,8 +882,31 @@ function extractSpecs(
     if (
       match?.[0]
     ) {
-      specs.chipset =
-        match[0].trim();
+      const chipset =
+        normalizeChipsetName(
+          match[0]
+        );
+
+      if (chipset) {
+        specs.chipset =
+          chipset;
+
+        const processorScore =
+          getProcessorScore(
+            chipset
+          );
+
+        /*
+         * Missing processor classification is
+         * represented as missing data, not zero.
+         */
+        if (
+          processorScore !== null
+        ) {
+          specs.processorScore =
+            processorScore;
+        }
+      }
 
       break;
     }
@@ -974,6 +977,915 @@ function extractSpecs(
   }
 
   return specs;
+}
+
+// ======================================================
+// RAM Extraction
+// ======================================================
+
+/**
+ * Extracts RAM from real marketplace title formats.
+ *
+ * Supported:
+ *   8GB RAM
+ *   12 GB RAM
+ *   8GB + 256GB
+ *   12GB, 512GB
+ *   12GB/512GB
+ *   12+256GB
+ *   8GB 256GB Storage
+ *   12GB LPDDR5X
+ *
+ * A standalone "256GB Storage" is never treated as RAM.
+ */
+function extractRam(
+  title: string
+): number | null {
+  // ----------------------------------------------------
+  // 1. Explicit RAM
+  // ----------------------------------------------------
+
+  const explicitPatterns = [
+    /\b(\d+(?:\.\d+)?)\s*GB\s*RAM\b/i,
+    /\b(\d+(?:\.\d+)?)\s*GB\s*LPDDR(?:[345X]+)?\b/i,
+  ];
+
+  for (
+    const pattern of
+      explicitPatterns
+  ) {
+    const match =
+      title.match(
+        pattern
+      );
+
+    if (
+      !match?.[1]
+    ) {
+      continue;
+    }
+
+    const value =
+      Number(
+        match[1]
+      );
+
+    if (
+      isValidRam(value)
+    ) {
+      return value;
+    }
+  }
+
+  // ----------------------------------------------------
+  // 2. RAM + Storage Pair
+  // ----------------------------------------------------
+
+  const pairPatterns = [
+    /\b(\d{1,3})\s*GB\s*(?:\+|\/|,|\||-)\s*(\d{2,4})\s*(GB|TB)\b/i,
+
+    /\b(\d{1,3})\s*GB\s+(\d{2,4})\s*(GB|TB)\s*(?:Storage|ROM)\b/i,
+  ];
+
+  for (
+    const pattern of
+      pairPatterns
+  ) {
+    const match =
+      title.match(
+        pattern
+      );
+
+    if (
+      !match?.[1] ||
+      !match[2] ||
+      !match[3]
+    ) {
+      continue;
+    }
+
+    const ram =
+      Number(
+        match[1]
+      );
+
+    const storageValue =
+      Number(
+        match[2]
+      );
+
+    const storageUnit =
+      match[3].toUpperCase();
+
+    const storage =
+      storageUnit === "TB"
+        ? storageValue * 1024
+        : storageValue;
+
+    if (
+      isValidRam(ram) &&
+      isValidStorageCapacity(
+        storage
+      )
+    ) {
+      return ram;
+    }
+  }
+
+  // ----------------------------------------------------
+  // 3. Compact RAM + Storage
+  // ----------------------------------------------------
+  //
+  // Examples:
+  // 12+256GB
+  // 8+128GB
+  //
+
+  const compactMatch =
+    title.match(
+      /\b(\d{1,3})\s*\+\s*(\d{2,4})\s*GB\b/i
+    );
+
+  if (
+    compactMatch?.[1] &&
+    compactMatch[2]
+  ) {
+    const ram =
+      Number(
+        compactMatch[1]
+      );
+
+    const storage =
+      Number(
+        compactMatch[2]
+      );
+
+    if (
+      isValidRam(ram) &&
+      isValidStorageCapacity(
+        storage
+      )
+    ) {
+      return ram;
+    }
+  }
+
+  // ----------------------------------------------------
+  // 4. Compact Slash Format
+  // ----------------------------------------------------
+  //
+  // Examples:
+  // 8/256GB
+  // 12/512GB
+  //
+
+  const slashMatch =
+    title.match(
+      /\b(\d{1,3})\s*\/\s*(\d{2,4})\s*GB\b/i
+    );
+
+  if (
+    slashMatch?.[1] &&
+    slashMatch[2]
+  ) {
+    const ram =
+      Number(
+        slashMatch[1]
+      );
+
+    const storage =
+      Number(
+        slashMatch[2]
+      );
+
+    if (
+      isValidRam(ram) &&
+      isValidStorageCapacity(
+        storage
+      )
+    ) {
+      return ram;
+    }
+  }
+
+  // ----------------------------------------------------
+  // 5. Sequential Capacities
+  // ----------------------------------------------------
+  //
+  // Examples:
+  // 12GB 512GB
+  // 8GB 256GB Storage
+  //
+
+  const sequentialMatch =
+    title.match(
+      /\b(\d{1,3})\s*GB\s+(\d{2,4})\s*GB(?:\s*(?:Storage|ROM))?\b/i
+    );
+
+  if (
+    sequentialMatch?.[1] &&
+    sequentialMatch[2]
+  ) {
+    const ram =
+      Number(
+        sequentialMatch[1]
+      );
+
+    const storage =
+      Number(
+        sequentialMatch[2]
+      );
+
+    if (
+      isValidRam(ram) &&
+      isValidStorageCapacity(
+        storage
+      ) &&
+      storage > ram
+    ) {
+      return ram;
+    }
+  }
+
+  return null;
+}
+
+// ======================================================
+// Storage Extraction
+// ======================================================
+
+function extractStorage(
+  title: string
+): number | null {
+  // ----------------------------------------------------
+  // 1. Explicit Storage
+  // ----------------------------------------------------
+
+  const explicitMatch =
+    title.match(
+      /\b(\d+(?:\.\d+)?)\s*(GB|TB)\s*(?:Storage|ROM)\b/i
+    );
+
+  if (
+    explicitMatch?.[1] &&
+    explicitMatch[2]
+  ) {
+    const value =
+      Number(
+        explicitMatch[1]
+      );
+
+    const unit =
+      explicitMatch[2].toUpperCase();
+
+    if (
+      Number.isFinite(value) &&
+      value > 0
+    ) {
+      const storage =
+        unit === "TB"
+          ? value * 1024
+          : value;
+
+      if (
+        isValidStorageCapacity(
+          storage
+        )
+      ) {
+        return storage;
+      }
+    }
+  }
+
+  // ----------------------------------------------------
+  // 2. RAM + Storage Pair
+  // ----------------------------------------------------
+
+  const pairMatch =
+    title.match(
+      /\b(\d{1,3})\s*GB\s*(?:\+|\/|,|\||-)\s*(\d{2,4})\s*(GB|TB)\b/i
+    );
+
+  if (
+    pairMatch?.[1] &&
+    pairMatch[2] &&
+    pairMatch[3]
+  ) {
+    const ram =
+      Number(
+        pairMatch[1]
+      );
+
+    const storageValue =
+      Number(
+        pairMatch[2]
+      );
+
+    const unit =
+      pairMatch[3].toUpperCase();
+
+    const storage =
+      unit === "TB"
+        ? storageValue * 1024
+        : storageValue;
+
+    if (
+      isValidRam(ram) &&
+      isValidStorageCapacity(
+        storage
+      )
+    ) {
+      return storage;
+    }
+  }
+
+  // ----------------------------------------------------
+  // 3. Compact Format
+  // ----------------------------------------------------
+  //
+  // 12+256GB
+  //
+
+  const compactMatch =
+    title.match(
+      /\b(\d{1,3})\s*\+\s*(\d{2,4})\s*GB\b/i
+    );
+
+  if (
+    compactMatch?.[1] &&
+    compactMatch[2]
+  ) {
+    const ram =
+      Number(
+        compactMatch[1]
+      );
+
+    const storage =
+      Number(
+        compactMatch[2]
+      );
+
+    if (
+      isValidRam(ram) &&
+      isValidStorageCapacity(
+        storage
+      )
+    ) {
+      return storage;
+    }
+  }
+
+  // ----------------------------------------------------
+  // 4. Slash Format
+  // ----------------------------------------------------
+  //
+  // 12/512GB
+  //
+
+  const slashMatch =
+    title.match(
+      /\b(\d{1,3})\s*\/\s*(\d{2,4})\s*GB\b/i
+    );
+
+  if (
+    slashMatch?.[1] &&
+    slashMatch[2]
+  ) {
+    const ram =
+      Number(
+        slashMatch[1]
+      );
+
+    const storage =
+      Number(
+        slashMatch[2]
+      );
+
+    if (
+      isValidRam(ram) &&
+      isValidStorageCapacity(
+        storage
+      )
+    ) {
+      return storage;
+    }
+  }
+
+  return null;
+}
+
+// ======================================================
+// RAM Validation
+// ======================================================
+
+function isValidRam(
+  value: number
+): boolean {
+  return (
+    Number.isFinite(value) &&
+    value > 0 &&
+    value <= 256
+  );
+}
+
+// ======================================================
+// Storage Validation
+// ======================================================
+
+function isValidStorageCapacity(
+  value: number
+): boolean {
+  return (
+    Number.isFinite(value) &&
+    value >= 32 &&
+    value <= 16384
+  );
+}
+
+// ======================================================
+// Chipset Normalization
+// ======================================================
+
+function normalizeChipsetName(
+  value: string
+): string | null {
+  const normalized =
+    value
+      .replace(/\s+/g, " ")
+      .trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  return normalized;
+}
+
+// ======================================================
+// Processor Score
+// ======================================================
+
+/**
+ * Returns a normalized processor capability score
+ * on a 0-10 scale.
+ *
+ * This is a deterministic product-tier heuristic,
+ * not a synthetic benchmark score.
+ *
+ * The Decision Engine later normalizes this value
+ * against the processor weight for the selected intent.
+ */
+function getProcessorScore(
+  chipset: string
+): number | null {
+  const normalized =
+    chipset
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+  if (!normalized) {
+    return null;
+  }
+
+  // ====================================================
+  // Apple Silicon
+  // ====================================================
+
+  const appleMatch =
+    normalized.match(
+      /\ba(\d+)\b/
+    );
+
+  if (
+    appleMatch?.[1]
+  ) {
+    const generation =
+      Number(
+        appleMatch[1]
+      );
+
+    if (
+      Number.isFinite(
+        generation
+      )
+    ) {
+      if (generation >= 19) {
+        return 10;
+      }
+
+      if (generation === 18) {
+        return 9.8;
+      }
+
+      if (generation === 17) {
+        return 9.5;
+      }
+
+      if (generation === 16) {
+        return 9.2;
+      }
+
+      if (generation === 15) {
+        return 8.8;
+      }
+
+      if (generation === 14) {
+        return 8.4;
+      }
+
+      if (generation === 13) {
+        return 8.0;
+      }
+
+      if (generation === 12) {
+        return 7.6;
+      }
+
+      if (generation === 11) {
+        return 7.2;
+      }
+
+      if (generation === 10) {
+        return 6.8;
+      }
+
+      if (generation >= 8) {
+        return 6.2;
+      }
+    }
+
+    return null;
+  }
+
+  // ====================================================
+  // Snapdragon
+  // ====================================================
+
+  const snapdragonMatch =
+    normalized.match(
+      /snapdragon\s+([a-z0-9-]+)/
+    );
+
+  if (
+    snapdragonMatch?.[1]
+  ) {
+    const model =
+      snapdragonMatch[1];
+
+    if (
+      model === "8" &&
+      /\belite\b/i.test(
+        normalized
+      )
+    ) {
+      return 10;
+    }
+
+    if (
+      /^8(?:s)?$/i.test(
+        model
+      )
+    ) {
+      return 9.5;
+    }
+
+    if (
+      /^7(?:s|\+)?$/i.test(
+        model
+      )
+    ) {
+      return 8.0;
+    }
+
+    if (
+      /^6(?:s)?$/i.test(
+        model
+      )
+    ) {
+      return 6.5;
+    }
+
+    if (
+      /^4(?:s)?$/i.test(
+        model
+      )
+    ) {
+      return 4.5;
+    }
+
+    const numericModel =
+      Number(
+        model.replace(
+          /[^\d]/g,
+          ""
+        )
+      );
+
+    if (
+      Number.isFinite(
+        numericModel
+      ) &&
+      numericModel > 0
+    ) {
+      if (
+        numericModel >= 800
+      ) {
+        return 9.0;
+      }
+
+      if (
+        numericModel >= 700
+      ) {
+        return 7.8;
+      }
+
+      if (
+        numericModel >= 600
+      ) {
+        return 6.2;
+      }
+
+      if (
+        numericModel >= 400
+      ) {
+        return 4.5;
+      }
+    }
+  }
+
+  // ====================================================
+  // MediaTek Dimensity
+  // ====================================================
+
+  const dimensityMatch =
+    normalized.match(
+      /dimensity\s+(\d+)/
+    );
+
+  if (
+    dimensityMatch?.[1]
+  ) {
+    const model =
+      Number(
+        dimensityMatch[1]
+      );
+
+    if (
+      Number.isFinite(
+        model
+      )
+    ) {
+      if (
+        model >= 9000
+      ) {
+        return 9.5;
+      }
+
+      if (
+        model >= 8000
+      ) {
+        return 8.5;
+      }
+
+      if (
+        model >= 7000
+      ) {
+        return 7.5;
+      }
+
+      if (
+        model >= 6000
+      ) {
+        return 6.5;
+      }
+
+      if (
+        model >= 5000
+      ) {
+        return 5.5;
+      }
+
+      if (
+        model >= 4000
+      ) {
+        return 4.5;
+      }
+
+      if (
+        model >= 3000
+      ) {
+        return 3.5;
+      }
+    }
+
+    return null;
+  }
+
+  // ====================================================
+  // MediaTek Helio
+  // ====================================================
+
+  const helioMatch =
+    normalized.match(
+      /helio\s+([a-z])?(\d+)/
+    );
+
+  if (
+    helioMatch?.[2]
+  ) {
+    const series =
+      helioMatch[1]
+        ?.toLowerCase();
+
+    const model =
+      Number(
+        helioMatch[2]
+      );
+
+    if (
+      Number.isFinite(
+        model
+      )
+    ) {
+      if (
+        series === "g"
+      ) {
+        if (model >= 200) {
+          return 7.0;
+        }
+
+        if (model >= 100) {
+          return 6.5;
+        }
+
+        if (model >= 90) {
+          return 6.0;
+        }
+
+        if (model >= 80) {
+          return 5.5;
+        }
+
+        if (model >= 70) {
+          return 5.0;
+        }
+
+        if (model >= 50) {
+          return 4.5;
+        }
+
+        return 4.0;
+      }
+
+      if (
+        model >= 100
+      ) {
+        return 4.5;
+      }
+
+      return 3.5;
+    }
+
+    return null;
+  }
+
+  // ====================================================
+  // Exynos
+  // ====================================================
+
+  const exynosMatch =
+    normalized.match(
+      /exynos\s+(\d+)/
+    );
+
+  if (
+    exynosMatch?.[1]
+  ) {
+    const model =
+      Number(
+        exynosMatch[1]
+      );
+
+    if (
+      Number.isFinite(
+        model
+      )
+    ) {
+      if (
+        model >= 2500
+      ) {
+        return 9.5;
+      }
+
+      if (
+        model >= 2400
+      ) {
+        return 9.0;
+      }
+
+      if (
+        model >= 2200
+      ) {
+        return 8.5;
+      }
+
+      if (
+        model >= 2100
+      ) {
+        return 8.0;
+      }
+
+      if (
+        model >= 1400
+      ) {
+        return 6.0;
+      }
+
+      if (
+        model >= 1200
+      ) {
+        return 5.5;
+      }
+
+      if (
+        model >= 1000
+      ) {
+        return 5.0;
+      }
+
+      if (
+        model >= 800
+      ) {
+        return 4.0;
+      }
+    }
+
+    return null;
+  }
+
+  // ====================================================
+  // Unisoc
+  // ====================================================
+
+  const unisocMatch =
+    normalized.match(
+      /unisoc\s+([a-z0-9-]+)/
+    );
+
+  if (
+    unisocMatch?.[1]
+  ) {
+    const model =
+      unisocMatch[1]
+        .toLowerCase();
+
+    if (
+      /^t\d+/i.test(
+        model
+      )
+    ) {
+      const numericModel =
+        Number(
+          model.replace(
+            /\D/g,
+            ""
+          )
+        );
+
+      if (
+        Number.isFinite(
+          numericModel
+        )
+      ) {
+        if (
+          numericModel >= 900
+        ) {
+          return 5.5;
+        }
+
+        if (
+          numericModel >= 800
+        ) {
+          return 5.0;
+        }
+
+        if (
+          numericModel >= 700
+        ) {
+          return 4.5;
+        }
+
+        return 4.0;
+      }
+
+      return 4.0;
+    }
+
+    return 3.5;
+  }
+
+  return null;
 }
 
 // ======================================================
@@ -1228,6 +2140,15 @@ function buildHighlights(
   ) {
     fallback.push(
       `${specs.refreshRate}Hz display`
+    );
+  }
+
+  if (
+    typeof specs.chipset ===
+      "string"
+  ) {
+    fallback.push(
+      specs.chipset
     );
   }
 
