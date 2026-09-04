@@ -88,6 +88,12 @@ export interface ProductSpecs {
 
   processorScore?: number
 
+  processor?: string
+
+  processorType?: string
+
+  processorCores?: number
+
   displaySize?: number
 
   refreshRate?: number

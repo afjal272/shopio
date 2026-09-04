@@ -2,28 +2,29 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "AI Shopping Decision Engine Backend",
-
   "main": "dist/src/api/server.js",
-
   "scripts": {
     "dev": "tsx watch src/api/server.ts",
     "build": "tsc",
     "start": "node dist/src/api/server.js",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
-    "sync:amazon": "tsx src/scripts/syncAmazon.ts"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:scoring": "vitest run src/modules/decision-engine/scoring/__tests__",
+    "test:ranking": "vitest run src/modules/decision-engine/ranking/__tests__",
+    "test:decision-engine": "vitest run src/modules/decision-engine",
+    "sync:amazon": "tsx src/scripts/syncAmazon.ts",
+    "validate:specs": "tsx src/scripts/validateProductSpecs.ts",
+    "rebuild:specs": "tsx src/scripts/rebuildProductSpecs.ts"
   },
-
   "keywords": [
     "ai",
     "shopping",
     "decision-engine"
   ],
-
   "author": "",
-
   "license": "ISC",
-
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "cors": "^2.8.6",
@@ -31,15 +32,14 @@
     "express": "^5.2.1",
     "prisma": "^5.22.0"
   },
-
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.9.1",
     "tsx": "^4.0.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.10"
   },
-
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   }

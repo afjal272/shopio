@@ -5,42 +5,31 @@ import {
   NormalizedAmazonProduct,
 } from "../integrations/amazon/amazon.types";
 
-import {
-  amazonService,
-} from "../integrations/amazon/amazon.service";
+import { amazonService } from "../integrations/amazon/amazon.service";
 
-import {
-  UpsertMarketplaceProductInput,
-} from "../repositories/product.repository";
+import { UpsertMarketplaceProductInput } from "../repositories/product.repository";
 
-import {
-  productService,
-} from "./product.service";
+import { productService } from "./product.service";
 
 // ======================================================
 // Constants
 // ======================================================
 
-const AMAZON_MARKETPLACE =
-  "AMAZON" as const;
+const AMAZON_MARKETPLACE = "AMAZON" as const;
 
-const DEFAULT_CATEGORY =
-  "smartphone";
+const DEFAULT_CATEGORY = "smartphone";
 
 const DEFAULT_DESCRIPTION =
   "Product information provided by Amazon.";
 
-const DEFAULT_CURRENCY =
-  "INR";
+const DEFAULT_CURRENCY = "INR";
 
 // ======================================================
 // Sync Result
 // ======================================================
 
 export interface ProductSyncResult {
-  marketplace:
-    | "AMAZON"
-    | "FLIPKART";
+  marketplace: "AMAZON" | "FLIPKART";
 
   requested: number;
 
@@ -72,62 +61,43 @@ export interface ProductSyncError {
 // ======================================================
 
 export class ProductSyncService {
-
   // ====================================================
   // Sync Amazon Products
   // ====================================================
 
   async syncAmazonProducts(
-    params: AmazonProductSearchParams
+    params: AmazonProductSearchParams,
   ): Promise<ProductSyncResult> {
+    const result = await amazonService.searchProducts(params);
 
-    const result =
-      await amazonService.searchProducts(
-        params
-      );
+    const syncResult = this.createSyncResult(
+      result.products.length,
+      result.hasNextPage,
+    );
 
-    const syncResult =
-      this.createSyncResult(
-        result.products.length,
-        result.hasNextPage
-      );
-
-    for (
-      const product of result.products
-    ) {
+    for (const product of result.products) {
       try {
-
         const input =
-          this.mapAmazonProductToSyncInput(
-            product
-          );
+          this.mapAmazonProductToSyncInput(product);
 
         if (!input) {
           syncResult.skipped += 1;
+          syncResult.processed += 1;
 
           continue;
         }
 
         await productService.syncMarketplaceProduct(
-          input
+          input,
         );
 
         syncResult.succeeded += 1;
-
-      } catch (
-        error: unknown
-      ) {
-
+      } catch (error: unknown) {
         syncResult.failed += 1;
 
         syncResult.errors.push({
-          externalId:
-            product.externalId,
-
-          message:
-            getErrorMessage(
-              error
-            ),
+          externalId: product.externalId,
+          message: getErrorMessage(error),
         });
       }
 
@@ -142,31 +112,30 @@ export class ProductSyncService {
   // ====================================================
 
   private mapAmazonProductToSyncInput(
-    product: NormalizedAmazonProduct
+    product: NormalizedAmazonProduct,
   ): UpsertMarketplaceProductInput | null {
-
     // ==================================================
     // Required Fields
     // ==================================================
 
     const externalId =
       normalizeRequiredString(
-        product.externalId
+        product.externalId,
       );
 
     const name =
       normalizeRequiredString(
-        product.name
+        product.name,
       );
 
     const brand =
       normalizeRequiredString(
-        product.brand
+        product.brand,
       );
 
     const productUrl =
       normalizeRequiredString(
-        product.productUrl
+        product.productUrl,
       );
 
     if (
@@ -183,18 +152,15 @@ export class ProductSyncService {
     // ==================================================
 
     if (
-      !Number.isFinite(
-        product.price
-      ) ||
+      !Number.isFinite(product.price) ||
       product.price <= 0
     ) {
       return null;
     }
 
-    const price =
-      Math.round(
-        product.price
-      );
+    const price = Math.round(
+      product.price,
+    );
 
     // ==================================================
     // Canonical Key
@@ -203,7 +169,7 @@ export class ProductSyncService {
     const canonicalKey =
       buildCanonicalKey(
         brand,
-        name
+        name,
       );
 
     if (!canonicalKey) {
@@ -216,13 +182,50 @@ export class ProductSyncService {
 
     const imageUrl =
       normalizeOptionalString(
-        product.imageUrl
+        product.imageUrl,
       );
 
-    const images =
-      imageUrl
-        ? [imageUrl]
-        : [];
+    const images = imageUrl
+      ? [imageUrl]
+      : [];
+
+    // ==================================================
+    // Description
+    //
+    // Preserve the normalized Amazon description.
+    // Only use the fallback when Amazon did not provide
+    // a usable description.
+    // ==================================================
+
+    const description =
+      normalizeOptionalString(
+        product.description,
+      ) ??
+      DEFAULT_DESCRIPTION;
+
+    // ==================================================
+    // Category
+    //
+    // Preserve the normalized category instead of
+    // blindly replacing every product category with
+    // "smartphone".
+    // ==================================================
+
+    const category =
+      normalizeOptionalString(
+        product.category,
+      ) ??
+      DEFAULT_CATEGORY;
+
+    // ==================================================
+    // Currency
+    // ==================================================
+
+    const currency =
+      normalizeOptionalString(
+        product.currency,
+      ) ??
+      DEFAULT_CURRENCY;
 
     // ==================================================
     // Final Sync Input
@@ -238,24 +241,18 @@ export class ProductSyncService {
 
       brand,
 
-      category:
-        DEFAULT_CATEGORY,
+      category,
 
-      description:
-        DEFAULT_DESCRIPTION,
+      description,
 
       price,
 
       originalPrice:
         normalizeOptionalPrice(
-          product.originalPrice
+          product.originalPrice,
         ),
 
-      currency:
-        normalizeRequiredString(
-          product.currency
-        ) ??
-        DEFAULT_CURRENCY,
+      currency,
 
       productUrl,
 
@@ -263,39 +260,39 @@ export class ProductSyncService {
 
       availability:
         normalizeOptionalString(
-          product.availability
+          product.availability,
         ),
 
       rating:
         normalizeOptionalRating(
-          product.rating
+          product.rating,
         ),
 
       reviewsCount:
         normalizeOptionalInteger(
-          product.reviewsCount
+          product.reviewsCount,
         ),
 
       images,
 
       tags:
         normalizeStringArray(
-          product.tags
+          product.tags,
         ),
 
       highlights:
         normalizeStringArray(
-          product.highlights
+          product.highlights,
         ),
 
       weaknesses:
         normalizeStringArray(
-          product.weaknesses
+          product.weaknesses,
         ),
 
       specs:
         normalizeSpecs(
-          product.specs
+          product.specs,
         ),
 
       canonicalKey,
@@ -308,9 +305,8 @@ export class ProductSyncService {
 
   private createSyncResult(
     requested: number,
-    hasNextPage: boolean
+    hasNextPage: boolean,
   ): ProductSyncResult {
-
     return {
       marketplace:
         AMAZON_MARKETPLACE,
@@ -338,19 +334,18 @@ export class ProductSyncService {
 
 function buildCanonicalKey(
   brand: string,
-  name: string
+  name: string,
 ): string {
-
   return `${brand}-${name}`
     .toLowerCase()
     .normalize("NFKD")
     .replace(
       /[\u0300-\u036f]/g,
-      ""
+      "",
     )
     .replace(
       /[^a-z0-9]+/g,
-      "-"
+      "-",
     )
     .replace(
       /^-+|-+$/g,
@@ -362,15 +357,18 @@ function buildCanonicalKey(
 // ======================================================
 
 function normalizeRequiredString(
-  value: string
+  value: string | undefined,
 ): string | null {
+  if (value === undefined) {
+    return null;
+  }
 
   const normalized =
     value
       .trim()
       .replace(
         /\s+/g,
-        " "
+        " ",
       );
 
   return normalized.length > 0
@@ -379,12 +377,9 @@ function normalizeRequiredString(
 }
 
 function normalizeOptionalString(
-  value?: string
+  value?: string,
 ): string | undefined {
-
-  if (
-    value === undefined
-  ) {
+  if (value === undefined) {
     return undefined;
   }
 
@@ -393,7 +388,7 @@ function normalizeOptionalString(
       .trim()
       .replace(
         /\s+/g,
-        " "
+        " ",
       );
 
   return normalized.length > 0
@@ -406,9 +401,8 @@ function normalizeOptionalString(
 // ======================================================
 
 function normalizeOptionalPrice(
-  value?: number
+  value?: number,
 ): number | undefined {
-
   if (
     value === undefined ||
     !Number.isFinite(value) ||
@@ -425,9 +419,8 @@ function normalizeOptionalPrice(
 // ======================================================
 
 function normalizeOptionalRating(
-  value?: number
+  value?: number,
 ): number | undefined {
-
   if (
     value === undefined ||
     !Number.isFinite(value)
@@ -439,8 +432,8 @@ function normalizeOptionalRating(
     5,
     Math.max(
       0,
-      value
-    )
+      value,
+    ),
   );
 }
 
@@ -449,9 +442,8 @@ function normalizeOptionalRating(
 // ======================================================
 
 function normalizeOptionalInteger(
-  value?: number
+  value?: number,
 ): number | undefined {
-
   if (
     value === undefined ||
     !Number.isFinite(value)
@@ -461,7 +453,7 @@ function normalizeOptionalInteger(
 
   return Math.max(
     0,
-    Math.round(value)
+    Math.round(value),
   );
 }
 
@@ -470,9 +462,8 @@ function normalizeOptionalInteger(
 // ======================================================
 
 function normalizeStringArray(
-  values: string[]
+  values: string[],
 ): string[] {
-
   return [
     ...new Set(
       values
@@ -482,10 +473,10 @@ function normalizeStringArray(
               .trim()
               .replace(
                 /\s+/g,
-                " "
-              )
+                " ",
+              ),
         )
-        .filter(Boolean)
+        .filter(Boolean),
     ),
   ];
 }
@@ -495,39 +486,27 @@ function normalizeStringArray(
 // ======================================================
 
 function normalizeSpecs(
-  specs: Record<
-    string,
-    unknown
-  >
+  specs: Record<string, unknown>,
 ): Prisma.InputJsonObject {
+  const normalized: Record<
+    string,
+    Prisma.InputJsonValue
+  > = {};
 
-  const normalized:
-    Record<
-      string,
-      Prisma.InputJsonValue
-    > = {};
-
-  for (
-    const [
-      key,
-      value,
-    ] of Object.entries(
-      specs
-    )
-  ) {
-
+  for (const [
+    key,
+    value,
+  ] of Object.entries(specs)) {
     const normalizedKey =
       key.trim();
 
-    if (
-      !normalizedKey
-    ) {
+    if (!normalizedKey) {
       continue;
     }
 
     const normalizedValue =
       normalizeJsonValue(
-        value
+        value,
       );
 
     if (
@@ -539,8 +518,7 @@ function normalizeSpecs(
 
     normalized[
       normalizedKey
-    ] =
-      normalizedValue;
+    ] = normalizedValue;
   }
 
   return normalized as Prisma.InputJsonObject;
@@ -551,16 +529,13 @@ function normalizeSpecs(
 // ======================================================
 
 function normalizeJsonValue(
-  value: unknown
+  value: unknown,
 ): Prisma.InputJsonValue | undefined {
-
   // ----------------------------------------------------
   // Null
   // ----------------------------------------------------
 
-  if (
-    value === null
-  ) {
+  if (value === null) {
     return undefined;
   }
 
@@ -569,21 +544,26 @@ function normalizeJsonValue(
   // ----------------------------------------------------
 
   if (
-    typeof value === "string"
+    typeof value ===
+    "string"
   ) {
     return value;
   }
 
   if (
-    typeof value === "boolean"
+    typeof value ===
+    "boolean"
   ) {
     return value;
   }
 
   if (
-    typeof value === "number"
+    typeof value ===
+    "number"
   ) {
-    return Number.isFinite(value)
+    return Number.isFinite(
+      value,
+    )
       ? value
       : undefined;
   }
@@ -595,7 +575,6 @@ function normalizeJsonValue(
   if (
     Array.isArray(value)
   ) {
-
     const normalized:
       Prisma.InputJsonValue[] =
       [];
@@ -603,10 +582,9 @@ function normalizeJsonValue(
     for (
       const item of value
     ) {
-
       const normalizedItem =
         normalizeJsonValue(
-          item
+          item,
         );
 
       if (
@@ -617,7 +595,7 @@ function normalizeJsonValue(
       }
 
       normalized.push(
-        normalizedItem
+        normalizedItem,
       );
     }
 
@@ -631,34 +609,27 @@ function normalizeJsonValue(
   if (
     isPlainObject(value)
   ) {
+    const normalized: Record<
+      string,
+      Prisma.InputJsonValue
+    > = {};
 
-    const normalized:
-      Record<
-        string,
-        Prisma.InputJsonValue
-      > = {};
-
-    for (
-      const [
-        key,
-        nestedValue,
-      ] of Object.entries(
-        value
-      )
-    ) {
-
+    for (const [
+      key,
+      nestedValue,
+    ] of Object.entries(
+      value,
+    )) {
       const normalizedKey =
         key.trim();
 
-      if (
-        !normalizedKey
-      ) {
+      if (!normalizedKey) {
         continue;
       }
 
       const normalizedNestedValue =
         normalizeJsonValue(
-          nestedValue
+          nestedValue,
         );
 
       if (
@@ -685,12 +656,11 @@ function normalizeJsonValue(
 // ======================================================
 
 function isPlainObject(
-  value: unknown
+  value: unknown,
 ): value is Record<
   string,
   unknown
 > {
-
   return (
     typeof value ===
       "object" &&
@@ -704,9 +674,8 @@ function isPlainObject(
 // ======================================================
 
 function getErrorMessage(
-  error: unknown
+  error: unknown,
 ): string {
-
   if (
     error instanceof Error
   ) {
@@ -714,7 +683,8 @@ function getErrorMessage(
   }
 
   if (
-    typeof error === "string"
+    typeof error ===
+    "string"
   ) {
     return error;
   }

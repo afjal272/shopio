@@ -27,27 +27,31 @@ type Props = {
 // Constants
 // ======================================================
 
-const SAVED_PRODUCTS_KEY = "saved_products";
-const COMPARE_IDS_KEY = "compare_ids";
+const SAVED_PRODUCTS_KEY =
+  "saved_products";
 
-const SAVED_PRODUCTS_EVENT = "shopio:saved-products";
-const COMPARE_IDS_EVENT = "shopio:compare-ids";
+const COMPARE_IDS_KEY =
+  "compare_ids";
+
+const SAVED_PRODUCTS_EVENT =
+  "shopio:saved-products";
+
+const COMPARE_IDS_EVENT =
+  "shopio:compare-ids";
 
 const MAX_COMPARE_PRODUCTS = 4;
-
-const BREAKDOWN_KEYS = [
-  "ram",
-  "processor",
-  "battery",
-  "rating",
-] as const;
 
 // ======================================================
 // Local Storage Helpers
 // ======================================================
 
-function readIdList(key: string): string[] {
-  if (typeof window === "undefined") {
+function readIdList(
+  key: string,
+): string[] {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
     return [];
   }
 
@@ -62,16 +66,20 @@ function readIdList(key: string): string[] {
     const parsed: unknown =
       JSON.parse(raw);
 
-    if (!Array.isArray(parsed)) {
+    if (
+      !Array.isArray(parsed)
+    ) {
       return [];
     }
 
     return Array.from(
       new Set(
         parsed
-          .map((value) => String(value))
-          .filter(Boolean)
-      )
+          .map((value) =>
+            String(value),
+          )
+          .filter(Boolean),
+      ),
     );
   } catch {
     return [];
@@ -80,9 +88,12 @@ function readIdList(key: string): string[] {
 
 function writeIdList(
   key: string,
-  ids: string[]
+  ids: string[],
 ): void {
-  if (typeof window === "undefined") {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
     return;
   }
 
@@ -90,21 +101,24 @@ function writeIdList(
     key,
     JSON.stringify(
       Array.from(
-        new Set(ids)
-      )
-    )
+        new Set(ids),
+      ),
+    ),
   );
 }
 
 function emitLocalStorageEvent(
-  eventName: string
+  eventName: string,
 ): void {
-  if (typeof window === "undefined") {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
     return;
   }
 
   window.dispatchEvent(
-    new Event(eventName)
+    new Event(eventName),
   );
 }
 
@@ -114,36 +128,136 @@ function emitLocalStorageEvent(
 
 function subscribeToEvent(
   eventName: string,
-  callback: () => void
+  callback: () => void,
 ): () => void {
-  if (typeof window === "undefined") {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
     return () => {};
   }
 
-  const handleStorage =
-    () => callback();
+  const handleStorage = () =>
+    callback();
 
   window.addEventListener(
     "storage",
-    handleStorage
+    handleStorage,
   );
 
   window.addEventListener(
     eventName,
-    handleStorage
+    handleStorage,
   );
 
   return () => {
     window.removeEventListener(
       "storage",
-      handleStorage
+      handleStorage,
     );
 
     window.removeEventListener(
       eventName,
-      handleStorage
+      handleStorage,
     );
   };
+}
+
+// ======================================================
+// Formatting Helpers
+// ======================================================
+
+function formatNumber(
+  value: number,
+): string {
+  return new Intl.NumberFormat(
+    "en-IN",
+  ).format(value);
+}
+
+function formatStorage(
+  storage: number,
+): string {
+  if (
+    storage >= 1024 &&
+    storage % 1024 === 0
+  ) {
+    return `${storage / 1024}TB`;
+  }
+
+  return `${storage}GB`;
+}
+
+function formatBattery(
+  battery: number,
+): string {
+  return `${formatNumber(
+    battery,
+  )}mAh`;
+}
+
+function formatCamera(
+  megapixels: number,
+): string {
+  return `${megapixels}MP`;
+}
+
+function formatDisplaySize(
+  size: number,
+): string {
+  return `${size}"`;
+}
+
+function formatClockSpeed(
+  value: number,
+): string {
+  return `${value}GHz`;
+}
+
+function formatRating(
+  value: number,
+): string {
+  return `${value.toFixed(1)}★`;
+}
+
+function safePercentage(
+  value: unknown,
+): number | null {
+  const numeric =
+    Number(value);
+
+  if (
+    !Number.isFinite(
+      numeric,
+    )
+  ) {
+    return null;
+  }
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(numeric),
+    ),
+  );
+}
+
+function safeNumber(
+  value: unknown,
+): number | null {
+  const numeric =
+    Number(value);
+
+  if (
+    !Number.isFinite(
+      numeric,
+    )
+  ) {
+    return null;
+  }
+
+  return numeric;
 }
 
 // ======================================================
@@ -152,8 +266,8 @@ function subscribeToEvent(
 
 export default function ResultCard({
   item,
-  highlight = false,
   index,
+  highlight = false,
   selected = false,
   onSelect,
 }: Props) {
@@ -168,20 +282,24 @@ export default function ResultCard({
     String(item.id);
 
   // ====================================================
-  // Score
+  // Match Score
   // ====================================================
 
   const rawScore =
     Number(item.score);
 
   const safeScore =
-    Number.isFinite(rawScore)
+    Number.isFinite(
+      rawScore,
+    )
       ? Math.max(
           0,
           Math.min(
             100,
-            Math.round(rawScore)
-          )
+            Math.round(
+              rawScore,
+            ),
+          ),
         )
       : 0;
 
@@ -189,8 +307,8 @@ export default function ResultCard({
     safeScore >= 85
       ? "bg-green-500"
       : safeScore >= 70
-      ? "bg-yellow-500"
-      : "bg-red-400";
+        ? "bg-yellow-500"
+        : "bg-red-400";
 
   // ====================================================
   // Price
@@ -200,14 +318,18 @@ export default function ResultCard({
     Number(item.price);
 
   const hasValidPrice =
-    Number.isFinite(rawPrice) &&
+    Number.isFinite(
+      rawPrice,
+    ) &&
     rawPrice > 0;
 
   const formattedPrice =
     hasValidPrice
       ? new Intl.NumberFormat(
-          "en-IN"
-        ).format(rawPrice)
+          "en-IN",
+        ).format(
+          rawPrice,
+        )
       : null;
 
   // ====================================================
@@ -216,28 +338,30 @@ export default function ResultCard({
 
   const subscribeSaved =
     useCallback(
-      (callback: () => void) =>
+      (
+        callback: () => void,
+      ) =>
         subscribeToEvent(
           SAVED_PRODUCTS_EVENT,
-          callback
+          callback,
         ),
-      []
+      [],
     );
 
   const getSavedSnapshot =
     useCallback(
       () =>
         readIdList(
-          SAVED_PRODUCTS_KEY
+          SAVED_PRODUCTS_KEY,
         ).includes(id),
-      [id]
+      [id],
     );
 
   const saved =
     useSyncExternalStore(
       subscribeSaved,
       getSavedSnapshot,
-      () => false
+      () => false,
     );
 
   // ====================================================
@@ -246,28 +370,30 @@ export default function ResultCard({
 
   const subscribeCompared =
     useCallback(
-      (callback: () => void) =>
+      (
+        callback: () => void,
+      ) =>
         subscribeToEvent(
           COMPARE_IDS_EVENT,
-          callback
+          callback,
         ),
-      []
+      [],
     );
 
   const getComparedSnapshot =
     useCallback(
       () =>
         readIdList(
-          COMPARE_IDS_KEY
+          COMPARE_IDS_KEY,
         ).includes(id),
-      [id]
+      [id],
     );
 
   const compared =
     useSyncExternalStore(
       subscribeCompared,
       getComparedSnapshot,
-      () => false
+      () => false,
     );
 
   // ====================================================
@@ -278,7 +404,7 @@ export default function ResultCard({
     useCallback(() => {
       const stored =
         readIdList(
-          SAVED_PRODUCTS_KEY
+          SAVED_PRODUCTS_KEY,
         );
 
       const exists =
@@ -287,8 +413,10 @@ export default function ResultCard({
       const updated =
         exists
           ? stored.filter(
-              (storedId) =>
-                storedId !== id
+              (
+                storedId,
+              ) =>
+                storedId !== id,
             )
           : [
               ...stored,
@@ -297,20 +425,20 @@ export default function ResultCard({
 
       writeIdList(
         SAVED_PRODUCTS_KEY,
-        updated
+        updated,
       );
 
       emitLocalStorageEvent(
-        SAVED_PRODUCTS_EVENT
+        SAVED_PRODUCTS_EVENT,
       );
 
       if (exists) {
         toast.success(
-          "Removed from wishlist"
+          "Removed from wishlist",
         );
       } else {
         toast.success(
-          "Saved to wishlist"
+          "Saved to wishlist",
         );
       }
     }, [id]);
@@ -323,7 +451,7 @@ export default function ResultCard({
     useCallback(() => {
       const stored =
         readIdList(
-          COMPARE_IDS_KEY
+          COMPARE_IDS_KEY,
         );
 
       const exists =
@@ -332,21 +460,23 @@ export default function ResultCard({
       if (exists) {
         const updated =
           stored.filter(
-            (storedId) =>
-              storedId !== id
+            (
+              storedId,
+            ) =>
+              storedId !== id,
           );
 
         writeIdList(
           COMPARE_IDS_KEY,
-          updated
+          updated,
         );
 
         emitLocalStorageEvent(
-          COMPARE_IDS_EVENT
+          COMPARE_IDS_EVENT,
         );
 
         toast.success(
-          "Removed from comparison"
+          "Removed from comparison",
         );
 
         return;
@@ -357,29 +487,28 @@ export default function ResultCard({
         MAX_COMPARE_PRODUCTS
       ) {
         toast.error(
-          `You can compare up to ${MAX_COMPARE_PRODUCTS} products only`
+          `You can compare up to ${MAX_COMPARE_PRODUCTS} products only`,
         );
 
         return;
       }
 
-      const updated =
-        [
-          ...stored,
-          id,
-        ];
+      const updated = [
+        ...stored,
+        id,
+      ];
 
       writeIdList(
         COMPARE_IDS_KEY,
-        updated
+        updated,
       );
 
       emitLocalStorageEvent(
-        COMPARE_IDS_EVENT
+        COMPARE_IDS_EVENT,
       );
 
       toast.success(
-        "Added to comparison"
+        "Added to comparison",
       );
     }, [id]);
 
@@ -390,52 +519,191 @@ export default function ResultCard({
   const openProduct =
     useCallback(() => {
       router.push(
-        `/product/${encodeURIComponent(id)}`
+        `/product/${encodeURIComponent(
+          id,
+        )}`,
       );
-    }, [id, router]);
+    }, [
+      id,
+      router,
+    ]);
 
   // ====================================================
-  // Breakdown
+  // Actual Specifications
   // ====================================================
 
-  const breakdownEntries =
-    BREAKDOWN_KEYS
-      .map((key) => {
-        const value =
-          Number(
-            item.breakdown?.[
-              key
-            ]
-          );
+  const specs =
+    item.specs;
 
-        if (
-          !Number.isFinite(value)
-        ) {
-          return null;
-        }
+  const actualSpecifications =
+    [
+      specs?.ram != null
+        ? {
+            key: "ram",
+            label: "RAM",
+            value: `${formatNumber(
+              specs.ram,
+            )}GB`,
+          }
+        : null,
 
-        return {
-          key,
-          value: Math.max(
-            0,
-            Math.min(
-              100,
-              Math.round(value)
-            )
-          ),
-        };
-      })
+      specs?.storage != null
+        ? {
+            key: "storage",
+            label: "Storage",
+            value: formatStorage(
+              specs.storage,
+            ),
+          }
+        : null,
+
+      specs?.processor
+        ? {
+            key: "processor",
+            label: "Processor",
+            value:
+              specs.processor,
+          }
+        : specs?.chipset
+          ? {
+              key: "processor",
+              label: "Processor",
+              value:
+                specs.chipset,
+            }
+          : specs?.processorType
+            ? {
+                key: "processor",
+                label:
+                  "Processor",
+                value:
+                  specs.processorType,
+              }
+            : null,
+
+      specs?.battery != null
+        ? {
+            key: "battery",
+            label: "Battery",
+            value:
+              formatBattery(
+                specs.battery,
+              ),
+          }
+        : null,
+
+      specs?.cameraMp != null
+        ? {
+            key: "camera",
+            label: "Camera",
+            value:
+              formatCamera(
+                specs.cameraMp,
+              ),
+          }
+        : null,
+
+      item.rating != null &&
+      Number.isFinite(
+        Number(
+          item.rating,
+        ),
+      )
+        ? {
+            key: "rating",
+            label: "Rating",
+            value:
+              formatRating(
+                Number(
+                  item.rating,
+                ),
+              ),
+          }
+        : null,
+
+      specs?.displaySize != null
+        ? {
+            key: "display",
+            label: "Display",
+            value:
+              formatDisplaySize(
+                specs.displaySize,
+              ),
+          }
+        : null,
+
+      specs?.refreshRate != null
+        ? {
+            key: "refresh-rate",
+            label:
+              "Refresh Rate",
+            value: `${Math.round(
+              specs.refreshRate,
+            )}Hz`,
+          }
+        : null,
+
+      specs?.frontCameraMp != null
+        ? {
+            key: "front-camera",
+            label:
+              "Front Camera",
+            value:
+              formatCamera(
+                specs.frontCameraMp,
+              ),
+          }
+        : null,
+
+      specs?.chargingSpeed != null
+        ? {
+            key: "charging-speed",
+            label:
+              "Charging",
+            value: `${Math.round(
+              specs.chargingSpeed,
+            )}W`,
+          }
+        : null,
+    ].filter(
+      (
+        entry,
+      ): entry is {
+        key: string;
+        label: string;
+        value: string;
+      } =>
+        entry !== null,
+    );
+
+  // ====================================================
+  // Optional Score Signals
+  //
+  // These are intentionally separated from actual
+  // product specifications.
+  // ====================================================
+
+  const breakdown =
+    item.breakdown;
+
+  const scoreSignals =
+    [
+      breakdown?.processor,
+      breakdown?.battery,
+      breakdown?.rating,
+    ]
+      .map(
+        safePercentage,
+      )
       .filter(
         (
-          entry
-        ): entry is {
-          key: (
-            typeof BREAKDOWN_KEYS
-          )[number];
-          value: number;
-        } =>
-          entry !== null
+          value,
+        ): value is number =>
+          value !== null,
       );
+
+  const hasScoreSignals =
+    scoreSignals.length > 0;
 
   // ====================================================
   // Render
@@ -443,7 +711,9 @@ export default function ResultCard({
 
   return (
     <article
-      onClick={openProduct}
+      onClick={
+        openProduct
+      }
       className={[
         "relative rounded-2xl",
         "p-4 md:p-6",
@@ -466,15 +736,21 @@ export default function ResultCard({
         <input
           type="checkbox"
           checked={
-            selected || compared
+            selected ||
+            compared
           }
-          onChange={(event) => {
+          onChange={(
+            event,
+          ) => {
             event.stopPropagation();
 
             toggleCompare();
             onSelect();
           }}
-          aria-label={`Compare ${item.name || "product"}`}
+          aria-label={`Compare ${
+            item.name ||
+            "product"
+          }`}
           className="
             absolute
             top-3
@@ -493,18 +769,20 @@ export default function ResultCard({
       <div className="flex gap-3 md:gap-4 items-start">
         {/* Product Image */}
 
-        <div className="
-          relative
-          w-16
-          h-16
-          md:w-20
-          md:h-20
-          shrink-0
-          overflow-hidden
-          rounded-xl
-          border
-          bg-white
-        ">
+        <div
+          className="
+            relative
+            w-16
+            h-16
+            md:w-20
+            md:h-20
+            shrink-0
+            overflow-hidden
+            rounded-xl
+            border
+            bg-white
+          "
+        >
           <Image
             src={
               item.images?.[0] ||
@@ -530,15 +808,18 @@ export default function ResultCard({
         {/* Product Information */}
 
         <div className="flex-1 min-w-0">
-          <h3 className="
-            font-semibold
-            text-black
-            text-sm
-            leading-tight
-            line-clamp-2
-            break-words
-          ">
-            {index !== undefined &&
+          <h3
+            className="
+              font-semibold
+              text-black
+              text-sm
+              leading-tight
+              line-clamp-2
+              break-words
+            "
+          >
+            {index !==
+              undefined &&
               `#${index + 1} `}
 
             {item.name ||
@@ -546,19 +827,26 @@ export default function ResultCard({
           </h3>
 
           {formattedPrice ? (
-            <p className="
-              text-sm
-              text-gray-500
-              mt-1
-            ">
-              ₹{formattedPrice}
+            <p
+              className="
+                text-sm
+                text-gray-500
+                mt-1
+              "
+            >
+              ₹
+              {
+                formattedPrice
+              }
             </p>
           ) : (
-            <p className="
-              text-sm
-              text-gray-400
-              mt-1
-            ">
+            <p
+              className="
+                text-sm
+                text-gray-400
+                mt-1
+              "
+            >
               Price unavailable
             </p>
           )}
@@ -566,10 +854,12 @@ export default function ResultCard({
 
         {/* Match Score */}
 
-        <div className="
-          text-right
-          shrink-0
-        ">
+        <div
+          className="
+            text-right
+            shrink-0
+          "
+        >
           <div
             className={[
               "text-xs md:text-sm",
@@ -581,14 +871,18 @@ export default function ResultCard({
               scoreColor,
             ].join(" ")}
           >
-            {safeScore}
+            {
+              safeScore
+            }
           </div>
 
-          <p className="
-            text-[10px]
-            text-gray-400
-            mt-1
-          ">
+          <p
+            className="
+              text-[10px]
+              text-gray-400
+              mt-1
+            "
+          >
             match
           </p>
         </div>
@@ -598,14 +892,16 @@ export default function ResultCard({
           Match Progress
       ================================================= */}
 
-      <div className="
-        w-full
-        bg-gray-200
-        h-2
-        rounded
-        mt-4
-        overflow-hidden
-      ">
+      <div
+        className="
+          w-full
+          bg-gray-200
+          h-2
+          rounded
+          mt-4
+          overflow-hidden
+        "
+      >
         <div
           className={[
             scoreColor,
@@ -618,16 +914,20 @@ export default function ResultCard({
         />
       </div>
 
-      <p className="
-        text-xs
-        text-gray-500
-        mt-1
-      ">
-        {safeScore >= 85
+      <p
+        className="
+          text-xs
+          text-gray-500
+          mt-1
+        "
+      >
+        {safeScore >=
+        85
           ? "Strong match"
-          : safeScore >= 70
-          ? "Good match"
-          : "Lower match"}
+          : safeScore >=
+              70
+            ? "Good match"
+            : "Lower match"}
       </p>
 
       {/* =================================================
@@ -635,14 +935,18 @@ export default function ResultCard({
       ================================================= */}
 
       {item.explanation && (
-        <p className="
-          text-sm
-          text-gray-700
-          mt-3
-          leading-relaxed
-          line-clamp-3
-        ">
-          {item.explanation}
+        <p
+          className="
+            text-sm
+            text-gray-700
+            mt-3
+            leading-relaxed
+            line-clamp-3
+          "
+        >
+          {
+            item.explanation
+          }
         </p>
       )}
 
@@ -651,91 +955,192 @@ export default function ResultCard({
       ================================================= */}
 
       {item.tags &&
-        item.tags.length > 0 && (
-          <div className="
-            flex
-            gap-2
-            mt-3
-            flex-wrap
-          ">
+        item.tags.length >
+          0 && (
+          <div
+            className="
+              flex
+              gap-2
+              mt-3
+              flex-wrap
+            "
+          >
             {item.tags
               .filter(Boolean)
-              .slice(0, 6)
-              .map((tag) => (
-                <span
-                  key={tag}
-                  className="
-                    text-xs
-                    bg-black/5
-                    text-gray-700
-                    px-2
-                    py-1
-                    rounded-full
-                  "
-                >
-                  {tag}
-                </span>
-              ))}
+              .slice(
+                0,
+                6,
+              )
+              .map(
+                (tag) => (
+                  <span
+                    key={tag}
+                    className="
+                      text-xs
+                      bg-black/5
+                      text-gray-700
+                      px-2
+                      py-1
+                      rounded-full
+                    "
+                  >
+                    {tag}
+                  </span>
+                ),
+              )}
           </div>
         )}
 
       {/* =================================================
-          Core Score Breakdown
-          Only real core scoring dimensions are shown.
+          Actual Product Specifications
+
+          IMPORTANT:
+          These values come from item.specs and represent
+          real product specifications.
+
+          They are NOT ranking percentages.
       ================================================= */}
 
-      {breakdownEntries.length > 0 && (
-        <div className="
-          mt-4
-          space-y-2
-        ">
-          {breakdownEntries.map(
-            ({
-              key,
-              value,
-            }) => (
-              <div
-                key={key}
-              >
-                <div className="
-                  flex
-                  justify-between
-                  text-[11px]
-                  text-gray-500
-                  mb-1
-                ">
-                  <span className="
-                    capitalize
-                  ">
-                    {key}
-                  </span>
-
-                  <span>
-                    {value}%
-                  </span>
-                </div>
-
-                <div className="
-                  w-full
-                  bg-gray-200
-                  h-1
-                  rounded
-                  overflow-hidden
-                ">
-                  <div
+      {actualSpecifications.length >
+        0 && (
+        <div
+          className="
+            mt-4
+            rounded-xl
+            border
+            border-gray-100
+            bg-gray-50/70
+            p-3
+          "
+        >
+          <div
+            className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              gap-2
+            "
+          >
+            {actualSpecifications.map(
+              ({
+                key,
+                label,
+                value,
+              }) => (
+                <div
+                  key={key}
+                  className="
+                    flex
+                    items-center
+                    justify-between
+                    gap-3
+                    rounded-lg
+                    bg-white
+                    border
+                    border-gray-100
+                    px-3
+                    py-2
+                  "
+                >
+                  <span
                     className="
-                      bg-black/70
-                      h-1
-                      rounded
+                      text-[11px]
+                      text-gray-500
+                      shrink-0
                     "
-                    style={{
-                      width: `${value}%`,
-                    }}
-                  />
+                  >
+                    {label}
+                  </span>
+
+                  <span
+                    className="
+                      text-[11px]
+                      font-medium
+                      text-gray-900
+                      text-right
+                      truncate
+                    "
+                    title={value}
+                  >
+                    {value}
+                  </span>
                 </div>
-              </div>
-            )
-          )}
+              ),
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =================================================
+          Ranking Signal Summary
+
+          Kept separate from actual product specifications.
+          These are internal decision-engine scores only.
+      ================================================= */}
+
+      {hasScoreSignals && (
+        <div
+          className="
+            mt-4
+            rounded-xl
+            border
+            border-gray-100
+            p-3
+          "
+        >
+          <div
+            className="
+              text-[10px]
+              font-medium
+              uppercase
+              tracking-wide
+              text-gray-400
+              mb-2
+            "
+          >
+            Match signals
+          </div>
+
+          <div
+            className="
+              flex
+              flex-wrap
+              gap-x-4
+              gap-y-1
+              text-[10px]
+              text-gray-500
+            "
+          >
+            {breakdown?.processor !=
+              null && (
+              <span>
+                Processor{" "}
+                {safePercentage(
+                  breakdown.processor,
+                )}
+              </span>
+            )}
+
+            {breakdown?.battery !=
+              null && (
+              <span>
+                Battery{" "}
+                {safePercentage(
+                  breakdown.battery,
+                )}
+              </span>
+            )}
+
+            {breakdown?.rating !=
+              null && (
+              <span>
+                Rating{" "}
+                {safePercentage(
+                  breakdown.rating,
+                )}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -743,20 +1148,24 @@ export default function ResultCard({
           Footer
       ================================================= */}
 
-      <div className="
-        mt-5
-        flex
-        flex-col
-        gap-4
-      ">
+      <div
+        className="
+          mt-5
+          flex
+          flex-col
+          gap-4
+        "
+      >
         {/* Confidence */}
 
         {item.confidence !==
           undefined && (
-          <span className="
-            text-xs
-            text-gray-500
-          ">
+          <span
+            className="
+              text-xs
+              text-gray-500
+            "
+          >
             Confidence:{" "}
             {Math.max(
               0,
@@ -764,10 +1173,10 @@ export default function ResultCard({
                 100,
                 Math.round(
                   Number(
-                    item.confidence
-                  ) || 0
-                )
-              )
+                    item.confidence,
+                  ) || 0,
+                ),
+              ),
             )}
             %
           </span>
@@ -775,13 +1184,15 @@ export default function ResultCard({
 
         {/* Actions */}
 
-        <div className="
-          flex
-          flex-wrap
-          gap-2
-          items-center
-          md:justify-end
-        ">
+        <div
+          className="
+            flex
+            flex-wrap
+            gap-2
+            items-center
+            md:justify-end
+          "
+        >
           {/* Wishlist */}
 
           <button
@@ -791,7 +1202,9 @@ export default function ResultCard({
                 ? "Remove from wishlist"
                 : "Save to wishlist"
             }
-            onClick={(event) => {
+            onClick={(
+              event,
+            ) => {
               event.stopPropagation();
               toggleSave();
             }}
@@ -818,7 +1231,9 @@ export default function ResultCard({
 
           <button
             type="button"
-            onClick={(event) => {
+            onClick={(
+              event,
+            ) => {
               event.stopPropagation();
 
               toggleCompare();
@@ -848,7 +1263,9 @@ export default function ResultCard({
 
           <button
             type="button"
-            onClick={(event) => {
+            onClick={(
+              event,
+            ) => {
               event.stopPropagation();
 
               // Affiliate / marketplace redirect

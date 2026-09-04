@@ -1,48 +1,46 @@
-import { IntentType } from "../types"
+import { IntentType } from "../types";
+
+export interface IntentScoreWeights {
+  ram: number;
+  processor: number;
+  battery: number;
+  rating: number;
+  camera: number;
+}
 
 export const SCORE_WEIGHTS: Record<
   IntentType,
-  {
-    ram: number
-    cpu: number
-    batt: number
-    rating: number
-  }
+  IntentScoreWeights
 > = {
   gaming: {
     ram: 0.30,
-    cpu: 0.40,
-    batt: 0.10,
-    rating: 0.20,
+    processor: 0.45,
+    battery: 0.10,
+    rating: 0.10,
+    camera: 0.05,
   },
 
   camera: {
-    ram: 0.10,
-    cpu: 0.20,
-    batt: 0.10,
-    rating: 0.60,
+    ram: 0.08,
+    processor: 0.12,
+    battery: 0.05,
+    rating: 0.15,
+    camera: 0.60,
   },
 
   battery: {
-    ram: 0.10,
-    cpu: 0.10,
-    batt: 0.60,
-    rating: 0.20,
+    ram: 0.08,
+    processor: 0.10,
+    battery: 0.65,
+    rating: 0.15,
+    camera: 0.02,
   },
 
   balanced: {
-    ram: 0.25,
-    cpu: 0.25,
-    batt: 0.20,
-    rating: 0.30,
+    ram: 0.22,
+    processor: 0.28,
+    battery: 0.20,
+    rating: 0.25,
+    camera: 0.05,
   },
-}
-
-export const BRAND_BOOST: Record<string, number> = {
-  samsung: 0.06,
-  apple: 0.10,
-  iqoo: 0.05,
-  realme: 0.04,
-  redmi: 0.04,
-  poco: 0.05,
-}
+};
