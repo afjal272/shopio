@@ -229,7 +229,7 @@ app.listen(
   PORT,
   () => {
     console.log(
-      `Shopio backend running on port ${PORT}`
+      `BeforeChoice backend running on port ${PORT}`
     );
 
     console.log(

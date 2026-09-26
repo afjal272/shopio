@@ -17,7 +17,7 @@ export default function Footer() {
                 <span className="h-2 w-2 rounded-full bg-white" />
               </span>
 
-              Shopio
+              BeforeChoice
             </Link>
 
             <p className="mt-6 max-w-sm text-sm leading-7 text-white/50 sm:text-base">
@@ -114,7 +114,7 @@ export default function Footer() {
             </h3>
 
             <p className="mt-6 max-w-sm text-sm leading-6 text-white/50">
-              Get product updates, decision-making insights, and new Shopio
+              Get product updates, decision-making insights, and new BeforeChoice
               features.
             </p>
 
@@ -146,7 +146,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="flex flex-col gap-4 border-t border-white/10 py-6 text-xs text-white/35 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {new Date().getFullYear()} Shopio. All rights reserved.
+            © {new Date().getFullYear()} BeforeChoice. All rights reserved.
           </p>
 
           <div className="flex flex-wrap items-center gap-5">

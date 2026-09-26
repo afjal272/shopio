@@ -103,12 +103,12 @@ export async function searchProducts(
 
     if (error instanceof Error) {
       throw new Error(
-        `Unable to connect to Shopio API: ${error.message}`
+        `Unable to connect to BeforeChoice API: ${error.message}`
       );
     }
 
     throw new Error(
-      "Unable to connect to Shopio API"
+      "Unable to connect to BeforeChoice API"
     );
   }
 
@@ -165,7 +165,7 @@ export async function searchProducts(
   } catch {
 
     throw new Error(
-      "Shopio API returned invalid JSON"
+      "BeforeChoice API returned invalid JSON"
     );
   }
 
@@ -191,7 +191,7 @@ export async function searchProducts(
   ) {
 
     throw new Error(
-      "Shopio API returned invalid search data"
+      "BeforeChoice API returned invalid search data"
     );
   }
 

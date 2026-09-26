@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Shopio AI",
-    template: "%s | Shopio AI",
+    default: "BeforeChoice AI",
+    template: "%s | BeforeChoice AI",
   },
   description:
     "AI-powered product intelligence that helps you compare products and make better buying decisions.",

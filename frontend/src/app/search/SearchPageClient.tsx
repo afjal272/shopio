@@ -320,8 +320,8 @@ export default function SearchPageClient({
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-[#656b76] sm:text-base">
                 {query
-                  ? "Shopio ranks products around your requirements instead of simply listing more options."
-                  : "Describe what you need and Shopio will help narrow the options down."}
+                  ? "BeforeChoice ranks products around your requirements instead of simply listing more options."
+                  : "Describe what you need and BeforeChoice will help narrow the options down."}
               </p>
             </div>
 
@@ -468,7 +468,7 @@ export default function SearchPageClient({
                 </p>
 
                 <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[#262626] sm:text-3xl">
-                  Tell Shopio what you are looking for.
+                  Tell BeforeChoice what you are looking for.
                 </h2>
 
                 <p className="mt-3 text-sm leading-6 text-[#656b76] sm:text-base">

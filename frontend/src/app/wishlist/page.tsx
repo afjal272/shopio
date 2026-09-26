@@ -8,7 +8,7 @@ import { ProductItem } from "@/types/search"
 
 const SAVED_PRODUCTS_KEY = "saved_products"
 const LAST_RESULTS_KEY = "last_results"
-const STORAGE_EVENT = "shopio-wishlist-change"
+const STORAGE_EVENT = "BeforeChoice-wishlist-change"
 
 type WishlistSnapshot = {
   savedIds: string[]

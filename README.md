@@ -1,6 +1,6 @@
-# 🤖 Shopio — AI Shopping Decision Engine
+# 🤖 BeforeChoice — AI Shopping Decision Engine
 
-Shopio is a backend-driven system that recommends the **best product for a user query**, instead of showing endless options.
+BeforeChoice is a backend-driven system that recommends the **best product for a user query**, instead of showing endless options.
 
 ---
 

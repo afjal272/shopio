@@ -43,7 +43,7 @@ export default function CTA() {
                 </h2>
 
                 <p className="mt-6 max-w-xl text-base leading-7 text-[#656b76] sm:text-lg sm:leading-8">
-                  Tell Shopio what you are looking for and let it turn the
+                  Tell BeforeChoice what you are looking for and let it turn the
                   research into a clearer product decision.
                 </p>
 
@@ -52,7 +52,7 @@ export default function CTA() {
                     href="/search"
                     className="group inline-flex items-center gap-2 rounded-xl bg-[#171717] px-5 py-3.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(15,23,42,0.12)] transition-all duration-200 hover:bg-black hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)]"
                   >
-                    Try Shopio
+                    Try BeforeChoice
 
                     <ArrowRight
                       size={16}
@@ -86,7 +86,7 @@ export default function CTA() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9aa0aa]">
-                      Ask Shopio
+                      Ask BeforeChoice
                     </p>
 
                     <p className="mt-1 text-sm font-medium text-[#454a53]">
@@ -139,7 +139,7 @@ export default function CTA() {
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7d82d8]">
-                        Shopio result
+                        BeforeChoice result
                       </p>
 
                       <p className="mt-1 text-sm font-semibold text-[#34363b]">
@@ -165,7 +165,7 @@ export default function CTA() {
         {/* Bottom line */}
         <div className="mt-7 flex flex-col gap-2 px-1 text-xs text-[#969ca6] sm:flex-row sm:items-center sm:justify-between">
           <span>Search less. Decide with more context.</span>
-          <span>Shopio AI</span>
+          <span>BeforeChoice AI</span>
         </div>
       </div>
     </section>

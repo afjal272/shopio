@@ -700,7 +700,7 @@ function printHeader(): void {
   );
 
   console.log(
-    "Shopio Product Specification Validation",
+    "BeforeChoice Product Specification Validation",
   );
 
   console.log(

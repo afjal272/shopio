@@ -42,10 +42,10 @@ const SAVED_PRODUCTS_KEY = "saved_products"
 const COMPARE_IDS_KEY = "compare_ids"
 
 const SAVED_PRODUCTS_EVENT =
-  "shopio:saved-products"
+  "BeforeChoice:saved-products"
 
 const COMPARE_IDS_EVENT =
-  "shopio:compare-ids"
+  "BeforeChoice:compare-ids"
 
 const MAX_COMPARE_PRODUCTS = 4
 const DEFAULT_IMAGE = "/placeholder.png"

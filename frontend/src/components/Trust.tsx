@@ -47,7 +47,7 @@ export default function Trust() {
           </div>
 
           <p className="max-w-xl text-base leading-7 text-white/50 sm:ml-auto sm:text-lg sm:leading-8">
-            Product decisions are already complicated enough. Shopio is built
+            Product decisions are already complicated enough. BeforeChoice is built
             to keep the experience focused on what actually helps you choose.
           </p>
         </div>

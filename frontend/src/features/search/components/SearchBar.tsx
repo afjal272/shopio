@@ -31,11 +31,11 @@ const STATIC_SUGGESTIONS = [
 const MAX_RECENT_SEARCHES = 5
 const MAX_SUGGESTIONS = 8
 
-const SEARCH_INPUT_ID = "shopio-product-search"
-const SEARCH_LISTBOX_ID = "shopio-search-suggestions"
+const SEARCH_INPUT_ID = "BeforeChoice-product-search"
+const SEARCH_LISTBOX_ID = "BeforeChoice-search-suggestions"
 
 const getSuggestionId = (index: number) =>
-  `shopio-search-suggestion-${index}`
+  `BeforeChoice-search-suggestion-${index}`
 
 export default function SearchBar({
   initialValue = "",

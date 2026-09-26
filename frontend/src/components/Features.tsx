@@ -42,7 +42,7 @@ export default function Features() {
           <div>
             <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#8a8f98]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#5b5ce2]" />
-              Why Shopio
+              Why BeforeChoice
             </span>
 
             <h2 className="mt-5 max-w-xl text-4xl font-semibold leading-[1.02] tracking-[-0.045em] text-[#262626] sm:text-5xl lg:text-[4.3rem]">
@@ -55,7 +55,7 @@ export default function Features() {
           <div className="max-w-xl lg:ml-auto">
             <p className="text-base leading-7 text-[#656b76] sm:text-lg sm:leading-8">
               Product search should not end with another hundred tabs.
-              Shopio turns your requirements into a clearer path to the
+              BeforeChoice turns your requirements into a clearer path to the
               product that fits.
             </p>
           </div>
@@ -104,7 +104,7 @@ export default function Features() {
                 </h3>
 
                 <p className="mt-5 max-w-sm text-sm leading-7 text-white/50 sm:text-base">
-                  Shopio considers your budget, preferences and use-case before
+                  BeforeChoice considers your budget, preferences and use-case before
                   narrowing the options down.
                 </p>
               </div>

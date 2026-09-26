@@ -26,7 +26,7 @@ export default function Header() {
           href="/"
           className="shrink-0 text-[21px] font-semibold tracking-[-0.04em] text-[#262626] transition-opacity hover:opacity-75"
         >
-          Shopio
+          BeforeChoice
         </Link>
 
         {/* Center Navigation */}
@@ -49,7 +49,7 @@ export default function Header() {
             href="#trust"
             className="text-sm font-medium text-[#69707b] transition-colors duration-200 hover:text-[#262626]"
           >
-            Why Shopio
+            Why BeforeChoice
           </a>
         </nav>
 

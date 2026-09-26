@@ -602,7 +602,7 @@ function printHeader(): void {
   );
 
   console.log(
-    "Shopio Product Specification Rebuild",
+    "BeforeChoice Product Specification Rebuild",
   );
 
   console.log(

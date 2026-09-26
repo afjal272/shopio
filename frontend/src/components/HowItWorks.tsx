@@ -19,7 +19,7 @@ export default function HowItWorks() {
     {
       number: "02",
       title: "AI analyzes options",
-      desc: "Shopio evaluates available products and compares the details that matter.",
+      desc: "BeforeChoice evaluates available products and compares the details that matter.",
       icon: Sparkles,
     },
     {
@@ -85,7 +85,7 @@ export default function HowItWorks() {
                   </p>
 
                   <p className="mt-5 max-w-xs text-sm leading-7 text-white/50">
-                    Shopio turns a natural-language request into a focused
+                    BeforeChoice turns a natural-language request into a focused
                     product decision.
                   </p>
                 </div>

@@ -26,8 +26,8 @@ export async function generateMetadata({
   const query = normalizeQuery(params.q)
 
   return {
-    title: `Best ${query} | Shopio`,
-    description: `Find the best ${query} using Shopio's AI-powered product decision engine.`,
+    title: `Best ${query} | BeforeChoice`,
+    description: `Find the best ${query} using BeforeChoice's AI-powered product decision engine.`,
   }
 }
 

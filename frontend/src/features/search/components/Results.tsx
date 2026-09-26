@@ -533,7 +533,7 @@ export default function Results({
               </p>
 
               <p className="mt-1 text-sm leading-6 text-amber-700">
-                Your budget was restrictive, so Shopio
+                Your budget was restrictive, so BeforeChoice
                 is showing the closest matching products
                 instead of returning nothing.
               </p>
@@ -597,7 +597,7 @@ export default function Results({
               <div>
                 <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#686bd2]">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#5b5ce2]" />
-                  Shopio recommendation
+                  BeforeChoice recommendation
                 </div>
 
                 <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[#262626] sm:text-[2.2rem]">
@@ -808,7 +808,7 @@ export default function Results({
 
             <div>
               <h3 className="text-lg font-semibold text-[#3f3f43]">
-                Products Shopio filtered out
+                Products BeforeChoice filtered out
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-[#7b6b6b]">

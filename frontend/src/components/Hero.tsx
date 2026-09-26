@@ -37,7 +37,7 @@ export default function Hero() {
 
           {/* Description */}
           <p className="mt-7 max-w-xl text-base leading-7 text-[#656b76] sm:text-lg">
-            Tell Shopio what you need. We compare the products and help you
+            Tell BeforeChoice what you need. We compare the products and help you
             understand which one actually fits.
           </p>
 
@@ -89,7 +89,7 @@ export default function Hero() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9aa0aa]">
-                  Shopio AI
+                  BeforeChoice AI
                 </p>
 
                 <p className="mt-1 text-sm font-medium text-[#3f4248]">
