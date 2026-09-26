@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
+import type { ReactNode } from "react"
 import { Geist, Geist_Mono } from "next/font/google"
+
 import "./globals.css"
 
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
-
-import { Toaster } from "sonner" // 🔥 ADD
+import { Toaster } from "sonner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,36 +19,41 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Shopio AI",
-  description: "AI-powered product decision engine",
+  title: {
+    default: "Shopio AI",
+    template: "%s | Shopio AI",
+  },
+  description:
+    "AI-powered product intelligence that helps you compare products and make better buying decisions.",
 }
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: ReactNode
+}>) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-black text-white">
-
-        {/* HEADER */}
+      <body className="min-h-full bg-[#fafafc] font-sans text-[#262626]">
         <Header />
 
-        {/* MAIN CONTENT */}
-        <main className="flex-1">
+        <main className="min-h-0 flex-1">
           {children}
         </main>
 
-        {/* FOOTER */}
         <Footer />
 
-        {/*  TOASTER ADD (IMPORTANT) */}
-        <Toaster position="top-center" richColors />
-
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          toastOptions={{
+            className: "font-sans",
+          }}
+        />
       </body>
     </html>
   )

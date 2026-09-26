@@ -1,24 +1,29 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  Lightbulb,
+  SlidersHorizontal,
+  Sparkles,
+  XCircle,
+} from "lucide-react"
 
-import ResultCard from "./ResultCard";
+import ResultCard from "./ResultCard"
 
 import {
   SearchResponse,
   SuggestionItem,
   ProductItem,
-} from "@/types/search";
-
-// ======================================================
-// Types
-// ======================================================
+} from "@/types/search"
 
 interface ResultsProps {
-  data: SearchResponse;
-  selected?: string[];
-  onSelect?: (id: string) => void;
+  data: SearchResponse
+  selected?: string[]
+  onSelect?: (id: string) => void
 }
 
 type MetricKey =
@@ -26,27 +31,22 @@ type MetricKey =
   | "processor"
   | "battery"
   | "camera"
-  | "rating";
+  | "rating"
 
-type MetricValue = number | null;
+type MetricValue = number | null
 
-// ======================================================
-// Constants
-// ======================================================
-
-const EMPTY_PRODUCTS: ProductItem[] = [];
-
-const EMPTY_STRINGS: string[] = [];
+const EMPTY_PRODUCTS: ProductItem[] = []
+const EMPTY_STRINGS: string[] = []
 
 const EMPTY_NOT_RECOMMENDED: SearchResponse["notRecommended"] =
-  [];
+  []
 
-const EMPTY_SUGGESTIONS: SuggestionItem[] = [];
+const EMPTY_SUGGESTIONS: SuggestionItem[] = []
 
 const EMPTY_PARSED: SearchResponse["parsed"] = {
   intent: [],
   budget: null,
-};
+}
 
 const METRIC_LABELS: Record<
   MetricKey,
@@ -57,7 +57,7 @@ const METRIC_LABELS: Record<
   battery: "Battery",
   camera: "Camera",
   rating: "Rating",
-};
+}
 
 const INTENT_PRIORITY: Record<
   string,
@@ -94,234 +94,193 @@ const INTENT_PRIORITY: Record<
     "camera",
     "rating",
   ],
-};
+}
 
 // ======================================================
 // Helpers
 // ======================================================
 
 function normalizeId(
-  value: unknown,
+  value: unknown
 ): string {
-  return String(
-    value ?? "",
-  );
+  return String(value ?? "")
 }
 
 function normalizeIntentList(
-  value: unknown,
+  value: unknown
 ): string[] {
-  if (
-    !Array.isArray(value)
-  ) {
-    return [];
+  if (!Array.isArray(value)) {
+    return []
   }
 
   return value
     .filter(
-      (
-        item,
-      ): item is string =>
-        typeof item ===
-        "string",
+      (item): item is string =>
+        typeof item === "string"
     )
-    .map(
-      (item) =>
-        item
-          .trim()
-          .toLowerCase(),
+    .map((item) =>
+      item.trim().toLowerCase()
     )
-    .filter(Boolean);
+    .filter(Boolean)
 }
 
 function getSafeBudget(
-  value: unknown,
+  value: unknown
 ): number | null {
-  const budget =
-    Number(value);
+  const budget = Number(value)
 
-  return Number.isFinite(
-    budget,
-  ) && budget > 0
+  return Number.isFinite(budget) &&
+    budget > 0
     ? budget
-    : null;
+    : null
 }
 
 function formatBudget(
-  value: number,
+  value: number
 ): string {
   return new Intl.NumberFormat(
-    "en-IN",
-  ).format(value);
+    "en-IN"
+  ).format(value)
 }
 
 function safeNumericValue(
-  value: unknown,
+  value: unknown
 ): number {
-  const numeric =
-    Number(value);
+  const numeric = Number(value)
 
-  return Number.isFinite(
-    numeric,
-  )
+  return Number.isFinite(numeric)
     ? numeric
-    : 0;
+    : 0
 }
 
 function safeScore(
-  value: unknown,
+  value: unknown
 ): number {
   return Math.max(
     0,
     Math.min(
       100,
       Math.round(
-        safeNumericValue(
-          value,
-        ),
-      ),
-    ),
-  );
+        safeNumericValue(value)
+      )
+    )
+  )
 }
 
 function isPositiveFiniteNumber(
-  value: unknown,
+  value: unknown
 ): value is number {
   return (
-    typeof value ===
-      "number" &&
-    Number.isFinite(
-      value,
-    ) &&
+    typeof value === "number" &&
+    Number.isFinite(value) &&
     value > 0
-  );
+  )
 }
 
 function capitalize(
-  value: string,
+  value: string
 ): string {
   if (!value) {
-    return "";
+    return ""
   }
 
   return (
     value.charAt(0).toUpperCase() +
     value.slice(1)
-  );
+  )
 }
 
-// ======================================================
-// Metric Priority
-// ======================================================
-
 function getMetricPriority(
-  intents: string[],
+  intents: string[]
 ): MetricKey[] {
-  for (
-    const intent of intents
-  ) {
-    const normalized =
-      intent
-        .trim()
-        .toLowerCase();
+  for (const intent of intents) {
+    const normalized = intent
+      .trim()
+      .toLowerCase()
 
     const priority =
-      INTENT_PRIORITY[
-        normalized
-      ];
+      INTENT_PRIORITY[normalized]
 
     if (priority) {
-      return priority;
+      return priority
     }
   }
 
-  return INTENT_PRIORITY.balanced;
+  return INTENT_PRIORITY.balanced
 }
-
-// ======================================================
-// Metric Value
-// ======================================================
 
 function getMetricValue(
   product: ProductItem,
-  metric: MetricKey,
+  metric: MetricKey
 ): MetricValue {
   switch (metric) {
     case "ram": {
       const value =
-        product.specs?.ram;
+        product.specs?.ram
 
       return isPositiveFiniteNumber(
-        value,
+        value
       )
         ? value
-        : null;
+        : null
     }
 
     case "battery": {
       const value =
-        product.specs?.battery;
+        product.specs?.battery
 
       return isPositiveFiniteNumber(
-        value,
+        value
       )
         ? value
-        : null;
+        : null
     }
 
     case "camera": {
       const value =
-        product.specs?.cameraMp;
+        product.specs?.cameraMp
 
       return isPositiveFiniteNumber(
-        value,
+        value
       )
         ? value
-        : null;
+        : null
     }
 
     case "rating": {
       const value =
-        product.rating;
+        product.rating
 
       return isPositiveFiniteNumber(
-        value,
+        value
       )
         ? value
-        : null;
+        : null
     }
 
     case "processor": {
       /*
-       * Processor performance is intentionally compared using
-       * the decision-engine normalized processor signal.
-       *
-       * Raw processor strings cannot be meaningfully sorted
-       * lexicographically.
+       * Processor comparison uses the
+       * normalized decision-engine signal.
        */
       const value =
-        product.breakdown
-          ?.processor;
+        product.breakdown?.processor
 
       return isPositiveFiniteNumber(
-        value,
+        value
       )
         ? value
-        : null;
+        : null
     }
 
     default:
-      return null;
+      return null
   }
 }
 
-// ======================================================
-// Metric Winner
-// ======================================================
-
 function findMetricWinner(
   products: ProductItem[],
-  metric: MetricKey,
+  metric: MetricKey
 ): ProductItem | null {
   const candidates =
     products.filter(
@@ -329,24 +288,18 @@ function findMetricWinner(
         const value =
           getMetricValue(
             product,
-            metric,
-          );
+            metric
+          )
 
         return (
           value !== null &&
           value > 0
-        );
-      },
-    );
+        )
+      }
+    )
 
-  /*
-   * One product cannot meaningfully be called the winner
-   * of a comparison when there is nothing to compare it with.
-   */
-  if (
-    candidates.length < 2
-  ) {
-    return null;
+  if (candidates.length < 2) {
+    return null
   }
 
   return (
@@ -355,14 +308,14 @@ function findMetricWinner(
         const aValue =
           getMetricValue(
             a,
-            metric,
-          ) ?? 0;
+            metric
+          ) ?? 0
 
         const bValue =
           getMetricValue(
             b,
-            metric,
-          ) ?? 0;
+            metric
+          ) ?? 0
 
         if (
           bValue !==
@@ -371,24 +324,20 @@ function findMetricWinner(
           return (
             bValue -
             aValue
-          );
+          )
         }
 
-        /*
-         * Deterministic tie-break:
-         * higher overall recommendation score wins.
-         */
         return (
           safeNumericValue(
-            b.score,
+            b.score
           ) -
           safeNumericValue(
-            a.score,
+            a.score
           )
-        );
-      },
+        )
+      }
     )[0] ?? null
-  );
+  )
 }
 
 // ======================================================
@@ -400,70 +349,67 @@ export default function Results({
   selected = [],
   onSelect,
 }: ResultsProps) {
-  const router =
-    useRouter();
+  const router = useRouter()
 
   // ====================================================
-  // Defensive Data Normalization
+  // Defensive normalization
   // ====================================================
 
   const best =
-    data?.best ?? null;
+    data?.best ?? null
 
   const recommendations =
     Array.isArray(
-      data?.recommendations,
+      data?.recommendations
     )
       ? data.recommendations
-      : EMPTY_PRODUCTS;
+      : EMPTY_PRODUCTS
 
   const parsed =
     data?.parsed ??
-    EMPTY_PARSED;
+    EMPTY_PARSED
 
   const comparison =
     Array.isArray(
-      data?.comparison,
+      data?.comparison
     )
       ? data.comparison
-      : EMPTY_STRINGS;
+      : EMPTY_STRINGS
 
   const notRecommended =
     Array.isArray(
-      data?.notRecommended,
+      data?.notRecommended
     )
       ? data.notRecommended
-      : EMPTY_NOT_RECOMMENDED;
+      : EMPTY_NOT_RECOMMENDED
 
   const suggestions =
     Array.isArray(
-      data?.suggestions,
+      data?.suggestions
     )
       ? data.suggestions
-      : EMPTY_SUGGESTIONS;
+      : EMPTY_SUGGESTIONS
 
   const isRelaxed =
-    Boolean(
-      data?.isRelaxed,
-    );
+    Boolean(data?.isRelaxed)
 
   const budget =
     getSafeBudget(
-      parsed.budget,
-    );
+      parsed.budget
+    )
 
   const intents =
     normalizeIntentList(
-      parsed.intent,
-    );
+      parsed.intent
+    )
 
   // ====================================================
-  // Persist Last Results
+  // Persist latest results
   // ====================================================
 
   useEffect(() => {
     if (!best) {
-      return;
+      return
     }
 
     try {
@@ -472,483 +418,339 @@ export default function Results({
         JSON.stringify([
           best,
           ...recommendations,
-        ]),
-      );
-    } catch (
-      error
-    ) {
+        ])
+      )
+    } catch (error) {
       console.error(
         "Failed to persist search results:",
-        error,
-      );
+        error
+      )
     }
   }, [
     best,
     recommendations,
-  ]);
+  ])
 
   // ====================================================
-  // Unique Product Collection
+  // Decision signals
   // ====================================================
 
-  /*
-   * This calculation is intentionally kept simple.
-   * The result set is small and typically contains only a
-   * handful of products, so memoization adds complexity
-   * without meaningful performance benefit.
-   */
   const allProducts =
     buildUniqueProducts(
       best,
-      recommendations,
-    );
-
-  // ====================================================
-  // Metric Priority
-  // ====================================================
+      recommendations
+    )
 
   const metricPriority =
     getMetricPriority(
-      intents,
-    );
-
-  // ====================================================
-  // Best Product Per Metric
-  // ====================================================
+      intents
+    )
 
   const bestMetrics =
     buildBestMetrics(
       allProducts,
-      metricPriority,
-    );
-
-  // ====================================================
-  // Strongest Area
-  // ====================================================
+      metricPriority
+    )
 
   const strongestArea =
     getStrongestArea(
       best,
       bestMetrics,
-      metricPriority,
-    );
-
-  // ====================================================
-  // Result State
-  // ====================================================
+      metricPriority
+    )
 
   const hasRecommendations =
-    recommendations.length > 0;
+    recommendations.length > 0
 
   const noResults =
     !best &&
     !hasRecommendations &&
-    !isRelaxed;
+    !isRelaxed
 
   const intentText =
     intents.length > 1
       ? intents
-          .map(
-            capitalize,
-          )
+          .map(capitalize)
           .join(" & ")
       : capitalize(
           intents[0] ??
-            "general",
-        );
+            "general"
+        )
+
+  const selectedSet =
+    new Set(selected)
 
   // ====================================================
-  // Empty State
+  // Empty state
   // ====================================================
 
   if (noResults) {
     return (
-      <div
-        className="
-          w-full
-          max-w-3xl
-          mx-auto
-          py-16
-          text-center
-          space-y-5
-        "
-      >
-        <h2
-          className="
-            text-2xl
-            font-bold
-            text-black
-          "
-        >
-          No matching
-          products found
-        </h2>
-
-        <p
-          className="
-            text-gray-500
-            text-sm
-          "
-        >
-          Try increasing your
-          budget or changing
-          your search
-          preferences.
-        </p>
-      </div>
-    );
-  }
-
-  // ====================================================
-  // Render
-  // ====================================================
-
-  return (
-    <div
-      className="
-        w-full
-        max-w-3xl
-        mx-auto
-        space-y-10
-      "
-    >
-      {/* =================================================
-          Relaxed Search Notice
-      ================================================= */}
-
-      {isRelaxed && (
-        <div
-          className="
-            rounded-xl
-            bg-orange-50
-            border
-            border-orange-200
-            p-4
-            text-sm
-            text-orange-700
-          "
-          role="status"
-        >
-          <p className="font-medium">
-            Budget was too
-            restrictive.
-          </p>
-
-          <p className="mt-1">
-            Showing the closest
-            matching products.
-          </p>
-        </div>
-      )}
-
-      {/* =================================================
-          Result Context
-      ================================================= */}
-
-      <div
-        className="
-          text-center
-          text-gray-500
-          text-sm
-        "
-      >
-        Results for{" "}
-
-        <span
-          className="
-            font-semibold
-            text-black
-            mx-1
-          "
-        >
-          {intentText}
-        </span>
-
-        {budget !== null && (
-          <>
-            under{" "}
-
-            <span
-              className="
-                font-semibold
-                text-black
-                ml-1
-              "
-            >
-              ₹
-              {formatBudget(
-                budget,
-              )}
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* =================================================
-          Best Choice
-      ================================================= */}
-
-      {best && (
-        <section
-          className="
-            rounded-3xl
-            border
-            border-black
-            bg-white
-            shadow-lg
-            p-6
-            space-y-5
-          "
-        >
-          <div
-            className="
-              flex
-              items-center
-              justify-between
-              gap-4
-            "
-          >
-            <div>
-              <h2
-                className="
-                  text-2xl
-                  font-bold
-                  text-black
-                "
-              >
-                🏆 Best Choice
-              </h2>
-
-              <p
-                className="
-                  text-sm
-                  text-gray-500
-                  mt-1
-                "
-              >
-                Highest ranked
-                recommendation
-              </p>
-            </div>
-
-            <div
-              className="
-                text-right
-                shrink-0
-              "
-            >
-              <div
-                className="
-                  rounded-full
-                  bg-black
-                  text-white
-                  px-4
-                  py-2
-                  text-sm
-                  font-semibold
-                "
-              >
-                {safeScore(
-                  best.score,
-                )}
-                % Match
-              </div>
-
-              {best.confidence !==
-                undefined && (
-                <p
-                  className="
-                    mt-2
-                    text-xs
-                    text-gray-500
-                  "
-                >
-                  Confidence{" "}
-                  {safeScore(
-                    best.confidence,
-                  )}
-                  %
-                </p>
-              )}
-            </div>
+      <section className="flex min-h-[420px] w-full items-center justify-center py-16">
+        <div className="mx-auto max-w-lg text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#e4e6eb] bg-white text-[#8b919b] shadow-sm">
+            <SlidersHorizontal
+              size={22}
+              strokeWidth={1.7}
+              aria-hidden="true"
+            />
           </div>
 
-          {/* =================================================
-              Strongest Area
-          ================================================= */}
+          <h2 className="mt-6 text-2xl font-semibold tracking-[-0.025em] text-[#262626]">
+            No matching products found
+          </h2>
 
-          {strongestArea && (
-            <div
-              className="
-                rounded-xl
-                bg-gray-50
-                border
-                border-gray-100
-                p-4
-              "
-            >
-              <div
-                className="
-                  text-xs
-                  uppercase
-                  tracking-wide
-                  text-gray-500
-                  mb-2
-                "
-              >
-                Strongest Area
-              </div>
+          <p className="mt-3 text-sm leading-6 text-[#656b76]">
+            Try increasing your budget or changing
+            your search preferences.
+          </p>
+        </div>
+      </section>
+    )
+  }
 
-              <div
-                className="
-                  font-semibold
-                  text-black
-                "
-              >
-                Best in{" "}
-                {strongestArea}
-              </div>
+  return (
+    <div className="w-full space-y-10">
+      {/* ==================================================
+          RELAXED SEARCH
+      ================================================== */}
+
+      {isRelaxed && (
+        <section
+          className="rounded-2xl border border-amber-200 bg-amber-50 p-5"
+          role="status"
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle
+              size={19}
+              className="mt-0.5 shrink-0 text-amber-600"
+              aria-hidden="true"
+            />
+
+            <div>
+              <p className="text-sm font-semibold text-amber-800">
+                We widened the search slightly.
+              </p>
+
+              <p className="mt-1 text-sm leading-6 text-amber-700">
+                Your budget was restrictive, so Shopio
+                is showing the closest matching products
+                instead of returning nothing.
+              </p>
             </div>
-          )}
-
-          {/* =================================================
-              Why This Wins
-          ================================================= */}
-
-          {comparison.length >
-            0 && (
-            <div
-              className="
-                rounded-xl
-                border
-                border-green-200
-                bg-green-50
-                p-5
-              "
-            >
-              <h3
-                className="
-                  font-semibold
-                  text-green-700
-                  mb-3
-                "
-              >
-                Why this wins
-              </h3>
-
-              <div
-                className="
-                  space-y-2
-                "
-              >
-                {comparison.map(
-                  (
-                    reason,
-                    index,
-                  ) => (
-                    <div
-                      key={`${index}-${reason}`}
-                      className="
-                        rounded-lg
-                        bg-white
-                        border
-                        border-green-100
-                        p-3
-                        text-sm
-                        text-gray-800
-                      "
-                    >
-                      <span
-                        aria-hidden="true"
-                      >
-                        ✅
-                      </span>{" "}
-                      {reason}
-                    </div>
-                  ),
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* =================================================
-              Best Product
-          ================================================= */}
-
-          <ResultCard
-            item={best}
-            highlight
-            selected={selected.includes(
-              normalizeId(
-                best.id,
-              ),
-            )}
-            onSelect={
-              onSelect
-                ? () =>
-                    onSelect(
-                      normalizeId(
-                        best.id,
-                      ),
-                    )
-                : undefined
-            }
-          />
+          </div>
         </section>
       )}
 
-      {/* =================================================
-          Recommendations
-      ================================================= */}
+      {/* ==================================================
+          SEARCH CONTEXT
+      ================================================== */}
+
+      <div className="flex flex-col gap-4 rounded-2xl border border-[#e5e7ec] bg-white px-5 py-4 shadow-[0_6px_24px_rgba(15,23,42,0.035)] sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9aa0aa]">
+            Search context
+          </p>
+
+          <p className="mt-1 text-sm text-[#656b76]">
+            Ranked for{" "}
+            <span className="font-semibold text-[#262626]">
+              {intentText}
+            </span>
+
+            {budget !== null && (
+              <>
+                {" "}
+                under{" "}
+                <span className="font-semibold text-[#262626]">
+                  ₹{formatBudget(budget)}
+                </span>
+              </>
+            )}
+          </p>
+        </div>
+
+        <div className="inline-flex w-fit items-center gap-2 rounded-full bg-[#f3f3ff] px-3 py-1.5 text-xs font-medium text-[#5b5ce2]">
+          <Sparkles
+            size={13}
+            aria-hidden="true"
+          />
+
+          AI-ranked results
+        </div>
+      </div>
+
+      {/* ==================================================
+          BEST RECOMMENDATION
+      ================================================== */}
+
+      {best && (
+        <section className="overflow-hidden rounded-[30px] border border-[#dfe2e9] bg-white shadow-[0_20px_65px_rgba(15,23,42,0.07)]">
+          {/* Header */}
+          <div className="relative overflow-hidden border-b border-[#e9ebf0] bg-gradient-to-br from-[#f7f7ff] via-white to-white px-6 py-7 sm:px-8 lg:px-9">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-indigo-100/30 blur-3xl"
+            />
+
+            <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#686bd2]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#5b5ce2]" />
+                  Shopio recommendation
+                </div>
+
+                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[#262626] sm:text-[2.2rem]">
+                  Best match for this search
+                </h2>
+
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-[#656b76]">
+                  Highest-ranked product based on the
+                  requirements and decision signals in your
+                  search.
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2.5">
+                <div className="min-w-[78px] rounded-2xl border border-[#e1e3e9] bg-white px-4 py-3 text-center shadow-[0_5px_18px_rgba(15,23,42,0.05)]">
+                  <p className="text-2xl font-semibold tracking-tight text-[#262626]">
+                    {safeScore(
+                      best.score
+                    )}
+                  </p>
+
+                  <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#969ca6]">
+                    match
+                  </p>
+                </div>
+
+                {best.confidence !==
+                  undefined && (
+                  <div className="min-w-[78px] rounded-2xl border border-[#e1e3e9] bg-white px-4 py-3 text-center shadow-[0_5px_18px_rgba(15,23,42,0.05)]">
+                    <p className="text-2xl font-semibold tracking-tight text-[#262626]">
+                      {safeScore(
+                        best.confidence
+                      )}
+                    </p>
+
+                    <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#969ca6]">
+                      confidence
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Product */}
+          <div className="p-4 sm:p-6 lg:p-7">
+            <ResultCard
+              item={best}
+              highlight
+              selected={selectedSet.has(
+                normalizeId(
+                  best.id
+                )
+              )}
+              onSelect={
+                onSelect
+                  ? () =>
+                      onSelect(
+                        normalizeId(
+                          best.id
+                        )
+                      )
+                  : undefined
+              }
+            />
+          </div>
+
+          {/* Decision reasoning */}
+          {(strongestArea ||
+            comparison.length > 0) && (
+            <div className="border-t border-[#e9ebf0] bg-[#fafafc] px-5 py-5 sm:px-6 lg:px-7">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                {/* Strongest area */}
+                {strongestArea && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#eeeeff] text-[#5b5ce2]">
+                      <Lightbulb
+                        size={17}
+                        aria-hidden="true"
+                      />
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9aa0aa]">
+                        Strongest area
+                      </p>
+
+                      <p className="mt-0.5 text-sm font-semibold text-[#34373d]">
+                        Best in{" "}
+                        {strongestArea}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reasons */}
+                {comparison.length >
+                  0 && (
+                  <div className="flex flex-wrap gap-x-5 gap-y-2">
+                    {comparison
+                      .slice(0, 3)
+                      .map(
+                        (
+                          reason,
+                          index
+                        ) => (
+                          <div
+                            key={`${index}-${reason}`}
+                            className="flex items-start gap-2 text-xs leading-5 text-[#656b76]"
+                          >
+                            <CheckCircle2
+                              size={14}
+                              className="mt-0.5 shrink-0 text-emerald-500"
+                              aria-hidden="true"
+                            />
+
+                            <span>
+                              {reason}
+                            </span>
+                          </div>
+                        )
+                      )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ==================================================
+          SHORTLIST
+      ================================================== */}
 
       {hasRecommendations && (
-        <section
-          className="
-            space-y-5
-          "
-        >
-          <div
-            className="
-              flex
-              items-center
-              justify-between
-              gap-4
-            "
-          >
+        <section>
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h3
-                className="
-                  text-xl
-                  font-bold
-                  text-black
-                "
-              >
-                Other Good
-                Options
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9aa0aa]">
+                Shortlist
+              </p>
+
+              <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#262626]">
+                Other strong options
               </h3>
 
-              <p
-                className="
-                  text-sm
-                  text-gray-500
-                  mt-1
-                "
-              >
-                Strong alternatives
-                to the top
-                recommendation.
+              <p className="mt-1 text-sm text-[#656b76]">
+                Strong alternatives worth considering.
               </p>
             </div>
 
-            <span
-              className="
-                text-xs
-                text-gray-500
-                shrink-0
-              "
-            >
-              {recommendations.length}{" "}
-              option
+            <span className="w-fit rounded-full border border-[#e2e4ea] bg-white px-3 py-1.5 text-xs font-medium text-[#737984]">
+              {recommendations.length} option
               {recommendations.length ===
               1
                 ? ""
@@ -956,198 +758,169 @@ export default function Results({
             </span>
           </div>
 
-          <div
-            className="
-              space-y-4
-            "
-          >
+          <div className="space-y-4">
             {recommendations.map(
               (
                 product,
-                index,
+                index
               ) => (
                 <ResultCard
                   key={normalizeId(
-                    product.id,
+                    product.id
                   )}
                   item={product}
                   index={index}
-                  selected={selected.includes(
+                  selected={selectedSet.has(
                     normalizeId(
-                      product.id,
-                    ),
+                      product.id
+                    )
                   )}
                   onSelect={
                     onSelect
                       ? () =>
                           onSelect(
                             normalizeId(
-                              product.id,
-                            ),
+                              product.id
+                            )
                           )
                       : undefined
                   }
                 />
-              ),
+              )
             )}
           </div>
         </section>
       )}
 
-      {/* =================================================
-          Not Recommended
-      ================================================= */}
+      {/* ==================================================
+          FILTERED PRODUCTS
+      ================================================== */}
 
-      {notRecommended.length >
-        0 && (
-        <section
-          className="
-            rounded-2xl
-            border
-            border-red-200
-            bg-red-50
-            p-5
-          "
-        >
-          <h3
-            className="
-              text-lg
-              font-semibold
-              text-red-700
-              mb-4
-            "
-          >
-            Why not these?
-          </h3>
+      {notRecommended.length > 0 && (
+        <section className="rounded-[24px] border border-[#f0dede] bg-[#fffafa] p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff0f0] text-[#c65b5b]">
+              <XCircle
+                size={19}
+                aria-hidden="true"
+              />
+            </div>
 
-          <div
-            className="
-              space-y-3
-            "
-          >
+            <div>
+              <h3 className="text-lg font-semibold text-[#3f3f43]">
+                Products Shopio filtered out
+              </h3>
+
+              <p className="mt-1 text-sm leading-6 text-[#7b6b6b]">
+                These options did not align well enough
+                with the requirements.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
             {notRecommended.map(
               (item) => (
                 <div
                   key={normalizeId(
-                    item.id,
+                    item.id
                   )}
-                  className="
-                    rounded-xl
-                    border
-                    border-red-100
-                    bg-white
-                    p-4
-                  "
+                  className="rounded-2xl border border-[#f0e2e2] bg-white p-4"
                 >
-                  <div
-                    className="
-                      font-medium
-                      text-black
-                    "
-                  >
+                  <p className="font-medium text-[#262626]">
                     {item.name}
-                  </div>
+                  </p>
 
-                  <div
-                    className="
-                      mt-1
-                      text-sm
-                      text-red-600
-                    "
-                  >
-                    {item.reason}
+                  <div className="mt-2 flex gap-2 text-sm leading-6 text-[#b05e5e]">
+                    <XCircle
+                      size={15}
+                      className="mt-1 shrink-0"
+                      aria-hidden="true"
+                    />
+
+                    <span>
+                      {item.reason}
+                    </span>
                   </div>
                 </div>
-              ),
+              )
             )}
           </div>
         </section>
       )}
 
-      {/* =================================================
-          Suggestions
-      ================================================= */}
+      {/* ==================================================
+          SEARCH REFINEMENT
+      ================================================== */}
 
-      {suggestions.length >
-        0 && (
-        <section
-          className="
-            rounded-2xl
-            border
-            border-blue-200
-            bg-blue-50
-            p-5
-          "
-        >
-          <h3
-            className="
-              text-lg
-              font-semibold
-              text-blue-700
-              mb-4
-            "
-          >
-            Refine your
-            search
-          </h3>
+      {suggestions.length > 0 && (
+        <section className="rounded-[24px] border border-[#e0e1ef] bg-[#f8f8ff] p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eeeeff] text-[#5b5ce2]">
+              <SlidersHorizontal
+                size={18}
+                aria-hidden="true"
+              />
+            </div>
 
-          <div
-            className="
-              flex
-              flex-wrap
-              gap-3
-            "
-          >
+            <div>
+              <h3 className="text-lg font-semibold text-[#262626]">
+                Refine your search
+              </h3>
+
+              <p className="mt-1 text-sm leading-6 text-[#656b76]">
+                Try one of these directions to narrow
+                the decision further.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2.5">
             {suggestions.map(
               (
-                suggestion: SuggestionItem,
+                suggestion: SuggestionItem
               ) => {
                 const action =
-                  suggestion.action?.trim();
+                  suggestion.action?.trim()
 
                 return (
                   <button
                     key={normalizeId(
-                      suggestion.id,
+                      suggestion.id
                     )}
                     type="button"
                     disabled={!action}
                     onClick={() => {
                       if (!action) {
-                        return;
+                        return
                       }
 
                       router.push(
                         `/search?q=${encodeURIComponent(
-                          action,
-                        )}`,
-                      );
+                          action
+                        )}`
+                      )
                     }}
-                    className="
-                      rounded-full
-                      border
-                      border-blue-200
-                      bg-white
-                      px-4
-                      py-2
-                      text-sm
-                      text-gray-800
-                      transition
-                      hover:bg-blue-100
-                      disabled:cursor-not-allowed
-                      disabled:opacity-50
-                    "
+                    className="group inline-flex items-center gap-2 rounded-full border border-[#dfe1ec] bg-white px-4 py-2.5 text-sm font-medium text-[#555b66] shadow-sm transition-all duration-200 hover:border-[#cfd1ee] hover:bg-[#f3f3ff] hover:text-[#4f46c8] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {suggestion.title}
+                    <span>
+                      {suggestion.title}
+                    </span>
+
+                    <ArrowRight
+                      size={14}
+                      className="transition-transform duration-200 group-hover:translate-x-0.5"
+                      aria-hidden="true"
+                    />
                   </button>
-                );
-              },
+                )
+              }
             )}
           </div>
         </section>
       )}
     </div>
-  );
+  )
 }
 
 // ======================================================
@@ -1156,55 +929,50 @@ export default function Results({
 
 function buildUniqueProducts(
   best: ProductItem | null,
-  recommendations: ProductItem[],
+  recommendations: ProductItem[]
 ): ProductItem[] {
-  const products: ProductItem[] =
-    [];
+  const products: ProductItem[] = []
 
   const appendUnique = (
     product:
       | ProductItem
       | null
-      | undefined,
+      | undefined
   ): void => {
     if (!product) {
-      return;
+      return
     }
 
     const id =
-      normalizeId(
-        product.id,
-      );
+      normalizeId(product.id)
 
     if (!id) {
-      return;
+      return
     }
 
     const exists =
       products.some(
         (existing) =>
           normalizeId(
-            existing.id,
-          ) === id,
-      );
+            existing.id
+          ) === id
+      )
 
     if (!exists) {
-      products.push(
-        product,
-      );
+      products.push(product)
     }
-  };
+  }
 
-  appendUnique(best);
+  appendUnique(best)
 
   for (
     const product of
-      recommendations
+    recommendations
   ) {
-    appendUnique(product);
+    appendUnique(product)
   }
 
-  return products;
+  return products
 }
 
 // ======================================================
@@ -1213,18 +981,16 @@ function buildUniqueProducts(
 
 function buildBestMetrics(
   products: ProductItem[],
-  priority: MetricKey[],
+  priority: MetricKey[]
 ): Partial<
   Record<MetricKey, string>
 > {
   const result: Partial<
     Record<MetricKey, string>
-  > = {};
+  > = {}
 
-  if (
-    products.length < 2
-  ) {
-    return result;
+  if (products.length < 2) {
+    return result
   }
 
   for (
@@ -1233,20 +999,20 @@ function buildBestMetrics(
     const winner =
       findMetricWinner(
         products,
-        metric,
-      );
+        metric
+      )
 
     if (!winner) {
-      continue;
+      continue
     }
 
     result[metric] =
       normalizeId(
-        winner.id,
-      );
+        winner.id
+      )
   }
 
-  return result;
+  return result
 }
 
 // ======================================================
@@ -1258,16 +1024,14 @@ function getStrongestArea(
   bestMetrics: Partial<
     Record<MetricKey, string>
   >,
-  priority: MetricKey[],
+  priority: MetricKey[]
 ): string | null {
   if (!best) {
-    return null;
+    return null
   }
 
   const bestId =
-    normalizeId(
-      best.id,
-    );
+    normalizeId(best.id)
 
   for (
     const metric of priority
@@ -1278,9 +1042,9 @@ function getStrongestArea(
     ) {
       return METRIC_LABELS[
         metric
-      ];
+      ]
     }
   }
 
-  return null;
+  return null
 }

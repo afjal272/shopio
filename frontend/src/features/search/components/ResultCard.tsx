@@ -1,268 +1,251 @@
-"use client";
+"use client"
 
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Image from "next/image"
+import { useRouter } from "next/navigation"
+import {
+  BatteryCharging,
+  Check,
+  ChevronRight,
+  Cpu,
+  Heart,
+  HardDrive,
+  Image as ImageIcon,
+  MemoryStick,
+  Monitor,
+  Scale,
+  Star,
+  Zap,
+} from "lucide-react"
 import {
   useCallback,
   useSyncExternalStore,
-} from "react";
-import { Heart } from "lucide-react";
-import { toast } from "sonner";
+} from "react"
+import { toast } from "sonner"
 
-import { ProductItem } from "@/types/search";
-
-// ======================================================
-// Types
-// ======================================================
+import { ProductItem } from "@/types/search"
 
 type Props = {
-  item: ProductItem;
-  index?: number;
-  highlight?: boolean;
-  selected?: boolean;
-  onSelect?: () => void;
-};
+  item: ProductItem
+  index?: number
+  highlight?: boolean
+  selected?: boolean
+  onSelect?: () => void
+}
 
-// ======================================================
-// Constants
-// ======================================================
+type Specification = {
+  key: string
+  label: string
+  value: string
+}
 
-const SAVED_PRODUCTS_KEY =
-  "saved_products";
-
-const COMPARE_IDS_KEY =
-  "compare_ids";
+const SAVED_PRODUCTS_KEY = "saved_products"
+const COMPARE_IDS_KEY = "compare_ids"
 
 const SAVED_PRODUCTS_EVENT =
-  "shopio:saved-products";
+  "shopio:saved-products"
 
 const COMPARE_IDS_EVENT =
-  "shopio:compare-ids";
+  "shopio:compare-ids"
 
-const MAX_COMPARE_PRODUCTS = 4;
+const MAX_COMPARE_PRODUCTS = 4
+const DEFAULT_IMAGE = "/placeholder.png"
 
-// ======================================================
-// Local Storage Helpers
-// ======================================================
-
-function readIdList(
-  key: string,
-): string[] {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return [];
+function readIdList(key: string): string[] {
+  if (typeof window === "undefined") {
+    return []
   }
 
   try {
-    const raw =
-      localStorage.getItem(key);
+    const raw = window.localStorage.getItem(key)
 
     if (!raw) {
-      return [];
+      return []
     }
 
-    const parsed: unknown =
-      JSON.parse(raw);
+    const parsed: unknown = JSON.parse(raw)
 
-    if (
-      !Array.isArray(parsed)
-    ) {
-      return [];
+    if (!Array.isArray(parsed)) {
+      return []
     }
 
     return Array.from(
       new Set(
         parsed
-          .map((value) =>
-            String(value),
-          )
-          .filter(Boolean),
-      ),
-    );
+          .map((value) => String(value))
+          .filter(Boolean)
+      )
+    )
   } catch {
-    return [];
+    return []
   }
 }
 
 function writeIdList(
   key: string,
-  ids: string[],
+  ids: string[]
 ): void {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return;
+  if (typeof window === "undefined") {
+    return
   }
 
-  localStorage.setItem(
-    key,
-    JSON.stringify(
-      Array.from(
-        new Set(ids),
-      ),
-    ),
-  );
+  try {
+    window.localStorage.setItem(
+      key,
+      JSON.stringify(Array.from(new Set(ids)))
+    )
+  } catch {
+    // Ignore storage failures.
+  }
 }
 
 function emitLocalStorageEvent(
-  eventName: string,
+  eventName: string
 ): void {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return;
+  if (typeof window === "undefined") {
+    return
   }
 
-  window.dispatchEvent(
-    new Event(eventName),
-  );
+  window.dispatchEvent(new Event(eventName))
 }
-
-// ======================================================
-// External Store
-// ======================================================
 
 function subscribeToEvent(
   eventName: string,
-  callback: () => void,
+  callback: () => void
 ): () => void {
-  if (
-    typeof window ===
-    "undefined"
-  ) {
-    return () => {};
+  if (typeof window === "undefined") {
+    return () => {}
   }
 
-  const handleStorage = () =>
-    callback();
+  const handleStorage = () => callback()
 
   window.addEventListener(
     "storage",
-    handleStorage,
-  );
+    handleStorage
+  )
 
   window.addEventListener(
     eventName,
-    handleStorage,
-  );
+    handleStorage
+  )
 
   return () => {
     window.removeEventListener(
       "storage",
-      handleStorage,
-    );
+      handleStorage
+    )
 
     window.removeEventListener(
       eventName,
-      handleStorage,
-    );
-  };
+      handleStorage
+    )
+  }
 }
 
-// ======================================================
-// Formatting Helpers
-// ======================================================
-
-function formatNumber(
-  value: number,
-): string {
+function formatNumber(value: number): string {
   return new Intl.NumberFormat(
-    "en-IN",
-  ).format(value);
+    "en-IN"
+  ).format(value)
+}
+
+function formatPrice(
+  value: unknown
+): string | null {
+  const numeric = Number(value)
+
+  if (
+    !Number.isFinite(numeric) ||
+    numeric <= 0
+  ) {
+    return null
+  }
+
+  return `₹${formatNumber(numeric)}`
 }
 
 function formatStorage(
-  storage: number,
+  storage: number
 ): string {
   if (
     storage >= 1024 &&
     storage % 1024 === 0
   ) {
-    return `${storage / 1024}TB`;
+    return `${storage / 1024}TB`
   }
 
-  return `${storage}GB`;
+  return `${storage}GB`
 }
 
 function formatBattery(
-  battery: number,
+  battery: number
 ): string {
-  return `${formatNumber(
-    battery,
-  )}mAh`;
+  return `${formatNumber(battery)}mAh`
 }
 
 function formatCamera(
-  megapixels: number,
+  megapixels: number
 ): string {
-  return `${megapixels}MP`;
+  return `${megapixels}MP`
 }
 
 function formatDisplaySize(
-  size: number,
+  size: number
 ): string {
-  return `${size}"`;
-}
-
-function formatClockSpeed(
-  value: number,
-): string {
-  return `${value}GHz`;
+  return `${size}"`
 }
 
 function formatRating(
-  value: number,
+  value: number
 ): string {
-  return `${value.toFixed(1)}★`;
+  return `${value.toFixed(1)}★`
 }
 
 function safePercentage(
-  value: unknown,
+  value: unknown
 ): number | null {
-  const numeric =
-    Number(value);
+  const numeric = Number(value)
 
-  if (
-    !Number.isFinite(
-      numeric,
-    )
-  ) {
-    return null;
+  if (!Number.isFinite(numeric)) {
+    return null
   }
 
   return Math.max(
     0,
     Math.min(
       100,
-      Math.round(numeric),
-    ),
-  );
+      Math.round(numeric)
+    )
+  )
 }
 
-function safeNumber(
-  value: unknown,
-): number | null {
-  const numeric =
-    Number(value);
-
-  if (
-    !Number.isFinite(
-      numeric,
-    )
-  ) {
-    return null;
+function getScoreTone(score: number) {
+  if (score >= 85) {
+    return {
+      text: "text-emerald-700",
+      bg: "bg-emerald-50",
+      border: "border-emerald-100",
+      bar: "bg-emerald-500",
+      label: "Strong match",
+    }
   }
 
-  return numeric;
-}
+  if (score >= 70) {
+    return {
+      text: "text-amber-700",
+      bg: "bg-amber-50",
+      border: "border-amber-100",
+      bar: "bg-amber-500",
+      label: "Good match",
+    }
+  }
 
-// ======================================================
-// Component
-// ======================================================
+  return {
+    text: "text-[#6b7280]",
+    bg: "bg-[#f5f6f8]",
+    border: "border-[#e5e7eb]",
+    bar: "bg-[#8c93a1]",
+    label: "Lower match",
+  }
+}
 
 export default function ResultCard({
   item,
@@ -271,1026 +254,716 @@ export default function ResultCard({
   selected = false,
   onSelect,
 }: Props) {
-  const router =
-    useRouter();
+  const router = useRouter()
 
-  // ====================================================
-  // Product Identity
-  // ====================================================
+  const id = String(item.id)
 
-  const id =
-    String(item.id);
+  /* ====================================================
+     SCORE
+  ==================================================== */
 
-  // ====================================================
-  // Match Score
-  // ====================================================
+  const rawScore = Number(item.score)
 
-  const rawScore =
-    Number(item.score);
-
-  const safeScore =
-    Number.isFinite(
-      rawScore,
-    )
-      ? Math.max(
-          0,
-          Math.min(
-            100,
-            Math.round(
-              rawScore,
-            ),
-          ),
+  const safeScore = Number.isFinite(rawScore)
+    ? Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(rawScore)
         )
-      : 0;
+      )
+    : 0
 
-  const scoreColor =
-    safeScore >= 85
-      ? "bg-green-500"
-      : safeScore >= 70
-        ? "bg-yellow-500"
-        : "bg-red-400";
+  const scoreTone =
+    getScoreTone(safeScore)
 
-  // ====================================================
-  // Price
-  // ====================================================
-
-  const rawPrice =
-    Number(item.price);
-
-  const hasValidPrice =
-    Number.isFinite(
-      rawPrice,
-    ) &&
-    rawPrice > 0;
+  /* ====================================================
+     PRICE
+  ==================================================== */
 
   const formattedPrice =
-    hasValidPrice
-      ? new Intl.NumberFormat(
-          "en-IN",
-        ).format(
-          rawPrice,
-        )
-      : null;
+    formatPrice(item.price)
 
-  // ====================================================
-  // Saved State
-  // ====================================================
+  /* ====================================================
+     WISHLIST
+  ==================================================== */
 
-  const subscribeSaved =
-    useCallback(
-      (
-        callback: () => void,
-      ) =>
-        subscribeToEvent(
-          SAVED_PRODUCTS_EVENT,
-          callback,
-        ),
-      [],
-    );
+  const subscribeSaved = useCallback(
+    (callback: () => void) =>
+      subscribeToEvent(
+        SAVED_PRODUCTS_EVENT,
+        callback
+      ),
+    []
+  )
 
-  const getSavedSnapshot =
-    useCallback(
-      () =>
-        readIdList(
-          SAVED_PRODUCTS_KEY,
-        ).includes(id),
-      [id],
-    );
+  const getSavedSnapshot = useCallback(
+    () =>
+      readIdList(
+        SAVED_PRODUCTS_KEY
+      ).includes(id),
+    [id]
+  )
 
-  const saved =
-    useSyncExternalStore(
-      subscribeSaved,
-      getSavedSnapshot,
-      () => false,
-    );
+  const saved = useSyncExternalStore(
+    subscribeSaved,
+    getSavedSnapshot,
+    () => false
+  )
 
-  // ====================================================
-  // Compare State
-  // ====================================================
+  /* ====================================================
+     COMPARE
+  ==================================================== */
 
   const subscribeCompared =
     useCallback(
-      (
-        callback: () => void,
-      ) =>
+      (callback: () => void) =>
         subscribeToEvent(
           COMPARE_IDS_EVENT,
-          callback,
+          callback
         ),
-      [],
-    );
+      []
+    )
 
   const getComparedSnapshot =
     useCallback(
       () =>
         readIdList(
-          COMPARE_IDS_KEY,
+          COMPARE_IDS_KEY
         ).includes(id),
-      [id],
-    );
+      [id]
+    )
 
   const compared =
     useSyncExternalStore(
       subscribeCompared,
       getComparedSnapshot,
-      () => false,
-    );
+      () => false
+    )
 
-  // ====================================================
-  // Save / Wishlist
-  // ====================================================
+  /* ====================================================
+     SAVE
+  ==================================================== */
 
-  const toggleSave =
-    useCallback(() => {
-      const stored =
-        readIdList(
-          SAVED_PRODUCTS_KEY,
-        );
+  const toggleSave = useCallback(() => {
+    const stored = readIdList(
+      SAVED_PRODUCTS_KEY
+    )
 
-      const exists =
-        stored.includes(id);
+    const exists =
+      stored.includes(id)
 
-      const updated =
-        exists
-          ? stored.filter(
-              (
-                storedId,
-              ) =>
-                storedId !== id,
-            )
-          : [
-              ...stored,
-              id,
-            ];
+    const updated = exists
+      ? stored.filter(
+          (storedId) =>
+            storedId !== id
+        )
+      : [...stored, id]
 
-      writeIdList(
-        SAVED_PRODUCTS_KEY,
-        updated,
-      );
+    writeIdList(
+      SAVED_PRODUCTS_KEY,
+      updated
+    )
 
-      emitLocalStorageEvent(
-        SAVED_PRODUCTS_EVENT,
-      );
+    emitLocalStorageEvent(
+      SAVED_PRODUCTS_EVENT
+    )
 
-      if (exists) {
-        toast.success(
-          "Removed from wishlist",
-        );
-      } else {
-        toast.success(
-          "Saved to wishlist",
-        );
-      }
-    }, [id]);
+    toast.success(
+      exists
+        ? "Removed from wishlist"
+        : "Saved to wishlist"
+    )
+  }, [id])
 
-  // ====================================================
-  // Compare
-  // ====================================================
+  /* ====================================================
+     COMPARE
+  ==================================================== */
 
-  const toggleCompare =
-    useCallback(() => {
-      const stored =
-        readIdList(
-          COMPARE_IDS_KEY,
-        );
+  const toggleCompare = useCallback(() => {
+    const stored = readIdList(
+      COMPARE_IDS_KEY
+    )
 
-      const exists =
-        stored.includes(id);
+    const exists =
+      stored.includes(id)
 
-      if (exists) {
-        const updated =
-          stored.filter(
-            (
-              storedId,
-            ) =>
-              storedId !== id,
-          );
-
-        writeIdList(
-          COMPARE_IDS_KEY,
-          updated,
-        );
-
-        emitLocalStorageEvent(
-          COMPARE_IDS_EVENT,
-        );
-
-        toast.success(
-          "Removed from comparison",
-        );
-
-        return;
-      }
-
-      if (
-        stored.length >=
-        MAX_COMPARE_PRODUCTS
-      ) {
-        toast.error(
-          `You can compare up to ${MAX_COMPARE_PRODUCTS} products only`,
-        );
-
-        return;
-      }
-
-      const updated = [
-        ...stored,
-        id,
-      ];
-
+    if (exists) {
       writeIdList(
         COMPARE_IDS_KEY,
-        updated,
-      );
+        stored.filter(
+          (storedId) =>
+            storedId !== id
+        )
+      )
 
       emitLocalStorageEvent(
-        COMPARE_IDS_EVENT,
-      );
+        COMPARE_IDS_EVENT
+      )
 
       toast.success(
-        "Added to comparison",
-      );
-    }, [id]);
+        "Removed from comparison"
+      )
 
-  // ====================================================
-  // Product Navigation
-  // ====================================================
+      return
+    }
 
-  const openProduct =
-    useCallback(() => {
-      router.push(
-        `/product/${encodeURIComponent(
-          id,
-        )}`,
-      );
-    }, [
-      id,
-      router,
-    ]);
+    if (
+      stored.length >=
+      MAX_COMPARE_PRODUCTS
+    ) {
+      toast.error(
+        `You can compare up to ${MAX_COMPARE_PRODUCTS} products only`
+      )
 
-  // ====================================================
-  // Actual Specifications
-  // ====================================================
+      return
+    }
 
-  const specs =
-    item.specs;
+    writeIdList(
+      COMPARE_IDS_KEY,
+      [...stored, id]
+    )
 
-  const actualSpecifications =
-    [
-      specs?.ram != null
-        ? {
-            key: "ram",
-            label: "RAM",
-            value: `${formatNumber(
-              specs.ram,
-            )}GB`,
-          }
-        : null,
+    emitLocalStorageEvent(
+      COMPARE_IDS_EVENT
+    )
 
-      specs?.storage != null
-        ? {
-            key: "storage",
-            label: "Storage",
-            value: formatStorage(
-              specs.storage,
+    toast.success(
+      "Added to comparison"
+    )
+  }, [id])
+
+  /* ====================================================
+     NAVIGATION
+  ==================================================== */
+
+  const openProduct = useCallback(() => {
+    router.push(
+      `/product/${encodeURIComponent(id)}`
+    )
+  }, [id, router])
+
+  /* ====================================================
+     SPECIFICATIONS
+  ==================================================== */
+
+  const specs = item.specs
+
+  const actualSpecifications:
+    Specification[] = [
+    specs?.ram != null
+      ? {
+          key: "ram",
+          label: "RAM",
+          value: `${formatNumber(
+            specs.ram
+          )}GB`,
+        }
+      : null,
+
+    specs?.storage != null
+      ? {
+          key: "storage",
+          label: "Storage",
+          value:
+            formatStorage(
+              specs.storage
             ),
-          }
-        : null,
+        }
+      : null,
 
-      specs?.processor
+    specs?.processor
+      ? {
+          key: "processor",
+          label: "Processor",
+          value: specs.processor,
+        }
+      : specs?.chipset
         ? {
             key: "processor",
             label: "Processor",
-            value:
-              specs.processor,
+            value: specs.chipset,
           }
-        : specs?.chipset
+        : specs?.processorType
           ? {
               key: "processor",
               label: "Processor",
               value:
-                specs.chipset,
+                specs.processorType,
             }
-          : specs?.processorType
-            ? {
-                key: "processor",
-                label:
-                  "Processor",
-                value:
-                  specs.processorType,
-              }
-            : null,
+          : null,
 
-      specs?.battery != null
-        ? {
-            key: "battery",
-            label: "Battery",
-            value:
-              formatBattery(
-                specs.battery,
-              ),
-          }
-        : null,
+    specs?.battery != null
+      ? {
+          key: "battery",
+          label: "Battery",
+          value:
+            formatBattery(
+              specs.battery
+            ),
+        }
+      : null,
 
-      specs?.cameraMp != null
-        ? {
-            key: "camera",
-            label: "Camera",
-            value:
-              formatCamera(
-                specs.cameraMp,
-              ),
-          }
-        : null,
+    specs?.cameraMp != null
+      ? {
+          key: "camera",
+          label: "Camera",
+          value:
+            formatCamera(
+              specs.cameraMp
+            ),
+        }
+      : null,
 
-      item.rating != null &&
-      Number.isFinite(
-        Number(
-          item.rating,
-        ),
-      )
-        ? {
-            key: "rating",
-            label: "Rating",
-            value:
-              formatRating(
-                Number(
-                  item.rating,
-                ),
-              ),
-          }
-        : null,
+    item.rating != null &&
+    Number.isFinite(
+      Number(item.rating)
+    )
+      ? {
+          key: "rating",
+          label: "Rating",
+          value:
+            formatRating(
+              Number(item.rating)
+            ),
+        }
+      : null,
 
-      specs?.displaySize != null
-        ? {
-            key: "display",
-            label: "Display",
-            value:
-              formatDisplaySize(
-                specs.displaySize,
-              ),
-          }
-        : null,
+    specs?.displaySize != null
+      ? {
+          key: "display",
+          label: "Display",
+          value:
+            formatDisplaySize(
+              specs.displaySize
+            ),
+        }
+      : null,
 
-      specs?.refreshRate != null
-        ? {
-            key: "refresh-rate",
-            label:
-              "Refresh Rate",
-            value: `${Math.round(
-              specs.refreshRate,
-            )}Hz`,
-          }
-        : null,
+    specs?.refreshRate != null
+      ? {
+          key: "refresh-rate",
+          label: "Refresh rate",
+          value: `${Math.round(
+            specs.refreshRate
+          )}Hz`,
+        }
+      : null,
 
-      specs?.frontCameraMp != null
-        ? {
-            key: "front-camera",
-            label:
-              "Front Camera",
-            value:
-              formatCamera(
-                specs.frontCameraMp,
-              ),
-          }
-        : null,
-
-      specs?.chargingSpeed != null
-        ? {
-            key: "charging-speed",
-            label:
-              "Charging",
-            value: `${Math.round(
-              specs.chargingSpeed,
-            )}W`,
-          }
-        : null,
-    ].filter(
-      (
-        entry,
-      ): entry is {
-        key: string;
-        label: string;
-        value: string;
-      } =>
-        entry !== null,
-    );
-
-  // ====================================================
-  // Optional Score Signals
-  //
-  // These are intentionally separated from actual
-  // product specifications.
-  // ====================================================
+    specs?.chargingSpeed != null
+      ? {
+          key: "charging-speed",
+          label: "Charging",
+          value: `${Math.round(
+            specs.chargingSpeed
+          )}W`,
+        }
+      : null,
+  ].filter(
+    (
+      entry
+    ): entry is Specification =>
+      entry !== null
+  )
 
   const breakdown =
-    item.breakdown;
+    item.breakdown
 
-  const scoreSignals =
-    [
-      breakdown?.processor,
-      breakdown?.battery,
-      breakdown?.rating,
-    ]
-      .map(
-        safePercentage,
-      )
-      .filter(
-        (
-          value,
-        ): value is number =>
-          value !== null,
-      );
-
-  const hasScoreSignals =
-    scoreSignals.length > 0;
-
-  // ====================================================
-  // Render
-  // ====================================================
+  /* ====================================================
+     CARD
+  ==================================================== */
 
   return (
     <article
-      onClick={
-        openProduct
-      }
+      onClick={openProduct}
       className={[
-        "relative rounded-2xl",
-        "p-4 md:p-6",
-        "bg-white",
-        "transition",
-        "border",
-        "shadow-sm",
-        "cursor-pointer",
-        "hover:shadow-md",
+        "group relative w-full",
         highlight
-          ? "border-black shadow-xl"
-          : "border-gray-200",
+          ? "bg-transparent"
+          : "overflow-hidden rounded-[26px] border border-[#e5e7eb] bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]",
+        "cursor-pointer transition-all duration-300",
+        "hover:-translate-y-0.5 hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]",
+        selected || compared
+          ? "ring-2 ring-[#5b5ce2]/15"
+          : "",
       ].join(" ")}
     >
-      {/* =================================================
-          Compare Checkbox
-      ================================================= */}
-
-      {onSelect && (
-        <input
-          type="checkbox"
-          checked={
-            selected ||
-            compared
-          }
-          onChange={(
-            event,
-          ) => {
-            event.stopPropagation();
-
-            toggleCompare();
-            onSelect();
-          }}
-          aria-label={`Compare ${
-            item.name ||
-            "product"
-          }`}
-          className="
-            absolute
-            top-3
-            left-3
-            w-4
-            h-4
-            cursor-pointer
-          "
-        />
-      )}
-
-      {/* =================================================
-          Product Header
-      ================================================= */}
-
-      <div className="flex gap-3 md:gap-4 items-start">
-        {/* Product Image */}
-
-        <div
-          className="
-            relative
-            w-16
-            h-16
-            md:w-20
-            md:h-20
-            shrink-0
-            overflow-hidden
-            rounded-xl
-            border
-            bg-white
-          "
-        >
-          <Image
-            src={
-              item.images?.[0] ||
-              "/placeholder.png"
-            }
-            alt={
-              item.name ||
-              "Product image"
-            }
-            fill
-            sizes="
-              (max-width: 768px) 64px,
-              80px
-            "
-            className="
-              object-contain
-              p-1
-            "
-            unoptimized
-          />
-        </div>
-
-        {/* Product Information */}
-
-        <div className="flex-1 min-w-0">
-          <h3
-            className="
-              font-semibold
-              text-black
-              text-sm
-              leading-tight
-              line-clamp-2
-              break-words
-            "
-          >
-            {index !==
-              undefined &&
-              `#${index + 1} `}
-
-            {item.name ||
-              "Untitled product"}
-          </h3>
-
-          {formattedPrice ? (
-            <p
-              className="
-                text-sm
-                text-gray-500
-                mt-1
-              "
-            >
-              ₹
-              {
-                formattedPrice
-              }
-            </p>
-          ) : (
-            <p
-              className="
-                text-sm
-                text-gray-400
-                mt-1
-              "
-            >
-              Price unavailable
-            </p>
-          )}
-        </div>
-
-        {/* Match Score */}
-
-        <div
-          className="
-            text-right
-            shrink-0
-          "
-        >
-          <div
-            className={[
-              "text-xs md:text-sm",
-              "font-semibold",
-              "text-white",
-              "px-2 md:px-3",
-              "py-1",
-              "rounded-full",
-              scoreColor,
-            ].join(" ")}
-          >
-            {
-              safeScore
-            }
-          </div>
-
-          <p
-            className="
-              text-[10px]
-              text-gray-400
-              mt-1
-            "
-          >
-            match
-          </p>
-        </div>
-      </div>
-
-      {/* =================================================
-          Match Progress
-      ================================================= */}
+      {/* ==================================================
+          MAIN CONTENT
+      ================================================== */}
 
       <div
-        className="
-          w-full
-          bg-gray-200
-          h-2
-          rounded
-          mt-4
-          overflow-hidden
-        "
+        className={
+          highlight
+            ? "px-0 pb-0"
+            : "p-5 sm:p-6"
+        }
       >
-        <div
-          className={[
-            scoreColor,
-            "h-2",
-            "rounded",
-          ].join(" ")}
-          style={{
-            width: `${safeScore}%`,
-          }}
-        />
-      </div>
+        {/* Top row */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            {highlight ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eeeeff] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5657d8]">
+                Best match
+              </span>
+            ) : index !== undefined ? (
+              <span className="rounded-full bg-[#f4f5f7] px-3 py-1.5 text-[11px] font-semibold text-[#7a808a]">
+                #{index + 1}
+              </span>
+            ) : null}
 
-      <p
-        className="
-          text-xs
-          text-gray-500
-          mt-1
-        "
-      >
-        {safeScore >=
-        85
-          ? "Strong match"
-          : safeScore >=
-              70
-            ? "Good match"
-            : "Lower match"}
-      </p>
-
-      {/* =================================================
-          Explanation
-      ================================================= */}
-
-      {item.explanation && (
-        <p
-          className="
-            text-sm
-            text-gray-700
-            mt-3
-            leading-relaxed
-            line-clamp-3
-          "
-        >
-          {
-            item.explanation
-          }
-        </p>
-      )}
-
-      {/* =================================================
-          Product Tags
-      ================================================= */}
-
-      {item.tags &&
-        item.tags.length >
-          0 && (
-          <div
-            className="
-              flex
-              gap-2
-              mt-3
-              flex-wrap
-            "
-          >
-            {item.tags
-              .filter(Boolean)
-              .slice(
-                0,
-                6,
-              )
-              .map(
-                (tag) => (
-                  <span
-                    key={tag}
-                    className="
-                      text-xs
-                      bg-black/5
-                      text-gray-700
-                      px-2
-                      py-1
-                      rounded-full
-                    "
-                  >
-                    {tag}
-                  </span>
-                ),
-              )}
+            {compared && (
+              <span className="rounded-full bg-[#f3f4ff] px-3 py-1.5 text-[11px] font-medium text-[#5559c9]">
+                Comparing
+              </span>
+            )}
           </div>
-        )}
 
-      {/* =================================================
-          Actual Product Specifications
-
-          IMPORTANT:
-          These values come from item.specs and represent
-          real product specifications.
-
-          They are NOT ranking percentages.
-      ================================================= */}
-
-      {actualSpecifications.length >
-        0 && (
-        <div
-          className="
-            mt-4
-            rounded-xl
-            border
-            border-gray-100
-            bg-gray-50/70
-            p-3
-          "
-        >
           <div
-            className="
-              grid
-              grid-cols-1
-              sm:grid-cols-2
-              gap-2
-            "
+            className={`rounded-full border px-3 py-1.5 ${scoreTone.bg} ${scoreTone.border}`}
           >
-            {actualSpecifications.map(
-              ({
-                key,
-                label,
-                value,
-              }) => (
-                <div
-                  key={key}
-                  className="
-                    flex
-                    items-center
-                    justify-between
-                    gap-3
-                    rounded-lg
-                    bg-white
-                    border
-                    border-gray-100
-                    px-3
-                    py-2
-                  "
-                >
-                  <span
-                    className="
-                      text-[11px]
-                      text-gray-500
-                      shrink-0
-                    "
-                  >
-                    {label}
+            <span
+              className={`text-sm font-bold ${scoreTone.text}`}
+            >
+              {safeScore}
+            </span>
+
+            <span
+              className={`ml-1 text-[11px] font-medium ${scoreTone.text}`}
+            >
+              /100
+            </span>
+          </div>
+        </div>
+
+        {/* Main layout */}
+        <div className="mt-6 grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+          {/* IMAGE */}
+
+          <div
+            className="relative self-start"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="relative flex h-[250px] w-full items-center justify-center overflow-hidden rounded-[22px] bg-[#f8f8fb]">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(91,92,226,0.06),transparent_62%)]"
+              />
+
+              <div className="relative h-[205px] w-[205px]">
+                <Image
+                  src={
+                    item.images?.[0] ||
+                    DEFAULT_IMAGE
+                  }
+                  alt={
+                    item.name ||
+                    "Product image"
+                  }
+                  fill
+                  sizes="220px"
+                  className="object-contain p-4 transition-transform duration-500 group-hover:scale-[1.04]"
+                  unoptimized
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* CONTENT */}
+
+          <div className="min-w-0">
+            {/* Product name / price */}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <h2 className="line-clamp-2 text-xl font-semibold leading-7 tracking-[-0.025em] text-[#262626] sm:text-2xl">
+                    {item.name ||
+                      "Untitled product"}
+                  </h2>
+
+                  {formattedPrice && (
+                    <p className="mt-2 text-xl font-semibold tracking-tight text-[#262626]">
+                      {formattedPrice}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                  {item.confidence !==
+                    undefined && (
+                    <div className="rounded-xl border border-[#e6e8ed] bg-[#fafafc] px-3 py-2 text-right">
+                      <p className="text-sm font-semibold text-[#454a53]">
+                        {Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            Math.round(
+                              Number(
+                                item.confidence
+                              ) || 0
+                            )
+                          )
+                        )}
+                        %
+                      </p>
+
+                      <p className="text-[10px] uppercase tracking-[0.08em] text-[#9aa0aa]">
+                        confidence
+                      </p>
+                    </div>
+                  )}
+
+                  {item.rating !=
+                    null && (
+                    <div className="inline-flex items-center gap-1 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
+                      <Star
+                        size={14}
+                        className="fill-amber-400 text-amber-400"
+                        aria-hidden="true"
+                      />
+
+                      <span className="text-sm font-semibold text-amber-800">
+                        {Number(
+                          item.rating
+                        ).toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Match */}
+              <div className="pt-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-[#7a808a]">
+                    Match quality
                   </span>
 
                   <span
-                    className="
-                      text-[11px]
-                      font-medium
-                      text-gray-900
-                      text-right
-                      truncate
-                    "
-                    title={value}
+                    className={`font-semibold ${scoreTone.text}`}
                   >
-                    {value}
+                    {scoreTone.label}
                   </span>
                 </div>
-              ),
-            )}
+
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eceef2]">
+                  <div
+                    className={`h-full rounded-full ${scoreTone.bar}`}
+                    style={{
+                      width: `${safeScore}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Explanation */}
+              {item.explanation && (
+                <p className="line-clamp-3 text-sm leading-7 text-[#656b76]">
+                  {item.explanation}
+                </p>
+              )}
+
+              {/* Tags */}
+              {item.tags &&
+                item.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {item.tags
+                      .filter(Boolean)
+                      .slice(0, 5)
+                      .map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-[#e5e7eb] bg-white px-3 py-1.5 text-[11px] font-medium text-[#69707b]"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                  </div>
+                )}
+
+              {/* Specs */}
+              {actualSpecifications.length >
+                0 && (
+                <div className="mt-1">
+                  <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
+                    {actualSpecifications
+                      .slice(0, 6)
+                      .map(
+                        ({
+                          key,
+                          label,
+                          value,
+                        }) => {
+                          const Icon =
+                            key === "ram"
+                              ? MemoryStick
+                              : key === "storage"
+                                ? HardDrive
+                                : key === "processor"
+                                  ? Cpu
+                                  : key === "battery"
+                                    ? BatteryCharging
+                                    : key ===
+                                        "camera"
+                                      ? ImageIcon
+                                      : key ===
+                                          "display"
+                                        ? Monitor
+                                        : key ===
+                                            "charging-speed"
+                                          ? Zap
+                                          : Star
+
+                          return (
+                            <div
+                              key={key}
+                              className="rounded-xl border border-[#e7e9ee] bg-[#fafafc] px-3 py-3"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Icon
+                                  size={13}
+                                  strokeWidth={1.7}
+                                  className="shrink-0 text-[#7479d8]"
+                                  aria-hidden="true"
+                                />
+
+                                <span className="truncate text-[11px] text-[#969ca6]">
+                                  {label}
+                                </span>
+                              </div>
+
+                              <p
+                                className="mt-1.5 truncate text-sm font-semibold text-[#34373d]"
+                                title={value}
+                              >
+                                {value}
+                              </p>
+                            </div>
+                          )
+                        }
+                      )}
+                  </div>
+                </div>
+              )}
+
+              {/* Ranking signals */}
+              {breakdown && (
+                <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-[#edf0f3] pt-4 text-[11px] text-[#8a8f98]">
+                  {breakdown.processor !=
+                    null && (
+                    <span>
+                      Processor{" "}
+                      {safePercentage(
+                        breakdown.processor
+                      )}
+                    </span>
+                  )}
+
+                  {breakdown.battery !=
+                    null && (
+                    <span>
+                      Battery{" "}
+                      {safePercentage(
+                        breakdown.battery
+                      )}
+                    </span>
+                  )}
+
+                  {breakdown.rating !=
+                    null && (
+                    <span>
+                      Rating{" "}
+                      {safePercentage(
+                        breakdown.rating
+                      )}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )}
-
-      {/* =================================================
-          Ranking Signal Summary
-
-          Kept separate from actual product specifications.
-          These are internal decision-engine scores only.
-      ================================================= */}
-
-      {hasScoreSignals && (
-        <div
-          className="
-            mt-4
-            rounded-xl
-            border
-            border-gray-100
-            p-3
-          "
-        >
-          <div
-            className="
-              text-[10px]
-              font-medium
-              uppercase
-              tracking-wide
-              text-gray-400
-              mb-2
-            "
-          >
-            Match signals
-          </div>
-
-          <div
-            className="
-              flex
-              flex-wrap
-              gap-x-4
-              gap-y-1
-              text-[10px]
-              text-gray-500
-            "
-          >
-            {breakdown?.processor !=
-              null && (
-              <span>
-                Processor{" "}
-                {safePercentage(
-                  breakdown.processor,
-                )}
-              </span>
-            )}
-
-            {breakdown?.battery !=
-              null && (
-              <span>
-                Battery{" "}
-                {safePercentage(
-                  breakdown.battery,
-                )}
-              </span>
-            )}
-
-            {breakdown?.rating !=
-              null && (
-              <span>
-                Rating{" "}
-                {safePercentage(
-                  breakdown.rating,
-                )}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* =================================================
-          Footer
-      ================================================= */}
-
-      <div
-        className="
-          mt-5
-          flex
-          flex-col
-          gap-4
-        "
-      >
-        {/* Confidence */}
-
-        {item.confidence !==
-          undefined && (
-          <span
-            className="
-              text-xs
-              text-gray-500
-            "
-          >
-            Confidence:{" "}
-            {Math.max(
-              0,
-              Math.min(
-                100,
-                Math.round(
-                  Number(
-                    item.confidence,
-                  ) || 0,
-                ),
-              ),
-            )}
-            %
-          </span>
-        )}
 
         {/* Actions */}
-
         <div
-          className="
-            flex
-            flex-wrap
-            gap-2
-            items-center
-            md:justify-end
-          "
+          className="mt-6 flex flex-col gap-3 border-t border-[#e9ebef] pt-5 sm:flex-row sm:items-center sm:justify-between"
+          onClick={(event) =>
+            event.stopPropagation()
+          }
         >
-          {/* Wishlist */}
-
-          <button
-            type="button"
-            aria-label={
-              saved
-                ? "Remove from wishlist"
-                : "Save to wishlist"
-            }
-            onClick={(
-              event,
-            ) => {
-              event.stopPropagation();
-              toggleSave();
-            }}
-            className={[
-              "p-2",
-              "rounded-lg",
-              "transition",
-              saved
-                ? "bg-black text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300",
-            ].join(" ")}
-          >
-            <Heart
-              size={16}
-              className={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label={
                 saved
-                  ? "fill-white"
-                  : ""
+                  ? "Remove from wishlist"
+                  : "Save to wishlist"
               }
+              aria-pressed={saved}
+              onClick={toggleSave}
+              className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+                saved
+                  ? "border-[#171717] bg-[#171717] text-white"
+                  : "border-[#e2e4ea] bg-white text-[#707681] hover:border-[#cfd2da] hover:text-[#262626]"
+              }`}
+            >
+              <Heart
+                size={17}
+                className={
+                  saved ? "fill-white" : ""
+                }
+                aria-hidden="true"
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                toggleCompare()
+                onSelect?.()
+              }}
+              aria-pressed={compared}
+              className={`inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium transition ${
+                compared
+                  ? "border-[#d6d8f3] bg-[#f1f1ff] text-[#5658cf]"
+                  : "border-[#e2e4ea] bg-white text-[#656b76] hover:border-[#cfd2da] hover:text-[#262626]"
+              }`}
+            >
+              {compared ? (
+                <Check
+                  size={15}
+                  aria-hidden="true"
+                />
+              ) : (
+                <Scale
+                  size={15}
+                  aria-hidden="true"
+                />
+              )}
+
+              {compared
+                ? "Added to compare"
+                : "Compare"}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={openProduct}
+            className="group inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#171717] px-5 text-sm font-medium text-white transition hover:bg-black hover:shadow-md active:scale-[0.98]"
+          >
+            View product
+
+            <ChevronRight
+              size={16}
+              className="transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
             />
-          </button>
-
-          {/* Compare */}
-
-          <button
-            type="button"
-            onClick={(
-              event,
-            ) => {
-              event.stopPropagation();
-
-              toggleCompare();
-              onSelect?.();
-            }}
-            className={[
-              "flex-1",
-              "sm:flex-none",
-              "min-w-[110px]",
-              "px-4",
-              "py-2",
-              "text-xs",
-              "rounded-lg",
-              "font-medium",
-              "transition",
-              compared
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300",
-            ].join(" ")}
-          >
-            {compared
-              ? "Added"
-              : "Compare"}
-          </button>
-
-          {/* Buy Now */}
-
-          <button
-            type="button"
-            onClick={(
-              event,
-            ) => {
-              event.stopPropagation();
-
-              // Affiliate / marketplace redirect
-              // will be connected here later.
-            }}
-            className="
-              flex-1
-              sm:flex-none
-              min-w-[120px]
-              bg-green-600
-              text-white
-              px-5
-              py-2
-              rounded-lg
-              text-sm
-              font-medium
-              hover:opacity-90
-              active:scale-95
-              transition
-            "
-          >
-            Buy Now
           </button>
         </div>
       </div>
     </article>
-  );
+  )
 }

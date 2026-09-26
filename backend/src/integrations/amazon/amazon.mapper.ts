@@ -289,34 +289,24 @@ export function normalizeProductSpecs(source: {
       continue;
     }
 
-    const current =
-      normalized[key];
-
-    if (
-      !hasMeaningfulSpecValue(
-        current,
-      )
-    ) {
-      normalized[key] = value;
-      continue;
-    }
-
     /*
-     * Textual processor evidence can be more complete
-     * than an incomplete legacy processor value.
+     * Values freshly extracted from the current source corpus are
+     * authoritative. This prevents stale legacy values from hiding
+     * behind the existing specs object during a rebuild.
+     *
+     * Fields that are not present in the current source remain
+     * untouched so we never erase valid legacy data merely because
+     * the current Amazon payload is incomplete.
      */
-    if (
-      key === "chipset" ||
-      key === "processorType"
-    ) {
-      normalized[key] = value;
-    }
+    normalized[key] = value;
   }
 
   delete normalized.processorScore;
 
   return normalized;
 }
+
+
 
 function sanitizeExistingSpecs(
   value: Record<string, unknown>,
@@ -336,6 +326,31 @@ function sanitizeExistingSpecs(
       continue;
     }
 
+    /*
+     * processor and chipset must contain a concrete chipset model.
+     *
+     * Generic values such as:
+     * - Octa-core
+     * - Hexa-core
+     * - Quad-core
+     * - processor type
+     *
+     * belong to processorType, not processor/chipset.
+     *
+     * Remove those legacy values so they cannot survive a rebuild.
+     */
+    if (
+      key === "processor" ||
+      key === "chipset"
+    ) {
+      if (
+        typeof child !== "string" ||
+        !isConcreteChipset(child)
+      ) {
+        continue;
+      }
+    }
+
     if (
       isJsonValue(child)
     ) {
@@ -345,6 +360,8 @@ function sanitizeExistingSpecs(
 
   return result;
 }
+
+
 
 function hasMeaningfulSpecValue(
   value: unknown,
@@ -671,35 +688,61 @@ function extractSpecs(
       battery;
   }
 
-  const chipset =
+  const textChipset =
+  extractChipset(text);
+
+const explicitChipset =
+  extractExplicitProcessor(
+    product,
+  );
+
+/*
+ * Concrete chipset is the canonical processor identity.
+ *
+ * Examples:
+ * - Snapdragon 8 Elite Gen 5
+ * - Dimensity 7400 Pro
+ * - Snapdragon 8 Gen 5
+ * - SD4 Gen2
+ * - 6s Gen 4
+ *
+ * Generic processor descriptions such as:
+ * - Octa-core
+ * - Hexa-core
+ * - 2.4 GHz processor
+ *
+ * are processorType only and must never become chipset/processor.
+ */
+const chipset =
+  firstText(
+    textChipset,
+    explicitChipset,
+  );
+
+if (chipset) {
+  specs.processor =
+    chipset;
+
+  specs.chipset =
+    chipset;
+} else {
+  const processorType =
     firstText(
-      extractExplicitProcessor(
+      extractExplicitProcessorType(
         product,
       ),
-      extractChipset(text),
+      extractGenericProcessorType(
+        text,
+      ),
     );
 
-  if (chipset) {
-    specs.chipset =
-      chipset;
-  } else {
-    const processorType =
-      firstText(
-        extractExplicitProcessorType(
-          product,
-        ),
-        extractGenericProcessorType(
-          text,
-        ),
-      );
-
-    if (
-      processorType
-    ) {
-      specs.processorType =
-        processorType;
-    }
+  if (processorType) {
+    specs.processorType =
+      processorType;
   }
+}
+
+
 
   const camera =
     firstValid(
@@ -961,7 +1004,9 @@ function extractExplicitNumber(
   labels: string[],
 ): number | null {
   const wanted =
-    labels.map(normalizeKey);
+    labels.map(
+      normalizeKey,
+    );
 
   let result:
     number | null = null;
@@ -979,15 +1024,24 @@ function extractExplicitNumber(
       }
 
       const normalized =
-        normalizeKey(key);
+        normalizeKey(
+          key,
+        );
 
-      if (
-        !wanted.some(
+      const matches =
+        wanted.some(
           (label) =>
-            normalized === label ||
-            normalized.includes(label),
-        )
-      ) {
+            normalized ===
+              label ||
+            normalized.includes(
+              label,
+            ) ||
+            label.includes(
+              normalized,
+            ),
+        );
+
+      if (!matches) {
         return;
       }
 
@@ -997,11 +1051,13 @@ function extractExplicitNumber(
         );
 
       if (
-        number !== null
+        number === null
       ) {
-        result =
-          number;
+        return;
       }
+
+      result =
+        number;
     },
   );
 
@@ -1262,7 +1318,7 @@ function extractExplicitCamera(
         valueToText(
           value,
         ).match(
-          /(\d{1,4}(?:\.\d+)?)\s*(?:MP|megapixel)/i,
+          /(\d{1,4}(?:\.\d+)?)\s*(?:MP|megapixel|master\s*pixel)/i,
         );
 
       if (match) {
@@ -1395,51 +1451,65 @@ function extractRam(
   text: string,
 ): number | null {
   const patterns = [
-    /\b(?:ram|memory|system memory|installed memory|ram size|memory size)\s*[:=\-]?\s*(\d{1,2}(?:\.\d+)?)\s*(?:gb|gib)\b/i,
+    // 4GB RAM / 8GB Memory / 12GB Unified Memory
     /\b(\d{1,2}(?:\.\d+)?)\s*(?:gb|gib)\s*(?:ram|memory|unified memory)\b/i,
-    /\b(\d{1,2})\s*gb\s*(?:ram\s*)?(?:\+|\/|\||,|-)\s*\d{2,5}\s*(?:gb|gib|tb)\b/i,
-    /\b(\d{1,2})\s*gb\s+\d{2,5}\s*(?:gb|gib|tb)\s*(?:storage|rom|internal)\b/i,
-    /\b(?:ram|memory)\s*[:=\-]\s*(\d{1,2})\b/i,
+
+    // RAM: 4GB / Memory: 8GB / RAM = 12 GB
+    /\b(?:ram|memory|system memory|installed memory|ram size|memory size)\s*[:=\-]?\s*(\d{1,2}(?:\.\d+)?)\s*(?:gb|gib)\b/i,
+
+    // 2GB + 4GB RAM -> 4GB physical RAM
+    /\b\d{1,2}\s*(?:gb|gib)\s*(?:\+|\/|\||,|-)\s*(\d{1,2}(?:\.\d+)?)\s*(?:gb|gib)\s*ram\b/i,
+
+    // 4GB RAM + 64GB Storage -> 4GB RAM
+    /\b(\d{1,2}(?:\.\d+)?)\s*(?:gb|gib)\s*ram\s*(?:\+|\/|\||,|-)\s*\d{1,5}(?:\.\d+)?\s*(?:gb|gib|tb)\b/i,
+
+    // Amazon compact memory notation: 8GB+128GB / 128GB+8GB
+    // Smaller capacity is RAM when no explicit RAM label exists.
+    /(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)\s*(?:\+|\/|\||,)\s*(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)/i,
+
+    // Compact notation without a unit on the RAM side: 6+128GB
+    /(\d{1,2})\s*(?:\+|\/|\|)\s*(\d{2,5}(?:\.\d+)?)\s*(gb|gib|tb)\b/i,
+
+    // 12, GB, 256
+    /\b(\d{1,2})\s*,\s*gb\s*,\s*(\d{2,5})\b/i,
   ];
 
   for (
     const pattern of patterns
   ) {
-    const match =
-      text.match(
-        pattern,
-      );
+    const match = text.match(pattern);
 
     if (!match) {
       continue;
     }
 
-    const n =
-      Number(match[1]);
+    if (pattern === patterns[4]) {
+      const first = normalizeStorageValue(Number(match[1]), match[2]);
+      const second = normalizeStorageValue(Number(match[3]), match[4]);
+      const candidate = Math.min(first, second);
 
-    if (
-      isValidRam(n)
-    ) {
-      return n;
+      if (isValidRam(candidate) && candidate < Math.max(first, second)) {
+        return candidate;
+      }
+
+      continue;
     }
-  }
 
-  const compact =
-    text.match(
-      /\b(\d{1,2})\s*,\s*gb\s*,\s*(\d{2,5})\b/i,
-    );
+    if (pattern === patterns[5]) {
+      const first = Number(match[1]);
+      const second = normalizeStorageValue(Number(match[2]), match[3]);
+      const candidate = Math.min(first, second);
 
-  if (compact) {
-    const n =
-      Number(compact[1]);
+      if (isValidRam(candidate) && candidate < Math.max(first, second)) {
+        return candidate;
+      }
 
-    const storage =
-      Number(compact[2]);
+      continue;
+    }
 
-    if (
-      isValidRam(n) &&
-      isValidStorage(storage)
-    ) {
+    const n = Number(match[1]);
+
+    if (isValidRam(n)) {
       return n;
     }
   }
@@ -1452,30 +1522,64 @@ function extractStorage(
   ram: number | null,
 ): number | null {
   const patterns = [
-    // Storage: 1TB
-    // Internal Storage: 512GB
-    // Storage Capacity: 256GB
+    // Storage: 1TB / Internal Storage: 512GB / ROM: 256GB
     /\b(?:storage|rom|internal\s+storage|internal\s+memory|built.?in\s+storage|storage\s+capacity|memory\s+capacity)\s*[:=\-]?\s*(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)\b/i,
 
-    // 1TB Storage
-    // 512GB ROM
+    // 1TB Storage / 512GB ROM
     /\b(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)\s*(?:storage|rom|internal\s+storage|internal\s+memory|built.?in\s+storage|storage\s+capacity)\b/i,
 
     // 8GB RAM 1TB Storage
     /\b\d{1,2}\s*(?:gb|gib)\s*ram\s*(?:\+|\/|\||,|-)\s*(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)\b/i,
 
-    // 8GB RAM 1TB
+    // 8GB RAM 1TB / 4GB RAM 64GB
     /\b\d{1,2}\s*(?:gb|gib)\s+ram\s+(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)\s*(?:storage|rom|internal|memory)?\b/i,
 
-    // 8GB/1TB
-    // 8GB + 1TB
-    /\b\d{1,2}\s*(?:gb|gib)\s*(?:ram\s*)?(?:\+|\/|\||,|-)\s*(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)\b/i,
+    // 8GB/1TB / 8GB+128GB / 128GB+8GB
+    /(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)\s*(?:ram\s*)?(?:\+|\/|\||,)\s*(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)\b/i,
+
+    // 6+128GB / 4+64GB
+    /(\d{1,2})\s*(?:\+|\/|\|)\s*(\d{2,5}(?:\.\d+)?)\s*(gb|gib|tb)\b/i,
   ];
 
-  for (const pattern of patterns) {
+  for (
+    const pattern of patterns
+  ) {
     const match = text.match(pattern);
 
     if (!match) {
+      continue;
+    }
+
+    if (pattern === patterns[4]) {
+      const first = normalizeStorageValue(Number(match[1]), match[2]);
+      const second = normalizeStorageValue(Number(match[3]), match[4]);
+
+      const candidates = [first, second]
+        .filter((value) => isValidStorage(value))
+        .filter((value) => ram === null || value !== ram);
+
+      const storage = Math.max(...candidates, 0);
+
+      if (isValidStorage(storage) && (ram === null || storage !== ram)) {
+        return storage;
+      }
+
+      continue;
+    }
+
+    if (pattern === patterns[5]) {
+      const first = Number(match[1]);
+      const second = normalizeStorageValue(Number(match[2]), match[3]);
+      const candidates = [first, second]
+        .filter((value) => isValidStorage(value))
+        .filter((value) => ram === null || value !== ram);
+
+      const storage = Math.max(...candidates, 0);
+
+      if (isValidStorage(storage) && (ram === null || storage !== ram)) {
+        return storage;
+      }
+
       continue;
     }
 
@@ -1492,8 +1596,7 @@ function extractStorage(
     }
   }
 
-  // Amazon compact format:
-  // 12, GB, 256
+  // Amazon compact format: 12, GB, 256
   const compact = text.match(
     /\b\d{1,2}\s*,\s*gb\s*,\s*(\d{1,5})\b/i,
   );
@@ -1509,16 +1612,8 @@ function extractStorage(
     }
   }
 
-  // Controlled fallback for:
-  // 16GB
-  // 32GB
-  // 64GB
-  // 128GB
-  // 256GB
-  // 512GB
-  // 1TB
-  // 2TB
-  // 4TB
+  // Controlled standalone storage fallback. Never use a bare RAM-sized
+  // capacity when it is already known to be the product RAM.
   const candidates = [
     ...text.matchAll(
       /\b(\d{1,5}(?:\.\d+)?)\s*(gb|gib|tb)\b/gi,
@@ -1543,37 +1638,30 @@ function extractStorage(
   return null;
 }
 
-
-
 function extractBattery(
   text: string,
 ): number | null {
   const patterns = [
-    /\b(?:battery|battery capacity|battery size|rated capacity)\s*[:=\-]?\s*(\d{1,2}(?:,\d{3}){1,2}|\d{4,5})\s*(?:mah|milliamp(?:-?hours?))\b/i,
-    /\b(\d{1,2}(?:,\d{3}){1,2}|\d{4,5})\s*(?:mah|milliamp(?:-?hours?))\b/i,
-    /\b(?:battery|battery capacity|battery size|rated capacity)\s*[:=\-]\s*(\d{4,5})\b/i,
+    // Battery Capacity: 7000mAhA / Rated Capacity: 6580mAh Si/C
+    /\b(?:battery|battery capacity|battery size|rated capacity)\s*[:=\-]?\s*(\d{1,2}(?:,\d{3}){1,2}|\d{4,5})\s*(?:mah|milliamp(?:-?hours?))(?:[a-z/\s-]*)?/i,
+
+    // 7000mAhA / 6580mAhSi/C / 5000mAh
+    /\b(\d{1,2}(?:,\d{3}){1,2}|\d{4,5})\s*(?:mah|milliamp(?:-?hours?))(?:[a-z/\s-]*)?/i,
+
+    // Battery: 5000
+    /\b(?:battery|battery capacity|battery size|rated capacity)\s*[:=\-]?\s*(\d{4,5})\b/i,
   ];
 
-  for (
-    const pattern of patterns
-  ) {
-    const match =
-      text.match(
-        pattern,
-      );
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
 
     if (!match) {
       continue;
     }
 
-    const n =
-      normalizeBattery(
-        match[1],
-      );
+    const n = normalizeBattery(match[1]);
 
-    if (
-      n !== null
-    ) {
+    if (n !== null) {
       return n;
     }
   }
@@ -1585,47 +1673,30 @@ function extractRearCamera(
   text: string,
 ): number | null {
   const labelled = [
-    /\b(?:rear|main|primary|wide|wide angle|main sensor)\s*(?:camera|sensor)?[^|;]{0,100}?(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel)\b/i,
-    /\b(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel)\s*(?:rear|main|primary)\s*(?:camera|sensor)?\b/i,
-    /\b(?:rear|main|primary)\s*(?:camera|sensor)\s*[:=\-]\s*(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel)?\b/i,
+    /\b(?:rear|main|primary|wide|wide angle|main sensor)\s*(?:camera|sensor)?[^|;]{0,120}?(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel|master\s*pixel)\b/i,
+    /\b(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel|master\s*pixel)\s*(?:rear|main|primary)\s*(?:camera|sensor)?\b/i,
+    /\b(?:rear|main|primary)\s*(?:camera|sensor)\s*[:=\-]\s*(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel|master\s*pixel)?\b/i,
   ];
 
-  for (
-    const pattern of labelled
-  ) {
-    const match =
-      text.match(
-        pattern,
-      );
+  for (const pattern of labelled) {
+    const match = text.match(pattern);
 
     if (match) {
-      const n =
-        Number(match[1]);
+      const n = Number(match[1]);
 
-      if (
-        n >= 2 &&
-        n <= 500
-      ) {
+      if (n >= 2 && n <= 500) {
         return n;
       }
     }
   }
 
-  const generic =
-    [
-      ...text.matchAll(
-        /\b(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel)\b/gi,
-      ),
-    ]
-      .map(
-        (match) =>
-          Number(match[1]),
-      )
-      .filter(
-        (n) =>
-          n >= 5 &&
-          n <= 500,
-      );
+  const generic = [
+    ...text.matchAll(
+      /\b(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel|master\s*pixel)\b/gi,
+    ),
+  ]
+    .map((match) => Number(match[1]))
+    .filter((n) => n >= 5 && n <= 500);
 
   return generic.length
     ? Math.max(...generic)
@@ -1636,27 +1707,18 @@ function extractFrontCamera(
   text: string,
 ): number | null {
   const patterns = [
-    /\b(?:front|selfie|secondary)\s*(?:camera|sensor)?[^|;]{0,100}?(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel)\b/i,
-    /\b(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel)\s*(?:front|selfie|secondary)\s*(?:camera|sensor)?\b/i,
-    /\b(?:front|selfie)\s*(?:camera|sensor)\s*[:=\-]\s*(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel)?\b/i,
+    /\b(?:front|selfie|secondary)\s*(?:camera|sensor)?[^|;]{0,120}?(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel|master\s*pixel)\b/i,
+    /\b(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel|master\s*pixel)\s*(?:front|selfie|secondary)\s*(?:camera|sensor)?\b/i,
+    /\b(?:front|selfie)\s*(?:camera|sensor)\s*[:=\-]\s*(\d{1,4}(?:\.\d+)?)\s*(?:mp|megapixel|master\s*pixel)?\b/i,
   ];
 
-  for (
-    const pattern of patterns
-  ) {
-    const match =
-      text.match(
-        pattern,
-      );
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
 
     if (match) {
-      const n =
-        Number(match[1]);
+      const n = Number(match[1]);
 
-      if (
-        n >= 2 &&
-        n <= 200
-      ) {
+      if (n >= 2 && n <= 200) {
         return n;
       }
     }
@@ -1667,17 +1729,11 @@ function extractFrontCamera(
 
 
 
-
-
 function extractChipset(
   text: string,
 ): string | null {
-  /*
-   * First priority:
-   * structured / labelled processor fields.
-   */
   const labelled = [
-    /\b(?:processor|cpu|chipset|soc|processor model|processor type|platform|chip)\s*[:=\-]\s*([^|;,.]{2,150})/i,
+    /\b(?:processor|cpu|chipset|soc|processor model|processor type|platform|chip)\s*[:=\-]\s*([^|;,.]{2,180})/i,
   ];
 
   for (const pattern of labelled) {
@@ -1687,47 +1743,59 @@ function extractChipset(
       continue;
     }
 
-    const candidate = normalizeChipsetName(
-      match[1],
-    );
+    const candidate = normalizeChipsetName(match[1]);
 
-    if (
-      candidate &&
-      isConcreteChipset(candidate)
-    ) {
+    if (candidate && isConcreteChipset(candidate)) {
       return candidate;
     }
   }
 
-  /*
-   * Textual processor families.
-   *
-   * normalizeChipsetName() performs the final boundary cleanup,
-   * so even if the Amazon title contains:
-   *
-   * Snapdragon 8 Elite for Galaxy 200MP Main Camera 5000mAh
-   *
-   * only:
-   *
-   * Snapdragon 8 Elite for Galaxy
-   *
-   * survives.
-   */
   const patterns = [
-   /\b(?:qualcomm\s+)?snapdragon\s+\d+[a-z0-9+.-]*(?:\s+(?:gen|elite|pro|plus|ultra|prime)(?:\s*\d+[a-z0-9+.-]*)?)?(?:\s+for\s+[a-z]+)?/i,
+    // Qualcomm Snapdragon family.
+    // Supports:
+    // Snapdragon 8 Gen 3
+    // Snapdragon 8 Elite
+    // Snapdragon 8 Elite Gen 5
+    // Snapdragon 8 Pro Gen 2
+    /\bsnapdragon\s+\d+[a-z0-9+.-]*(?:(?:\s+)(?:gen|elite|pro|plus|ultra|prime)(?:\s*\d+[a-z0-9+.-]*)?){0,3}(?:\s+for\s+[a-z]+(?:\s+[a-z]+){0,2})?/i,
 
-    /\b(?:mediatek\s+)?dimensity\s+\d+[a-z0-9+.-]*(?:\s+(?:ultra|max|pro|plus|apex|extreme|for)\b(?:\s+[a-z0-9+.-]+)*)?/i,
+    // Qualcomm shorthand processor names.
+    // Supports:
+    // SD4 Gen2
+    // SD 4 Gen 2
+    // SD7 Gen 3
+    /\bsd\s*\d+\s*gen\s*\d+[a-z0-9+.-]*/i,
 
+    // Newer shorthand family seen in Amazon source.
+    // Supports:
+    // 6s Gen 4
+    // 4s Gen 2
+    /\b\d+s\s*gen\s*\d+[a-z0-9+.-]*/i,
+
+    // MediaTek Dimensity family.
+    /\b(?:mediatek\s+)?dimensity\s+\d+[a-z0-9+.-]*(?:[-\s](?:ultra|max|pro|plus|apex|extreme))?(?:\s+for\s+(?:gaming|mobile))?/i,
+
+    // MediaTek branded numeric and D-series chips.
+    /\bmediatek\s+d\d+[a-z0-9+.-]*(?:\s+(?:max|ultra|pro|plus|apex|extreme))?/i,
+    /\bmediatek\s+\d+[a-z0-9+.-]*(?:[-\s](?:max|ultra|pro|plus|apex|extreme))?/i,
+    /\bd\d+[a-z0-9+.-]*(?:\s+(?:max|ultra|pro|plus|apex|extreme))?/i,
+
+    // MediaTek Helio family.
     /\b(?:mediatek\s+)?helio\s+[a-z]?\d+[a-z0-9+.-]*/i,
 
+    // Samsung Exynos.
     /\bexynos\s+\d+[a-z0-9+.-]*/i,
 
-    /\btensor\s+g\d+(?:\s+(?:pro|tensor|for)\b(?:\s+[a-z0-9+.-]+)*)?/i,
+    // Google Tensor.
+    /\btensor\s+g\d+(?:\s+(?:pro|tensor))?/i,
 
-    /\bapple\s+a\d+(?:\s+(?:bionic|pro|fusion)\b(?:\s+[a-z0-9+.-]+)*)?/i,
+    // Apple A-series.
+    /\b(?:apple\s+)?a\d+(?:\s+(?:bionic|pro|fusion))?/i,
 
+    // Huawei Kirin.
     /\bkirin\s+\d+[a-z0-9+.-]*/i,
 
+    // Unisoc / Spreadtrum.
     /\b(?:unisoc|spreadtrum)\s+[a-z0-9-]+/i,
   ];
 
@@ -1738,20 +1806,16 @@ function extractChipset(
       continue;
     }
 
-    const candidate = normalizeChipsetName(
-      match[0],
-    );
+    const candidate = normalizeChipsetName(match[0]);
 
-    if (
-      candidate &&
-      isConcreteChipset(candidate)
-    ) {
+    if (candidate && isConcreteChipset(candidate)) {
       return candidate;
     }
   }
 
   return null;
 }
+
 
 
 
@@ -1799,50 +1863,44 @@ function extractGenericProcessorType(
 function normalizeChipsetName(
   value: string,
 ): string | null {
-  let cleaned =
-    value
-      .replace(
-        /^\s*(?:processor|cpu|chipset|soc|processor model|processor type|platform|chip)\s*[:=\-]\s*/i,
-        "",
-      )
-      .replace(
-        /\s+/g,
-        " ",
-      )
-      .replace(
-        /[|;,]+$/g,
-        "",
-      )
-      .trim();
+  let cleaned = value
+    .replace(
+      /^\s*(?:processor|cpu|chipset|soc|processor model|processor type|platform|chip)\s*[:=\-]\s*/i,
+      "",
+    )
+    .replace(
+      /\s+/g,
+      " ",
+    )
+    .replace(
+      /[|;,]+$/g,
+      "",
+    )
+    .trim();
 
   if (!cleaned) {
     return null;
   }
 
   /*
-   * Amazon frequently concatenates processor and other specs:
-   *
-   * Snapdragon 8 Elite for Galaxy 200MP Main Camera 5000mAh
-   *
-   * The following rules terminate processor text at the first
-   * recognizable specification boundary.
+   * Terminate accidental processor over-capture at the next
+   * recognizable product-spec boundary.
    */
-
   cleaned = cleaned
     .replace(
-      /\s+\d{1,4}(?:\.\d+)?\s*(?:MP|megapixel)\b[\s\S]*$/i,
+      /\s+\d{1,4}(?:\.\d+)?\s*(?:mp|megapixel|master\s*pixel)\b[\s\S]*$/i,
       "",
     )
     .replace(
-      /\s+\d{4,5}\s*(?:mAh|milliamp(?:-?hours?))\b[\s\S]*$/i,
+      /\s+\d{4,5}\s*(?:mah|milliamp(?:-?hours?))(?:[a-z/\s-]*)?\b[\s\S]*$/i,
       "",
     )
     .replace(
-      /\s+\d{1,2}\s*(?:GB|GiB)\s*RAM\b[\s\S]*$/i,
+      /\s+\d{1,2}\s*(?:gb|gib)\s*ram\b[\s\S]*$/i,
       "",
     )
     .replace(
-      /\s+\d{1,5}(?:\.\d+)?\s*(?:GB|GiB|TB)\s*(?:Storage|ROM|Internal(?:\s+Storage)?)\b[\s\S]*$/i,
+      /\s+\d{1,5}(?:\.\d+)?\s*(?:gb|gib|tb)\s*(?:storage|rom|internal(?:\s+storage)?)\b[\s\S]*$/i,
       "",
     )
     .replace(
@@ -1850,7 +1908,7 @@ function normalizeChipsetName(
       "",
     )
     .replace(
-      /\s+\d{2,3}\s*(?:Hz|Hertz)\b[\s\S]*$/i,
+      /\s+\d{2,3}\s*(?:hz|hertz)\b[\s\S]*$/i,
       "",
     )
     .replace(
@@ -1868,52 +1926,39 @@ function normalizeChipsetName(
   }
 
   const patterns = [
-    /*
-     * Snapdragon
-     *
-     * Supports:
-     * Snapdragon 8 Gen 2
-     * Snapdragon 8 Gen 3
-     * Snapdragon 8 Elite
-     * Snapdragon 8 Elite for Galaxy
-     * Snapdragon 7+ Gen 3
-     * Snapdragon 6 Gen 1
-     */
-    /\bsnapdragon\s+\d+[a-z0-9+.-]*(?:\s+(?:gen|elite|pro|plus|ultra|prime)(?:\s*\d+[a-z0-9+.-]*)?)?(?:\s+for\s+[a-z]+)?/i,
+    // Qualcomm Snapdragon.
+    /\bsnapdragon\s+\d+[a-z0-9+.-]*(?:(?:\s+)(?:gen|elite|pro|plus|ultra|prime)(?:\s*\d+[a-z0-9+.-]*)?){0,3}(?:\s+for\s+[a-z]+(?:\s+[a-z]+){0,2})?/i,
 
-    /*
-     * MediaTek Dimensity
-     */
-    /\b(?:dimensity\s+\d+[a-z0-9+.-]*(?:\s+(?:ultra|max|pro|plus|apex|extreme)\b)?(?:\s+for\s+(?:gaming|mobile))?)/i,
+    // Qualcomm shorthand.
+    /\bsd\s*\d+\s*gen\s*\d+[a-z0-9+.-]*/i,
 
-    /*
-     * MediaTek Helio
-     */
-    /\b(?:helio\s+[a-z]?\d+[a-z0-9+.-]*)/i,
+    // Newer shorthand processor names.
+    /\b\d+s\s*gen\s*\d+[a-z0-9+.-]*/i,
 
-    /*
-     * Samsung Exynos
-     */
-    /\b(?:exynos\s+\d+[a-z0-9+.-]*)/i,
+    // MediaTek Dimensity.
+    /\bdimensity\s+\d+[a-z0-9+.-]*(?:[-\s](?:ultra|max|pro|plus|apex|extreme))?(?:\s+for\s+(?:gaming|mobile))?/i,
 
-    /*
-     * Google Tensor
-     */
-    /\b(?:tensor\s+g\d+(?:\s+(?:pro|tensor))?)/i,
+    // MediaTek D-series / numeric.
+    /\bmediatek\s+d\d+[a-z0-9+.-]*(?:\s+(?:max|ultra|pro|plus|apex|extreme))?/i,
+    /\bmediatek\s+\d+[a-z0-9+.-]*(?:[-\s](?:max|ultra|pro|plus|apex|extreme))?/i,
+    /\bd\d+[a-z0-9+.-]*(?:\s+(?:max|ultra|pro|plus|apex|extreme))?/i,
 
-    /*
-     * Apple
-     */
-    /\b(?:apple\s+a\d+(?:\s+(?:bionic|pro|fusion))?)/i,
+    // Helio.
+    /\bhelio\s+[a-z]?\d+[a-z0-9+.-]*/i,
 
-    /*
-     * Huawei Kirin
-     */
-    /\b(?:kirin\s+\d+[a-z0-9+.-]*)/i,
+    // Exynos.
+    /\bexynos\s+\d+[a-z0-9+.-]*/i,
 
-    /*
-     * Unisoc / Spreadtrum
-     */
+    // Tensor.
+    /\btensor\s+g\d+(?:\s+(?:pro|tensor))?/i,
+
+    // Apple A-series.
+    /\b(?:apple\s+)?a\d+(?:\s+(?:bionic|pro|fusion))?/i,
+
+    // Kirin.
+    /\bkirin\s+\d+[a-z0-9+.-]*/i,
+
+    // Unisoc / Spreadtrum.
     /\b(?:unisoc|spreadtrum)\s+[a-z0-9-]+/i,
   ];
 
@@ -1922,10 +1967,7 @@ function normalizeChipsetName(
 
     if (match) {
       return match[0]
-        .replace(
-          /\s+/g,
-          " ",
-        )
+        .replace(/\s+/g, " ")
         .trim();
     }
   }
@@ -1936,13 +1978,27 @@ function normalizeChipsetName(
 
 
 
+
 function isConcreteChipset(
   value: string,
 ): boolean {
-  return /\b(?:snapdragon\s+\d|dimensity\s+\d|(?:mediatek\s+)?helio\s+[a-z]?\d|exynos\s+\d|tensor\s+g\d|apple\s+a\d|kirin\s+\d|(?:unisoc|spreadtrum)\s+[a-z0-9-]+)\b/i.test(
-    value,
+  return (
+    /\bsnapdragon\s+\d+/i.test(value) ||
+    /\bsd\s*\d+\s*gen\s*\d+/i.test(value) ||
+    /\b\d+s\s*gen\s*\d+/i.test(value) ||
+    /\bdimensity\s+\d+/i.test(value) ||
+    /\bmediatek\s+(?:d)?\d+/i.test(value) ||
+    /\bd\d+/i.test(value) ||
+    /\bhelio\s+[a-z]?\d+/i.test(value) ||
+    /\bexynos\s+\d+/i.test(value) ||
+    /\btensor\s+g\d+/i.test(value) ||
+    /\b(?:apple\s+)?a\d+/i.test(value) ||
+    /\bkirin\s+\d+/i.test(value) ||
+    /\b(?:unisoc|spreadtrum)\s+[a-z0-9-]+/i.test(value)
   );
 }
+
+
 
 function extractDisplaySize(
   text: string,
@@ -2002,13 +2058,16 @@ function extractRefreshRate(
     : null;
 }
 
+
 function extractChargingSpeed(
   text: string,
 ): number | null {
   const patterns = [
-    /\b(?:charging|charge|charger|wired charging|fast charging|charging power)\s*[:=\-]?[^|;]{0,40}?(\d{2,4})\s*(?:w|watts?)\b/i,
-    /\b(\d{2,4})\s*(?:w|watts?)\s*(?:fast charging|charging|supervooc|hypercharge|turbopower|warp charge)\b/i,
-    /\b(\d{2,4})\s*(?:w|watts?)\b/i,
+    /\b(?:charging[\s_-]+power|charging[\s_-]+speed|wired[\s_-]+charging|fast[\s_-]+charging|charge[\s_-]+power|charger[\s_-]+power|charging|charge|charger)\s*[:=\-]?\s*(?:up\s+to\s+)?(\d{1,4}(?:\.\d+)?)\s*(?:w|watts?)\b/i,
+
+    /\b(\d{1,4}(?:\.\d+)?)\s*(?:w|watts?)\s+(?:fast[\s_-]+)?(?:charging|charge|supervooc|hypercharge|turbopower|warp[\s_-]+charge)\b/i,
+
+    /\b(\d{2,4}(?:\.\d+)?)\s*(?:w|watts?)\b/i,
   ];
 
   for (
@@ -2023,19 +2082,25 @@ function extractChargingSpeed(
       continue;
     }
 
-    const n =
-      Number(match[1]);
+    const value =
+      Number(
+        match[1],
+      );
 
     if (
-      n > 0 &&
-      n <= 1000
+      Number.isFinite(
+        value,
+      ) &&
+      value >= 5 &&
+      value <= 1000
     ) {
-      return n;
+      return value;
     }
   }
 
   return null;
 }
+
 
 function extractResolution(
   text: string,
@@ -2306,9 +2371,17 @@ function normalizeSpecificationText(
       "$1$2 mAh",
     )
     .replace(
-      /(\d{3,5})\s*,\s*mAh\b/gi,
+      /(\d{3,5})\s*,\s*mAh/gi,
       "$1 mAh",
     )
+    .replace(
+      /(\d{1,4})\s*master\s*pixel\b/gi,
+      "$1 MasterPixel",
+    )
+    .replace(
+  /(\d{4,5})\s*mAh(?:(?:\s*)(?:A|Si\/C|Si-C))?\b/gi,
+  "$1 mAh",
+)
     .replace(
       /\s+/g,
       " ",

@@ -1,631 +1,638 @@
-"use client";
+"use client"
 
+import {
+  ArrowUpRight,
+  Clock3,
+  Loader2,
+  Search,
+} from "lucide-react"
 import {
   FormEvent,
   KeyboardEvent,
+  useMemo,
   useState,
-} from "react";
-
-import { usePathname, useRouter } from "next/navigation";
-
-// ======================================================
-// Props
-// ======================================================
+} from "react"
+import {
+  usePathname,
+  useRouter,
+} from "next/navigation"
 
 interface SearchBarProps {
-  initialValue?: string;
+  initialValue?: string
 }
-
-// ======================================================
-// Constants
-// ======================================================
 
 const STATIC_SUGGESTIONS = [
   "best gaming phone",
   "best phone under 20000",
   "best camera phone",
   "best laptop for coding",
-];
+]
 
-// ======================================================
-// Component
-// ======================================================
+const MAX_RECENT_SEARCHES = 5
+const MAX_SUGGESTIONS = 8
+
+const SEARCH_INPUT_ID = "shopio-product-search"
+const SEARCH_LISTBOX_ID = "shopio-search-suggestions"
+
+const getSuggestionId = (index: number) =>
+  `shopio-search-suggestion-${index}`
 
 export default function SearchBar({
   initialValue = "",
 }: SearchBarProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const router = useRouter()
+  const pathname = usePathname()
 
-  // ====================================================
-  // State
-  // ====================================================
-
-  const [query, setQuery] =
-    useState(initialValue);
-
-  const [loading, setLoading] =
-    useState(false);
-
+  const [query, setQuery] = useState(initialValue)
+  const [loading, setLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] =
-    useState(false);
-
-  const [activeIndex, setActiveIndex] =
-    useState(-1);
+    useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
 
   const [recentSearches, setRecentSearches] =
-    useState<string[]>([]);
+    useState<string[]>([])
 
   const [clickData, setClickData] =
-    useState<Record<string, number>>({});
-
-  // ====================================================
-  // Load Local Search Data
-  // ====================================================
+    useState<Record<string, number>>({})
 
   const loadLocalSearchData = () => {
     if (typeof window === "undefined") {
-      return;
+      return
     }
 
     try {
       const storedRecent =
-        localStorage.getItem(
-          "recent_searches"
-        );
+        window.localStorage.getItem("recent_searches")
 
       if (storedRecent) {
-        const parsed =
-          JSON.parse(storedRecent);
+        const parsed: unknown = JSON.parse(
+          storedRecent
+        )
 
         if (Array.isArray(parsed)) {
-          setRecentSearches(
-            parsed
-              .filter(
-                (value): value is string =>
-                  typeof value === "string"
-              )
-              .slice(0, 5)
-          );
+          const validRecent = parsed
+            .filter(
+              (value): value is string =>
+                typeof value === "string"
+            )
+            .map((value) => value.trim())
+            .filter(Boolean)
+            .slice(0, MAX_RECENT_SEARCHES)
+
+          setRecentSearches(validRecent)
         }
       }
 
       const storedClicks =
-        localStorage.getItem(
-          "search_clicks"
-        );
+        window.localStorage.getItem("search_clicks")
 
       if (storedClicks) {
-        const parsed =
-          JSON.parse(storedClicks);
+        const parsed: unknown = JSON.parse(
+          storedClicks
+        )
 
         if (
           parsed &&
           typeof parsed === "object" &&
           !Array.isArray(parsed)
         ) {
-          setClickData(parsed);
+          const safeClickData: Record<string, number> =
+            {}
+
+          for (const [key, value] of Object.entries(
+            parsed
+          )) {
+            const numericValue = Number(value)
+
+            if (
+              Number.isFinite(numericValue) &&
+              numericValue >= 0
+            ) {
+              safeClickData[key] = numericValue
+            }
+          }
+
+          setClickData(safeClickData)
         }
       }
     } catch {
-      setRecentSearches([]);
-      setClickData({});
+      setRecentSearches([])
+      setClickData({})
     }
-  };
+  }
 
-  // ====================================================
-  // Save Recent Search
-  // ====================================================
-
-  const saveRecentSearch = (
-    value: string
-  ) => {
-    const normalized =
-      value.trim();
+  const saveRecentSearch = (value: string) => {
+    const normalized = value.trim()
 
     if (!normalized) {
-      return;
+      return
     }
 
     const updated = [
       normalized,
-
       ...recentSearches.filter(
         (item) =>
           item.toLowerCase() !==
           normalized.toLowerCase()
       ),
-    ].slice(0, 5);
+    ].slice(0, MAX_RECENT_SEARCHES)
 
-    setRecentSearches(updated);
+    setRecentSearches(updated)
 
-    localStorage.setItem(
-      "recent_searches",
-      JSON.stringify(updated)
-    );
-  };
+    try {
+      window.localStorage.setItem(
+        "recent_searches",
+        JSON.stringify(updated)
+      )
+    } catch {
+      // Ignore localStorage failures.
+    }
+  }
 
-  // ====================================================
-  // Track Search
-  // ====================================================
-
-  const trackSearch = (
-    value: string
-  ) => {
-    const normalized =
-      value.trim();
+  const trackSearch = (value: string) => {
+    const normalized = value.trim()
 
     if (!normalized) {
-      return;
+      return
     }
 
     const updated = {
       ...clickData,
-
       [normalized]:
         (clickData[normalized] ?? 0) + 1,
-    };
-
-    setClickData(updated);
-
-    localStorage.setItem(
-      "search_clicks",
-      JSON.stringify(updated)
-    );
-  };
-
-  // ====================================================
-  // Navigate To Search
-  // ====================================================
-
-  const navigateToSearch = (
-    value: string
-  ) => {
-    const normalized =
-      value.trim();
-
-    if (!normalized) {
-      return;
     }
 
-    const target =
-      `/search?q=${encodeURIComponent(
-        normalized
-      )}`;
+    setClickData(updated)
 
-    setLoading(true);
-    setShowSuggestions(false);
-    setActiveIndex(-1);
+    try {
+      window.localStorage.setItem(
+        "search_clicks",
+        JSON.stringify(updated)
+      )
+    } catch {
+      // Ignore localStorage failures.
+    }
+  }
 
-    saveRecentSearch(normalized);
-    trackSearch(normalized);
+  const navigateToSearch = (value: string) => {
+    const normalized = value.trim()
+
+    if (!normalized) {
+      return
+    }
+
+    const target = `/search?q=${encodeURIComponent(
+      normalized
+    )}`
+
+    setLoading(true)
+    setShowSuggestions(false)
+    setActiveIndex(-1)
+
+    saveRecentSearch(normalized)
+    trackSearch(normalized)
 
     /*
-     * IMPORTANT:
-     *
-     * SearchPageClient currently keeps its own query
-     * state and does not fully synchronize that state
-     * after an in-place router.replace() on the same
-     * /search route.
-     *
-     * Therefore, when already on /search, perform a
-     * real browser navigation so the page initializes
-     * from the new URL query.
-     *
-     * This guarantees:
-     *
-     * /search?q=20000
-     *        ->
-     * /search?q=25000
-     *
-     * actually triggers a fresh search.
+     * SearchPageClient needs a fresh URL-derived query when
+     * the user searches again from the existing /search page.
      */
-
     if (pathname === "/search") {
-      window.location.assign(target);
-      return;
+      window.location.assign(target)
+      return
     }
 
-    router.push(target);
-  };
+    router.push(target)
+  }
 
-  // ====================================================
-  // Submit
-  // ====================================================
+  const handleSubmit = (event?: FormEvent) => {
+    event?.preventDefault()
 
-  const handleSubmit = (
-    event?: FormEvent
-  ) => {
-    event?.preventDefault();
-
-    const normalized =
-      query.trim();
+    const normalized = query.trim()
 
     if (!normalized) {
-      return;
+      return
     }
 
-    navigateToSearch(normalized);
-  };
+    navigateToSearch(normalized)
+  }
 
-  // ====================================================
-  // Suggestion Selection
-  // ====================================================
-
-  const handleSelect = (
-    value: string
-  ) => {
-    const normalized =
-      value.trim();
+  const handleSelect = (value: string) => {
+    const normalized = value.trim()
 
     if (!normalized) {
-      return;
+      return
     }
 
-    setQuery(normalized);
+    setQuery(normalized)
+    navigateToSearch(normalized)
+  }
 
-    navigateToSearch(normalized);
-  };
+  const normalizedQuery = query.trim()
+  const normalizedQueryLower = normalizedQuery.toLowerCase()
 
-  // ====================================================
-  // Generate Dynamic Suggestions
-  // ====================================================
+  const dynamicSuggestions = useMemo(() => {
+    if (normalizedQuery.length < 2) {
+      return []
+    }
 
-  const normalizedQuery =
-    query.trim();
+    return [
+      `${normalizedQuery} under 15000`,
+      `${normalizedQuery} under 20000`,
+      `best ${normalizedQuery}`,
+      `${normalizedQuery} with 8GB RAM`,
+      `${normalizedQuery} for gaming`,
+    ]
+  }, [normalizedQuery])
 
-  const dynamicSuggestions =
-    normalizedQuery.length >= 2
-      ? [
-          `${normalizedQuery} under 15000`,
-          `${normalizedQuery} under 20000`,
-          `best ${normalizedQuery}`,
-          `${normalizedQuery} with 8GB RAM`,
-          `${normalizedQuery} for gaming`,
-        ]
-      : [];
+  const filteredStaticSuggestions = useMemo(
+    () =>
+      STATIC_SUGGESTIONS.filter(
+        (suggestion) =>
+          !normalizedQuery ||
+          suggestion
+            .toLowerCase()
+            .includes(normalizedQueryLower)
+      ),
+    [normalizedQuery, normalizedQueryLower]
+  )
 
-  // ====================================================
-  // Filter Static Suggestions
-  // ====================================================
+  const recentItems = useMemo(
+    () =>
+      recentSearches
+        .filter(
+          (item) =>
+            !normalizedQuery ||
+            item
+              .toLowerCase()
+              .includes(normalizedQueryLower)
+        )
+        .slice(0, 3),
+    [
+      recentSearches,
+      normalizedQuery,
+      normalizedQueryLower,
+    ]
+  )
 
-  const filteredStaticSuggestions =
-    STATIC_SUGGESTIONS.filter(
-      (suggestion) =>
-        !normalizedQuery ||
-        suggestion
-          .toLowerCase()
-          .includes(
-            normalizedQuery.toLowerCase()
-          )
-    );
+  const recommendedItems = useMemo(() => {
+    const recentSet = new Set(
+      recentSearches.map((item) =>
+        item.trim().toLowerCase()
+      )
+    )
 
-  // ====================================================
-  // Merge Suggestions
-  // ====================================================
-
-  const filteredSuggestions =
-    Array.from(
+    return Array.from(
       new Set([
-        ...recentSearches,
         ...filteredStaticSuggestions,
         ...dynamicSuggestions,
       ])
     )
-      .filter(
-        (value) =>
-          value.trim().length > 0
-      )
+      .filter((value) => {
+        const normalizedValue =
+          value.trim().toLowerCase()
+
+        return (
+          normalizedValue.length > 0 &&
+          !recentSet.has(normalizedValue)
+        )
+      })
       .sort(
         (a, b) =>
           (clickData[b] ?? 0) -
           (clickData[a] ?? 0)
       )
-      .slice(0, 8);
+      .slice(0, MAX_SUGGESTIONS)
+  }, [
+    clickData,
+    dynamicSuggestions,
+    filteredStaticSuggestions,
+    recentSearches,
+  ])
 
-  // ====================================================
-  // Keyboard Navigation
-  // ====================================================
+  const suggestions = useMemo(
+    () =>
+      [...recentItems, ...recommendedItems].slice(
+        0,
+        MAX_SUGGESTIONS
+      ),
+    [recentItems, recommendedItems]
+  )
 
   const handleKeyDown = (
     event: KeyboardEvent<HTMLInputElement>
   ) => {
-    if (
-      event.key === "ArrowDown"
-    ) {
-      event.preventDefault();
+    if (event.key === "ArrowDown") {
+      event.preventDefault()
 
-      if (
-        filteredSuggestions.length ===
-        0
-      ) {
-        return;
+      if (suggestions.length === 0) {
+        return
       }
 
       setActiveIndex((current) =>
-        current <
-        filteredSuggestions.length - 1
+        current < suggestions.length - 1
           ? current + 1
           : 0
-      );
+      )
 
-      return;
+      return
     }
 
-    if (
-      event.key === "ArrowUp"
-    ) {
-      event.preventDefault();
+    if (event.key === "ArrowUp") {
+      event.preventDefault()
 
-      if (
-        filteredSuggestions.length ===
-        0
-      ) {
-        return;
+      if (suggestions.length === 0) {
+        return
       }
 
       setActiveIndex((current) =>
         current > 0
           ? current - 1
-          : filteredSuggestions.length - 1
-      );
+          : suggestions.length - 1
+      )
 
-      return;
+      return
     }
 
-    if (
-      event.key === "Escape"
-    ) {
-      setShowSuggestions(false);
-      setActiveIndex(-1);
-
-      return;
+    if (event.key === "Escape") {
+      setShowSuggestions(false)
+      setActiveIndex(-1)
+      return
     }
 
-    if (
-      event.key === "Enter"
-    ) {
-      event.preventDefault();
+    if (event.key === "Enter") {
+      event.preventDefault()
 
       if (
         activeIndex >= 0 &&
-        activeIndex <
-          filteredSuggestions.length
+        activeIndex < suggestions.length
       ) {
-        handleSelect(
-          filteredSuggestions[
-            activeIndex
-          ]
-        );
-
-        return;
+        handleSelect(suggestions[activeIndex])
+        return
       }
 
-      handleSubmit();
+      handleSubmit()
     }
-  };
+  }
 
-  // ====================================================
-  // Highlight Search Match
-  // ====================================================
-
-  const highlightMatch = (
-    text: string
-  ) => {
-    const search =
-      normalizedQuery;
+  const highlightMatch = (text: string) => {
+    const search = normalizedQuery
 
     if (!search) {
-      return text;
+      return text
     }
 
-    const escaped =
-      search.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&"
-      );
+    const escaped = search.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    )
 
-    const regex =
-      new RegExp(
-        `(${escaped})`,
-        "gi"
-      );
+    const regex = new RegExp(
+      `(${escaped})`,
+      "gi"
+    )
 
-    return text
-      .split(regex)
-      .map((part, index) => {
-        if (
-          part.toLowerCase() ===
-          search.toLowerCase()
-        ) {
-          return (
-            <span
-              key={index}
-              className="font-semibold text-black"
-            >
-              {part}
-            </span>
-          );
-        }
+    return text.split(regex).map((part, index) =>
+      part.toLowerCase() === search.toLowerCase() ? (
+        <span
+          key={`${part}-${index}`}
+          className="font-semibold text-[#171717]"
+        >
+          {part}
+        </span>
+      ) : (
+        <span key={`${part}-${index}`}>
+          {part}
+        </span>
+      )
+    )
+  }
 
-        return (
-          <span key={index}>
-            {part}
-          </span>
-        );
-      });
-  };
+  const hasSuggestions =
+    showSuggestions && suggestions.length > 0
 
-  // ====================================================
-  // Render
-  // ====================================================
+  const activeSuggestionId =
+    activeIndex >= 0
+      ? getSuggestionId(activeIndex)
+      : undefined
 
   return (
     <div className="relative w-full">
       <form
         onSubmit={handleSubmit}
         className="flex w-full items-center gap-2"
+        role="search"
       >
-        {/* ==================================================
-            Input
-            ================================================== */}
+        <div className="relative min-w-0 flex-1">
+          <label
+            htmlFor={SEARCH_INPUT_ID}
+            className="sr-only"
+          >
+            Search products
+          </label>
 
-        <input
-          type="search"
-          value={query}
-          autoComplete="off"
-          placeholder="e.g. best phone under 20000 for gaming"
-          aria-label="Search products"
-          className="
-            min-w-0
-            flex-1
-            rounded-xl
-            border
-            border-gray-300
-            bg-white
-            px-4
-            py-3
-            text-sm
-            text-black
-            outline-none
-            transition
-            placeholder:text-gray-400
-            focus:border-black
-            focus:ring-2
-            focus:ring-black/10
-            md:text-base
-          "
-          onChange={(event) => {
-            setQuery(
-              event.target.value
-            );
+          <Search
+            size={18}
+            strokeWidth={1.8}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8a8f98]"
+          />
 
-            setShowSuggestions(true);
-            setActiveIndex(-1);
-
-            /*
-             * If the user edits the query after
-             * a previous search, allow the button
-             * to return to normal immediately.
-             */
-            if (loading) {
-              setLoading(false);
+          <input
+            id={SEARCH_INPUT_ID}
+            type="search"
+            role="combobox"
+            value={query}
+            autoComplete="off"
+            maxLength={200}
+            placeholder="What are you looking for?"
+            aria-label="Search products"
+            aria-autocomplete="list"
+            aria-haspopup="listbox"
+            aria-controls={
+              hasSuggestions
+                ? SEARCH_LISTBOX_ID
+                : undefined
             }
-          }}
-          onFocus={() => {
-            loadLocalSearchData();
-
-            if (
-              filteredSuggestions.length > 0
-            ) {
-              setShowSuggestions(true);
+            aria-expanded={hasSuggestions}
+            aria-activedescendant={
+              hasSuggestions
+                ? activeSuggestionId
+                : undefined
             }
-          }}
-          onBlur={() => {
-            setTimeout(() => {
-              setShowSuggestions(false);
-              setActiveIndex(-1);
-            }, 150);
-          }}
-          onKeyDown={handleKeyDown}
-        />
+            aria-busy={loading}
+            enterKeyHint="search"
+            className="h-12 w-full rounded-xl border border-[#e2e4ea] bg-white pl-11 pr-4 text-sm text-[#262626] outline-none transition-all duration-200 placeholder:text-[#9aa0aa] hover:border-[#d8dbe2] focus:border-[#c9cbe0] focus:ring-4 focus:ring-[#5b5ce2]/8 md:text-base"
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setShowSuggestions(true)
+              setActiveIndex(-1)
 
-        {/* ==================================================
-            Search Button
-            ================================================== */}
+              if (loading) {
+                setLoading(false)
+              }
+            }}
+            onFocus={() => {
+              loadLocalSearchData()
+
+              if (suggestions.length > 0) {
+                setShowSuggestions(true)
+              }
+            }}
+            onBlur={() => {
+              window.setTimeout(() => {
+                setShowSuggestions(false)
+                setActiveIndex(-1)
+              }, 150)
+            }}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
 
         <button
           type="submit"
-          disabled={
-            loading ||
-            !query.trim()
+          disabled={loading || !query.trim()}
+          aria-label={
+            loading
+              ? "Searching products"
+              : "Search products"
           }
-          className="
-            shrink-0
-            rounded-xl
-            bg-black
-            px-5
-            py-3
-            text-sm
-            font-medium
-            text-white
-            transition
-            hover:bg-gray-800
-            active:scale-95
-            disabled:cursor-not-allowed
-            disabled:opacity-50
-            md:text-base
-          "
+          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#171717] px-5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-black hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#171717] disabled:text-white disabled:opacity-100 md:px-6 md:text-base"
         >
-          {loading
-            ? "Searching..."
-            : "Search"}
+          {loading ? (
+            <>
+              <Loader2
+                size={16}
+                className="animate-spin"
+                aria-hidden="true"
+              />
+              <span>Searching...</span>
+            </>
+          ) : (
+            "Search"
+          )}
         </button>
       </form>
 
-      {/* ==================================================
-          Suggestions
-          ================================================== */}
-
-      {showSuggestions &&
-        filteredSuggestions.length > 0 && (
-          <div
-            className="
-              absolute
-              left-0
-              right-0
-              top-full
-              z-50
-              mt-2
-              overflow-hidden
-              rounded-xl
-              border
-              border-gray-200
-              bg-white
-              shadow-xl
-            "
-          >
-            {recentSearches.length > 0 && (
-              <div className="border-b border-gray-100 px-4 py-2 text-xs font-medium text-gray-400">
-                Recent searches
+      {hasSuggestions && (
+        <div
+          id={SEARCH_LISTBOX_ID}
+          role="listbox"
+          aria-label="Search suggestions"
+          className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#e3e5ea] bg-white p-2 shadow-[0_18px_50px_rgba(15,23,42,0.10)]"
+        >
+          {recentItems.length > 0 && (
+            <div className="mb-1">
+              <div
+                id={`${SEARCH_LISTBOX_ID}-recent`}
+                className="flex items-center gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9aa0aa]"
+              >
+                <Clock3
+                  size={13}
+                  strokeWidth={1.8}
+                  aria-hidden="true"
+                />
+                Recent
               </div>
-            )}
 
-            {filteredSuggestions.map(
-              (suggestion, index) => (
-                <button
-                  key={`${suggestion}-${index}`}
-                  type="button"
-                  onMouseDown={(event) => {
-                    event.preventDefault();
+              {recentItems.map((suggestion) => {
+                const suggestionIndex =
+                  suggestions.indexOf(suggestion)
 
-                    handleSelect(
-                      suggestion
-                    );
-                  }}
-                  className={`
-                    block
-                    w-full
-                    px-4
-                    py-3
-                    text-left
-                    text-sm
-                    transition
-                    ${
-                      index === activeIndex
-                        ? "bg-gray-100"
-                        : "hover:bg-gray-50"
-                    }
-                  `}
-                >
-                  {highlightMatch(
-                    suggestion
-                  )}
-                </button>
-              )
-            )}
-          </div>
-        )}
+                const isActive =
+                  suggestionIndex === activeIndex
+
+                return (
+                  <button
+                    id={getSuggestionId(
+                      suggestionIndex
+                    )}
+                    key={`recent-${suggestion}`}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    onPointerDown={(event) => {
+                      event.preventDefault()
+                      handleSelect(suggestion)
+                    }}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm transition-colors duration-150 ${
+                      isActive
+                        ? "bg-[#f3f3ff]"
+                        : "hover:bg-[#f7f7f9]"
+                    }`}
+                  >
+                    <span className="truncate text-[#4f555f]">
+                      {highlightMatch(suggestion)}
+                    </span>
+
+                    <ArrowUpRight
+                      size={14}
+                      strokeWidth={1.7}
+                      className="ml-3 shrink-0 text-[#a0a5ae]"
+                      aria-hidden="true"
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {recommendedItems.length > 0 && (
+            <div
+              className={
+                recentItems.length > 0
+                  ? "border-t border-[#edf0f3] pt-1"
+                  : ""
+              }
+            >
+              <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9aa0aa]">
+                {normalizedQuery
+                  ? "Suggestions"
+                  : "Popular searches"}
+              </div>
+
+              {recommendedItems.map((suggestion) => {
+                const suggestionIndex =
+                  suggestions.indexOf(suggestion)
+
+                const isActive =
+                  suggestionIndex === activeIndex
+
+                return (
+                  <button
+                    id={getSuggestionId(
+                      suggestionIndex
+                    )}
+                    key={`suggestion-${suggestion}`}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    onPointerDown={(event) => {
+                      event.preventDefault()
+                      handleSelect(suggestion)
+                    }}
+                    className={`group flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm transition-colors duration-150 ${
+                      isActive
+                        ? "bg-[#f3f3ff]"
+                        : "hover:bg-[#f7f7f9]"
+                    }`}
+                  >
+                    <span className="truncate text-[#4f555f]">
+                      {highlightMatch(suggestion)}
+                    </span>
+
+                    <ArrowUpRight
+                      size={14}
+                      strokeWidth={1.7}
+                      className="ml-3 shrink-0 text-[#b0b5bd] transition-colors group-hover:text-[#5b5ce2]"
+                      aria-hidden="true"
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
-  );
+  )
 }

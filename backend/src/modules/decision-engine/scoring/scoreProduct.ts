@@ -5,7 +5,6 @@ import {
   WeightedIntent,
 } from "../types";
 
-
 // ======================================================
 // Types
 // ======================================================
@@ -54,7 +53,6 @@ interface Breakdown {
   total: number;
 }
 
-
 // ======================================================
 // Constants
 // ======================================================
@@ -73,21 +71,8 @@ const RATING_REFERENCE = 5;
 
 const MIN_PRICE = 1;
 
-
 // ======================================================
 // Final Score Composition
-//
-// The score has a predictable meaning:
-//
-// 70%  -> Intent / product capability
-// 10%  -> Price fit
-// 10%  -> Explicit constraints
-// 5%   -> Trust
-// 5%   -> Value
-//
-// Brand does NOT receive an arbitrary score.
-// A Samsung phone should not magically beat another
-// phone merely because the brand is Samsung.
 // ======================================================
 
 const SCORE_COMPOSITION = {
@@ -97,7 +82,6 @@ const SCORE_COMPOSITION = {
   trust: 0.05,
   value: 0.05,
 } as const;
-
 
 // ======================================================
 // Intent Weights
@@ -140,12 +124,14 @@ const INTENT_WEIGHTS: Record<
   },
 };
 
-
 // ======================================================
 // Intent Tags
 // ======================================================
 
-const INTENT_TAGS: Record<IntentType, string[]> = {
+const INTENT_TAGS: Record<
+  IntentType,
+  string[]
+> = {
   gaming: [
     "gaming",
     "gaming phone",
@@ -182,24 +168,31 @@ const INTENT_TAGS: Record<IntentType, string[]> = {
   balanced: [],
 };
 
-
 // ======================================================
 // Processor Detection Patterns
 // ======================================================
 
 const PROCESSOR_PATTERNS = [
-  /\bsnapdragon\s+(?:\d+\s+)?(?:elite|gen|plus|\+|s)?\s*\d*/i,
-  /\bdimensity\s+\d{3,5}\s*(?:ultra|max|plus|\+|s)?/i,
-  /\bexynos\s+\d{3,4}/i,
-  /\bmediatek\s+(?:dimensity|helio)[\w\s+-]*/i,
-  /\bhelio\s+[a-z]?\d+/i,
-  /\bkirin\s+\d{3,4}/i,
-  /\btensor\s+g?\d+/i,
-  /\bapple\s+a\d+/i,
-  /\ba\d+\s*(?:pro|max|ultra)?\b/i,
-  /\bunisoc\s+[a-z]\d+/i,
-];
+  /\b(?:qualcomm\s+)?snapdragon\s+\d+[a-z]?(?:\s+(?:gen|elite|pro|plus|ultra|prime)(?:\s*\d+[a-z0-9+.-]*)?)?(?:\s+for\s+[a-z]+)?/i,
 
+  /\b(?:mediatek\s+)?dimensity\s+\d+[a-z0-9+.-]*(?:[-\s](?:ultra|max|pro|plus|apex|extreme))?/i,
+
+  /\b(?:mediatek\s+)?helio\s+[a-z]?\d+[a-z0-9+.-]*/i,
+
+  /\b(?:mediatek\s+)?d\d+[a-z0-9+.-]*(?:\s+(?:max|ultra|pro|plus|apex|extreme))?/i,
+
+  /\bmediatek\s+\d+[a-z0-9+.-]*/i,
+
+  /\bexynos\s+\d+[a-z0-9+.-]*/i,
+
+  /\btensor\s+g?\d+(?:\s+(?:pro|tensor))?/i,
+
+  /\b(?:apple\s+)?a\d+(?:\s+(?:bionic|pro|fusion))?/i,
+
+  /\bkirin\s+\d+[a-z0-9+.-]*/i,
+
+  /\b(?:unisoc|spreadtrum)\s+[a-z0-9-]+/i,
+];
 
 // ======================================================
 // Public API
@@ -211,123 +204,150 @@ export function scoreProduct(
   budget: number | null,
   constraints?: Constraints,
 ) {
-  const intents = normalizeIntent(intent);
+  const intents =
+    normalizeIntent(intent);
 
-  const context = buildContext(product, intents);
+  const context =
+    buildContext(
+      product,
+      intents,
+    );
 
-  const intentScore = calculateIntentScore(context);
+  const intentScore =
+    calculateIntentScore(
+      context,
+    );
 
-  const priceFit = calculatePriceFit(
-    context.price,
-    budget,
-  );
+  const priceFit =
+    calculatePriceFit(
+      context.price,
+      budget,
+    );
 
-  const constraintScore = constraints
-    ? calculateConstraintScore(
-        context,
-        constraints,
-      )
-    : 1;
+  const constraintScore =
+    constraints
+      ? calculateConstraintScore(
+          context,
+          constraints,
+        )
+      : 1;
 
-  const trustScore = calculateTrustScore(
-    context.reviews,
-  );
+  const trustScore =
+    calculateTrustScore(
+      context.reviews,
+    );
 
-  const valueScore = calculateValueScoreNormalized(
-    context,
-  );
+  const valueScore =
+    calculateValueScoreNormalized(
+      context,
+    );
 
-  const tagScore = calculateIntentTagScore(
-    context,
-  );
+  const tagScore =
+    calculateIntentTagScore(
+      context,
+    );
 
-  /*
-   * Tag evidence is intentionally small.
-   *
-   * A product tagged "large-battery" should get
-   * some additional evidence, but tags must never
-   * overpower actual specifications.
-   */
-  const finalIntentScore = clamp(
-    intentScore * 0.95 +
-      tagScore * 0.05,
-    0,
-    1,
-  );
+  const finalIntentScore =
+    clamp(
+      intentScore * 0.95 +
+        tagScore * 0.05,
+      0,
+      1,
+    );
 
-  const tieBreaker = calculateTieBreaker(
-    context,
-  );
+  const tieBreaker =
+    calculateTieBreaker(
+      context,
+    );
 
-  /*
-   * Tie breaker is NOT part of the primary score.
-   *
-   * It is only a tiny deterministic differentiator
-   * for otherwise nearly identical products.
-   */
-  const finalScore = clamp(
-    finalIntentScore *
-      SCORE_COMPOSITION.intent +
+  const finalScore =
+    clamp(
+      finalIntentScore *
+        SCORE_COMPOSITION.intent +
+        priceFit *
+          SCORE_COMPOSITION.priceFit +
+        constraintScore *
+          SCORE_COMPOSITION.constraints +
+        trustScore *
+          SCORE_COMPOSITION.trust +
+        valueScore *
+          SCORE_COMPOSITION.value +
+        tieBreaker,
+      0,
+      1,
+    );
 
-      priceFit *
-        SCORE_COMPOSITION.priceFit +
-
-      constraintScore *
-        SCORE_COMPOSITION.constraints +
-
-      trustScore *
-        SCORE_COMPOSITION.trust +
-
-      valueScore *
-        SCORE_COMPOSITION.value +
-
-      tieBreaker,
-    0,
-    1,
-  );
-
-  const calibratedScore = Math.round(
-    finalScore * SCORE_MAX,
-  );
+  const calibratedScore =
+    Math.round(
+      finalScore *
+        SCORE_MAX *
+        100,
+    ) / 100;
 
   const breakdown: Breakdown = {
-    ram: toPercentage(context.ram.value),
-    processor: toPercentage(
-      context.processor.value,
-    ),
-    battery: toPercentage(
-      context.battery.value,
-    ),
-    rating: toPercentage(
-      context.rating.value,
+    ram: toPercentage(
+      context.ram.value,
     ),
 
-    // No arbitrary brand advantage.
+    processor:
+      toPercentage(
+        context.processor
+          .value,
+      ),
+
+    battery:
+      toPercentage(
+        context.battery.value,
+      ),
+
+    rating:
+      toPercentage(
+        context.rating.value,
+      ),
+
     brand: 0,
 
-    tags: toPercentage(tagScore),
+    tags:
+      toPercentage(
+        tagScore,
+      ),
 
-    trust: toPercentage(trustScore),
+    trust:
+      toPercentage(
+        trustScore,
+      ),
 
-    value: toPercentage(valueScore),
+    value:
+      toPercentage(
+        valueScore,
+      ),
 
-    priceFit: toPercentage(priceFit),
+    priceFit:
+      toPercentage(
+        priceFit,
+      ),
 
-    constraints: toPercentage(
-      constraintScore,
-    ),
+    constraints:
+      toPercentage(
+        constraintScore,
+      ),
 
-    tieBreaker: toPercentage(tieBreaker),
+    tieBreaker:
+      toPercentage(
+        tieBreaker,
+      ),
 
-    total: calibratedScore,
+    total:
+      calibratedScore,
   };
 
   return {
-    total: calibratedScore,
+    total:
+      calibratedScore,
+
     breakdown,
   };
 }
-
 
 // ======================================================
 // Context
@@ -337,57 +357,72 @@ function buildContext(
   product: Product,
   intents: WeightedIntent[],
 ): ScoreContext {
-  const text = buildSearchableText(product);
+  const text =
+    buildSearchableText(
+      product,
+    );
 
   return {
-    ram: resolveRamGb(
-      product,
-      text,
-    ),
+    ram:
+      resolveRamGb(
+        product,
+        text,
+      ),
 
-    processor: resolveProcessorScore(
-      product,
-      text,
-    ),
+    processor:
+      resolveProcessorScore(
+        product,
+        text,
+      ),
 
-    battery: resolveBatteryMah(
-      product,
-      text,
-    ),
+    battery:
+      resolveBatteryMah(
+        product,
+        text,
+      ),
 
-    camera: resolveCameraMp(
-      product,
-      text,
-    ),
+    camera:
+      resolveCameraMp(
+        product,
+        text,
+      ),
 
-    rating: resolveRating(
-      product.rating,
-    ),
+    rating:
+      resolveRating(
+        product.rating,
+      ),
 
-    reviews: Math.max(
-      0,
-      safeNumber(product.reviewsCount),
-    ),
+    reviews:
+      Math.max(
+        0,
+        safeNumber(
+          product.reviewsCount,
+        ),
+      ),
 
-    price: Math.max(
-      0,
-      safeNumber(product.price),
-    ),
+    price:
+      Math.max(
+        0,
+        safeNumber(
+          product.price,
+        ),
+      ),
 
-    tags: normalizeTags(
-      product.tags,
-    ),
+    tags:
+      normalizeTags(
+        product.tags,
+      ),
 
-    brand: normalizeText(
-      product.brand,
-    ),
+    brand:
+      normalizeText(
+        product.brand,
+      ),
 
     text,
 
     intents,
   };
 }
-
 
 // ======================================================
 // Intent Score
@@ -396,13 +431,20 @@ function buildContext(
 function calculateIntentScore(
   context: ScoreContext,
 ): number {
-  let weightedTotal = 0;
+  let weightedTotal =
+    0;
 
-  let intentWeightTotal = 0;
+  let intentWeightTotal =
+    0;
 
-  for (const intent of context.intents) {
+  for (
+    const intent of
+      context.intents
+  ) {
     const weights =
-      INTENT_WEIGHTS[intent.type];
+      INTENT_WEIGHTS[
+        intent.type
+      ];
 
     if (
       !weights ||
@@ -411,25 +453,51 @@ function calculateIntentScore(
       continue;
     }
 
-    const signals: Array<
-      [ScoreComponent, ResolvedSignal]
-    > = [
-      ["ram", context.ram],
-      ["processor", context.processor],
-      ["battery", context.battery],
-      ["rating", context.rating],
-      ["camera", context.camera],
+    const signals:
+      Array<
+        [
+          ScoreComponent,
+          ResolvedSignal,
+        ]
+      > = [
+      [
+        "ram",
+        context.ram,
+      ],
+      [
+        "processor",
+        context.processor,
+      ],
+      [
+        "battery",
+        context.battery,
+      ],
+      [
+        "rating",
+        context.rating,
+      ],
+      [
+        "camera",
+        context.camera,
+      ],
     ];
 
-    let weightedSignal = 0;
+    let weightedSignal =
+      0;
 
-    let availableWeight = 0;
+    let availableWeight =
+      0;
 
     for (
-      const [component, signal] of signals
+      const [
+        component,
+        signal,
+      ] of signals
     ) {
       const componentWeight =
-        weights[component];
+        weights[
+          component
+        ];
 
       if (
         componentWeight <= 0 ||
@@ -446,15 +514,10 @@ function calculateIntentScore(
         componentWeight;
     }
 
-    /*
-     * Missing data does NOT become 50%.
-     *
-     * This is critical.
-     *
-     * If a product has no camera data, it should
-     * not receive an artificial camera score of 50.
-     */
-    if (availableWeight <= 0) {
+    if (
+      availableWeight <=
+      0
+    ) {
       continue;
     }
 
@@ -462,19 +525,14 @@ function calculateIntentScore(
       weightedSignal /
       availableWeight;
 
-    /*
-     * Missing data should not become a fake zero, but a
-     * product with very little evidence should not receive
-     * the same confidence in its intent score as a product
-     * with complete evidence.
-     *
-     * Coverage ranges from 0.85 to 1.00, so missing fields
-     * influence ranking only mildly while confidence remains
-     * the stronger uncertainty signal.
-     */
     const totalWeight =
-      Object.values(weights).reduce(
-        (sum, value) =>
+      Object.values(
+        weights,
+      ).reduce(
+        (
+          sum,
+          value,
+        ) =>
           sum + value,
         0,
       );
@@ -498,7 +556,10 @@ function calculateIntentScore(
       intent.weight;
   }
 
-  if (intentWeightTotal <= 0) {
+  if (
+    intentWeightTotal <=
+    0
+  ) {
     return 0;
   }
 
@@ -509,7 +570,6 @@ function calculateIntentScore(
     1,
   );
 }
-
 
 // ======================================================
 // Intent Tag Score
@@ -522,18 +582,26 @@ function calculateIntentTagScore(
 
   let weightTotal = 0;
 
-  for (const intent of context.intents) {
+  for (
+    const intent of
+      context.intents
+  ) {
     if (
-      intent.type === "balanced" ||
+      intent.type ===
+        "balanced" ||
       intent.weight <= 0
     ) {
       continue;
     }
 
     const candidates =
-      INTENT_TAGS[intent.type];
+      INTENT_TAGS[
+        intent.type
+      ];
 
-    if (!candidates?.length) {
+    if (
+      !candidates?.length
+    ) {
       continue;
     }
 
@@ -541,10 +609,14 @@ function calculateIntentTagScore(
       candidates.some(
         (tag) =>
           context.tags.includes(
-            normalizeText(tag),
+            normalizeText(
+              tag,
+            ),
           ) ||
           context.text.includes(
-            normalizeText(tag),
+            normalizeText(
+              tag,
+            ),
           ),
       );
 
@@ -556,17 +628,19 @@ function calculateIntentTagScore(
       intent.weight;
   }
 
-  if (weightTotal <= 0) {
+  if (
+    weightTotal <= 0
+  ) {
     return 0;
   }
 
   return clamp(
-    total / weightTotal,
+    total /
+      weightTotal,
     0,
     1,
   );
 }
-
 
 // ======================================================
 // Price Fit
@@ -576,12 +650,6 @@ function calculatePriceFit(
   price: number,
   budget: number | null,
 ): number {
-  /*
-   * No budget means there is no price-fit signal.
-   *
-   * Do not award a neutral 50% score here. A missing
-   * preference is not evidence that the product fits it.
-   */
   if (
     budget == null ||
     budget <= 0 ||
@@ -593,46 +661,57 @@ function calculatePriceFit(
   const utilization =
     price / budget;
 
-  /*
-   * Sweet spot:
-   *
-   * 85% - 100% of budget = excellent
-   *
-   * We don't automatically reward extremely cheap
-   * products because cheap does not mean suitable.
-   */
-
-  if (utilization <= 0.85) {
+  if (
+    utilization <=
+    0.85
+  ) {
     return 0.78;
   }
 
-  if (utilization <= 0.95) {
+  if (
+    utilization <=
+    0.95
+  ) {
     return 0.92;
   }
 
-  if (utilization <= 1) {
+  if (
+    utilization <=
+    1
+  ) {
     return 1;
   }
 
-  if (utilization <= 1.05) {
+  if (
+    utilization <=
+    1.05
+  ) {
     return 0.72;
   }
 
-  if (utilization <= 1.10) {
+  if (
+    utilization <=
+    1.1
+  ) {
     return 0.55;
   }
 
-  if (utilization <= 1.20) {
-    return 0.30;
+  if (
+    utilization <=
+    1.2
+  ) {
+    return 0.3;
   }
 
-  if (utilization <= 1.35) {
-    return 0.10;
+  if (
+    utilization <=
+    1.35
+  ) {
+    return 0.1;
   }
 
   return 0;
 }
-
 
 // ======================================================
 // Constraint Score
@@ -642,12 +721,14 @@ function calculateConstraintScore(
   context: ScoreContext,
   constraints: Constraints,
 ): number {
-  const results: number[] = [];
+  const results: number[] =
+    [];
 
-  const ram = context.ram.available
-    ? context.ram.value *
-      RAM_REFERENCE_GB
-    : null;
+  const ram =
+    context.ram.available
+      ? context.ram.value *
+        RAM_REFERENCE_GB
+      : null;
 
   const battery =
     context.battery.available
@@ -662,38 +743,40 @@ function calculateConstraintScore(
         RATING_REFERENCE
       : null;
 
-  const price = context.price;
-
-  // ----------------------------------------------------
-  // RAM
-  // ----------------------------------------------------
-
-  if (constraints.minRam != null) {
-    results.push(
-      ram == null
-        ? 0
-        : ram >= constraints.minRam
-          ? 1
-          : 0,
-    );
-  }
-
-  if (constraints.maxRam != null) {
-    results.push(
-      ram == null
-        ? 0
-        : ram <= constraints.maxRam
-          ? 1
-          : 0,
-    );
-  }
-
-  // ----------------------------------------------------
-  // Battery
-  // ----------------------------------------------------
+  const price =
+    context.price;
 
   if (
-    constraints.minBattery != null
+    constraints.minRam !=
+    null
+  ) {
+    results.push(
+      ram == null
+        ? 0
+        : ram >=
+            constraints.minRam
+          ? 1
+          : 0,
+    );
+  }
+
+  if (
+    constraints.maxRam !=
+    null
+  ) {
+    results.push(
+      ram == null
+        ? 0
+        : ram <=
+            constraints.maxRam
+          ? 1
+          : 0,
+    );
+  }
+
+  if (
+    constraints.minBattery !=
+    null
   ) {
     results.push(
       battery == null
@@ -706,7 +789,8 @@ function calculateConstraintScore(
   }
 
   if (
-    constraints.maxBattery != null
+    constraints.maxBattery !=
+    null
   ) {
     results.push(
       battery == null
@@ -718,11 +802,10 @@ function calculateConstraintScore(
     );
   }
 
-  // ----------------------------------------------------
-  // Rating
-  // ----------------------------------------------------
-
-  if (constraints.minRating != null) {
+  if (
+    constraints.minRating !=
+    null
+  ) {
     results.push(
       rating == null
         ? 0
@@ -733,7 +816,10 @@ function calculateConstraintScore(
     );
   }
 
-  if (constraints.maxRating != null) {
+  if (
+    constraints.maxRating !=
+    null
+  ) {
     results.push(
       rating == null
         ? 0
@@ -744,11 +830,10 @@ function calculateConstraintScore(
     );
   }
 
-  // ----------------------------------------------------
-  // Price
-  // ----------------------------------------------------
-
-  if (constraints.minPrice != null) {
+  if (
+    constraints.minPrice !=
+    null
+  ) {
     results.push(
       price >=
         constraints.minPrice
@@ -757,7 +842,10 @@ function calculateConstraintScore(
     );
   }
 
-  if (constraints.maxPrice != null) {
+  if (
+    constraints.maxPrice !=
+    null
+  ) {
     results.push(
       price <=
         constraints.maxPrice
@@ -766,109 +854,129 @@ function calculateConstraintScore(
     );
   }
 
-  // ----------------------------------------------------
-  // Preferred Brand
-  // ----------------------------------------------------
-
   if (
-    constraints.preferredBrands?.length
+    constraints.preferredBrands
+      ?.length
   ) {
     const preferred =
       constraints.preferredBrands.some(
         (brand) =>
-          normalizeText(brand) ===
+          normalizeText(
+            brand,
+          ) ===
           context.brand,
       );
 
     results.push(
-      preferred ? 1 : 0.5,
+      preferred
+        ? 1
+        : 0.5,
     );
   }
 
-  // ----------------------------------------------------
-  // Excluded Brand
-  // ----------------------------------------------------
-
   if (
-    constraints.excludedBrands?.length
+    constraints.excludedBrands
+      ?.length
   ) {
     const excluded =
       constraints.excludedBrands.some(
         (brand) =>
-          normalizeText(brand) ===
+          normalizeText(
+            brand,
+          ) ===
           context.brand,
       );
 
     results.push(
-      excluded ? 0 : 1,
+      excluded
+        ? 0
+        : 1,
     );
   }
 
-  // ----------------------------------------------------
-  // Required Tags
-  // ----------------------------------------------------
-
   if (
-    constraints.requiredTags?.length
+    constraints.requiredTags
+      ?.length
   ) {
     const required =
       constraints.requiredTags
-        .map(normalizeText)
+        .map(
+          normalizeText,
+        )
         .filter(Boolean);
 
-    if (required.length > 0) {
+    if (
+      required.length >
+      0
+    ) {
       const matched =
         required.filter(
           (tag) =>
-            context.tags.includes(tag) ||
-            context.text.includes(tag),
+            context.tags.includes(
+              tag,
+            ) ||
+            context.text.includes(
+              tag,
+            ),
         ).length;
 
       results.push(
-        matched / required.length,
+        matched /
+          required.length,
       );
     }
   }
 
-  // ----------------------------------------------------
-  // Excluded Tags
-  // ----------------------------------------------------
-
   if (
-    constraints.excludedTags?.length
+    constraints.excludedTags
+      ?.length
   ) {
     const excluded =
       constraints.excludedTags
-        .map(normalizeText)
+        .map(
+          normalizeText,
+        )
         .filter(Boolean);
 
     const hasExcluded =
       excluded.some(
         (tag) =>
-          context.tags.includes(tag) ||
-          context.text.includes(tag),
+          context.tags.includes(
+            tag,
+          ) ||
+          context.text.includes(
+            tag,
+          ),
       );
 
     results.push(
-      hasExcluded ? 0 : 1,
+      hasExcluded
+        ? 0
+        : 1,
     );
   }
 
-  if (results.length === 0) {
+  if (
+    results.length ===
+    0
+  ) {
     return 1;
   }
 
   return clamp(
     results.reduce(
-      (sum, value) =>
+      (
+        sum,
+        value,
+      ) =>
         sum + value,
       0,
-    ) / results.length,
+    ) /
+      results.length,
     0,
     1,
   );
 }
-
 
 // ======================================================
 // Trust Score
@@ -877,22 +985,20 @@ function calculateConstraintScore(
 function calculateTrustScore(
   reviews: number,
 ): number {
-  if (reviews <= 0) {
+  if (
+    reviews <= 0
+  ) {
     return 0;
   }
 
-  /*
-   * Logarithmic scaling prevents a product with
-   * 50,000 reviews from completely destroying a
-   * product with 5,000 reviews.
-   */
   return clamp(
-    Math.log10(reviews + 1) / 5,
+    Math.log10(
+      reviews + 1,
+    ) / 5,
     0,
     1,
   );
 }
-
 
 // ======================================================
 // Value Score
@@ -902,65 +1008,84 @@ function calculateValueScoreNormalized(
   context: ScoreContext,
 ): number {
   if (
-    context.price <= 0
+    context.price <=
+    0
   ) {
     return 0;
   }
 
-  /*
-   * Value must not treat missing specifications as a
-   * zero-capability product.
-   *
-   * Instead, calculate the weighted average over the
-   * signals that actually exist. This keeps sparse scraped
-   * products from being unfairly crushed by missing fields.
-   */
   const signals: Array<{
     value: number;
     weight: number;
     available: boolean;
   }> = [
     {
-      value: context.processor.value,
-      weight: 0.40,
-      available: context.processor.available,
+      value:
+        context.processor
+          .value,
+      weight: 0.4,
+      available:
+        context.processor
+          .available,
     },
+
     {
-      value: context.ram.value,
-      weight: 0.30,
-      available: context.ram.available,
+      value:
+        context.ram.value,
+      weight: 0.3,
+      available:
+        context.ram.available,
     },
+
     {
-      value: context.battery.value,
-      weight: 0.30,
-      available: context.battery.available,
+      value:
+        context.battery
+          .value,
+      weight: 0.3,
+      available:
+        context.battery
+          .available,
     },
   ];
 
   const availableSignals =
     signals.filter(
-      (signal) => signal.available,
+      (
+        signal,
+      ) =>
+        signal.available,
     );
 
-  if (availableSignals.length === 0) {
+  if (
+    availableSignals.length ===
+    0
+  ) {
     return 0;
   }
 
   const availableWeight =
     availableSignals.reduce(
-      (sum, signal) =>
-        sum + signal.weight,
+      (
+        sum,
+        signal,
+      ) =>
+        sum +
+        signal.weight,
       0,
     );
 
   const capability =
     availableSignals.reduce(
-      (sum, signal) =>
+      (
+        sum,
+        signal,
+      ) =>
         sum +
         signal.value *
           signal.weight,
       0,
-    ) / availableWeight;
+    ) /
+    availableWeight;
 
   const priceFactor =
     Math.min(
@@ -974,12 +1099,15 @@ function calculateValueScoreNormalized(
 
   return clamp(
     capability *
-      (0.65 + priceFactor * 0.35),
+      (
+        0.65 +
+        priceFactor *
+          0.35
+      ),
     0,
     1,
   );
 }
-
 
 // ======================================================
 // Tie Breaker
@@ -992,7 +1120,8 @@ function calculateTieBreaker(
     Math.min(
       1,
       Math.log10(
-        context.reviews + 1,
+        context.reviews +
+          1,
       ) / 5,
     );
 
@@ -1001,67 +1130,126 @@ function calculateTieBreaker(
       ? context.rating.value
       : 0;
 
-  /*
-   * Maximum contribution is intentionally tiny.
-   *
-   * It should only resolve near-identical products.
-   */
   return clamp(
-    reviewSignal * 0.0008 +
-      ratingSignal * 0.0005,
+    reviewSignal *
+        0.0008 +
+      ratingSignal *
+        0.0005,
     0,
     0.0013,
   );
 }
 
-
 // ======================================================
-// Processor
+// Processor Resolution
 // ======================================================
 
 function resolveProcessorScore(
   product: Product,
   text: string,
 ): ResolvedSignal {
-  const chipset =
-    typeof product.specs?.chipset ===
+  /*
+   * Structured/canonical processor data is authoritative.
+   *
+   * The previous implementation checked title text first,
+   * which caused generic words/specs from the title to override
+   * the actual normalized processor value.
+   */
+  const structuredProcessor =
+    typeof product.specs
+      ?.chipset ===
     "string"
       ? product.specs.chipset
-      : typeof product.specs?.processor ===
+      : typeof product.specs
+            ?.processor ===
           "string"
         ? product.specs.processor
         : "";
 
-  const source =
-    chipset ||
-    extractProcessorName(text);
+  if (
+    structuredProcessor.trim()
+      .length > 0
+  ) {
+    const score =
+      getProcessorScore(
+        structuredProcessor,
+      );
 
-  if (source) {
-    const score = getProcessorScore(source);
-    if (score > 0) {
+    if (
+      score > 0
+    ) {
       return {
-        value: normalize(score, PROCESSOR_MAX),
+        value: normalize(
+          score,
+          PROCESSOR_MAX,
+        ),
         available: true,
       };
     }
   }
 
-  const legacyScore = safeNumber(product.specs?.processorScore);
-  if (legacyScore > 0) {
+  /*
+   * Text fallback remains available for products whose
+   * structured processor field is genuinely absent.
+   */
+  const sourceProcessor =
+    extractProcessorName(
+      text,
+    );
+
+  if (
+    sourceProcessor
+  ) {
+    const score =
+      getProcessorScore(
+        sourceProcessor,
+      );
+
+    if (
+      score > 0
+    ) {
+      return {
+        value: normalize(
+          score,
+          PROCESSOR_MAX,
+        ),
+        available: true,
+      };
+    }
+  }
+
+  /*
+   * Preserve compatibility with legacy processorScore.
+   */
+  const legacyScore =
+    safeNumber(
+      product.specs
+        ?.processorScore,
+    );
+
+  if (
+    legacyScore > 0
+  ) {
     const normalizedLegacyScore =
-      legacyScore > PROCESSOR_MAX
+      legacyScore >
+        PROCESSOR_MAX
         ? legacyScore / 10
         : legacyScore;
 
     return {
-      value: normalize(normalizedLegacyScore, PROCESSOR_MAX),
+      value: normalize(
+        normalizedLegacyScore,
+        PROCESSOR_MAX,
+      ),
       available: true,
     };
   }
 
-  return { value: 0, available: false };
+  return {
+    value: 0,
+    available: false,
+  };
 }
-
 
 // ======================================================
 // Processor Scoring
@@ -1071,9 +1259,17 @@ function getProcessorScore(
   chipset: string,
 ): number {
   const normalized =
-    normalizeText(chipset)
-      .replace(/[®™]/g, "")
-      .replace(/\s+/g, " ");
+    normalizeText(
+      chipset,
+    )
+      .replace(
+        /[®™]/g,
+        "",
+      )
+      .replace(
+        /\s+/g,
+        " ",
+      );
 
   // ----------------------------------------------------
   // Snapdragon
@@ -1084,7 +1280,9 @@ function getProcessorScore(
       /snapdragon\s+(.+)/i,
     );
 
-  if (snapdragon?.[1]) {
+  if (
+    snapdragon?.[1]
+  ) {
     const model =
       snapdragon[1];
 
@@ -1093,9 +1291,19 @@ function getProcessorScore(
         /8\s+elite(?:\s+gen\s*(\d+))?/i,
       );
 
-    if (elite) {
-      const generation = safeNumber(elite[1] ?? "1");
-      return generation >= 1 ? 10 : 9.8;
+    if (
+      elite
+    ) {
+      const generation =
+        safeNumber(
+          elite[1] ??
+            "1",
+        );
+
+      return generation >=
+        1
+        ? 10
+        : 9.8;
     }
 
     const eight =
@@ -1103,62 +1311,139 @@ function getProcessorScore(
         /8\s+gen\s*(\d+)/i,
       );
 
-    if (eight) {
+    if (
+      eight
+    ) {
       const generation =
-        safeNumber(eight[1]);
+        safeNumber(
+          eight[1],
+        );
 
-      if (generation >= 5) return 10;
-      if (generation === 4) return 9.8;
-      if (generation === 3) return 9.5;
-      if (generation === 2) return 9.1;
+      if (
+        generation >= 5
+      ) {
+        return 10;
+      }
+
+      if (
+        generation === 4
+      ) {
+        return 9.8;
+      }
+
+      if (
+        generation === 3
+      ) {
+        return 9.5;
+      }
+
+      if (
+        generation === 2
+      ) {
+        return 9.1;
+      }
 
       return 8.7;
     }
 
     const sevenPlus =
       model.match(
-        /7\+\s+gen\s*(\d+)/i,
+        /7\+?\s+gen\s*(\d+)/i,
       );
 
-    if (sevenPlus) {
+    if (
+      sevenPlus
+    ) {
       const generation =
-        safeNumber(sevenPlus[1]);
+        safeNumber(
+          sevenPlus[1],
+        );
 
-      if (generation >= 4) return 9;
-      if (generation === 3) return 8.8;
-      if (generation === 2) return 8.3;
+      if (
+        generation >= 4
+      ) {
+        return 9;
+      }
+
+      if (
+        generation === 3
+      ) {
+        return 8.8;
+      }
+
+      if (
+        generation === 2
+      ) {
+        return 8.3;
+      }
 
       return 8;
     }
 
     const seven =
       model.match(
-        /7\s+gen\s*(\d+)/i,
+        /7s?\s+gen\s*(\d+)/i,
       );
 
-    if (seven) {
+    if (
+      seven
+    ) {
       const generation =
-        safeNumber(seven[1]);
+        safeNumber(
+          seven[1],
+        );
 
-      if (generation >= 4) return 8.4;
-      if (generation === 3) return 8.1;
-      if (generation === 2) return 7.7;
+      if (
+        generation >= 4
+      ) {
+        return 8.4;
+      }
+
+      if (
+        generation === 3
+      ) {
+        return 8.1;
+      }
+
+      if (
+        generation === 2
+      ) {
+        return 7.7;
+      }
 
       return 7.3;
     }
 
     const six =
       model.match(
-        /6\s+gen\s*(\d+)/i,
+        /6s?\s+gen\s*(\d+)/i,
       );
 
-    if (six) {
+    if (
+      six
+    ) {
       const generation =
-        safeNumber(six[1]);
+        safeNumber(
+          six[1],
+        );
 
-      if (generation >= 4) return 6.8;
-      if (generation === 3) return 6.4;
-      if (generation === 2) return 6;
+      if (
+        generation >= 4
+      ) {
+        return 6.8;
+      }
+
+      if (
+        generation === 3
+      ) {
+        return 6.4;
+      }
+
+      if (
+        generation === 2
+      ) {
+        return 6;
+      }
 
       return 5.5;
     }
@@ -1168,14 +1453,37 @@ function getProcessorScore(
         /\b(\d{3,4})\b/,
       );
 
-    if (numeric) {
+    if (
+      numeric
+    ) {
       const series =
-        safeNumber(numeric[1]);
+        safeNumber(
+          numeric[1],
+        );
 
-      if (series >= 800) return 9;
-      if (series >= 700) return 7.5;
-      if (series >= 600) return 5.5;
-      if (series >= 400) return 4;
+      if (
+        series >= 800
+      ) {
+        return 9;
+      }
+
+      if (
+        series >= 700
+      ) {
+        return 7.5;
+      }
+
+      if (
+        series >= 600
+      ) {
+        return 5.5;
+      }
+
+      if (
+        series >= 400
+      ) {
+        return 4;
+      }
     }
   }
 
@@ -1188,22 +1496,191 @@ function getProcessorScore(
       /dimensity\s+(\d{3,5})/i,
     );
 
-  if (dimensity) {
+  if (
+    dimensity
+  ) {
     const model =
-      safeNumber(dimensity[1]);
+      safeNumber(
+        dimensity[1],
+      );
 
-    if (model >= 9500) return 9.8;
-    if (model >= 9000) return 9.5;
-    if (model >= 8500) return 9;
-    if (model >= 8000) return 8.5;
-    if (model >= 7500) return 8;
-    if (model >= 7300) return 7.6;
-    if (model >= 7000) return 7.3;
-    if (model >= 6500) return 6.8;
-    if (model >= 6300) return 6.5;
-    if (model >= 6000) return 6.2;
-    if (model >= 5000) return 5.5;
-    if (model >= 4000) return 4.5;
+    if (
+      model >= 9500
+    ) {
+      return 9.8;
+    }
+
+    if (
+      model >= 9000
+    ) {
+      return 9.5;
+    }
+
+    if (
+      model >= 8500
+    ) {
+      return 9;
+    }
+
+    if (
+      model >= 8000
+    ) {
+      return 8.5;
+    }
+
+    if (
+      model >= 7500
+    ) {
+      return 8;
+    }
+
+    if (
+      model >= 7300
+    ) {
+      return 7.6;
+    }
+
+    if (
+      model >= 7000
+    ) {
+      return 7.3;
+    }
+
+    if (
+      model >= 6500
+    ) {
+      return 6.8;
+    }
+
+    if (
+      model >= 6300
+    ) {
+      return 6.5;
+    }
+
+    if (
+      model >= 6000
+    ) {
+      return 6.2;
+    }
+
+    if (
+      model >= 5000
+    ) {
+      return 5.5;
+    }
+
+    if (
+      model >= 4000
+    ) {
+      return 4.5;
+    }
+  }
+
+  // ----------------------------------------------------
+  // MediaTek D-Series
+  // ----------------------------------------------------
+
+  const mediatekD =
+    normalized.match(
+      /\b(?:mediatek\s+)?d(\d{3,5})\b/i,
+    );
+
+  if (
+    mediatekD
+  ) {
+    const model =
+      safeNumber(
+        mediatekD[1],
+      );
+
+    if (
+      model >= 9000
+    ) {
+      return 9.4;
+    }
+
+    if (
+      model >= 8000
+    ) {
+      return 8.7;
+    }
+
+    if (
+      model >= 7000
+    ) {
+      return 7.5;
+    }
+
+    if (
+      model >= 6000
+    ) {
+      return 6.8;
+    }
+
+    if (
+      model >= 5000
+    ) {
+      return 6;
+    }
+
+    if (
+      model >= 4000
+    ) {
+      return 5.2;
+    }
+
+    return 4.5;
+  }
+
+  // ----------------------------------------------------
+  // MediaTek Numeric
+  // ----------------------------------------------------
+
+  const mediatekNumeric =
+    normalized.match(
+      /\bmediatek\s+(\d{3,5})\b/i,
+    );
+
+  if (
+    mediatekNumeric
+  ) {
+    const model =
+      safeNumber(
+        mediatekNumeric[1],
+      );
+
+    if (
+      model >= 9000
+    ) {
+      return 9;
+    }
+
+    if (
+      model >= 8000
+    ) {
+      return 8.3;
+    }
+
+    if (
+      model >= 7000
+    ) {
+      return 7.3;
+    }
+
+    if (
+      model >= 6000
+    ) {
+      return 6.4;
+    }
+
+    if (
+      model >= 5000
+    ) {
+      return 5.5;
+    }
+
+    return 4.5;
   }
 
   // ----------------------------------------------------
@@ -1215,20 +1692,73 @@ function getProcessorScore(
       /exynos\s+(\d{3,4})/i,
     );
 
-  if (exynos) {
+  if (
+    exynos
+  ) {
     const model =
-      safeNumber(exynos[1]);
+      safeNumber(
+        exynos[1],
+      );
 
-    if (model >= 2500) return 9.4;
-    if (model >= 2400) return 9;
-    if (model >= 2300) return 8.7;
-    if (model >= 2200) return 8.5;
-    if (model >= 2100) return 8;
-    if (model >= 2000) return 7.4;
-    if (model >= 1400) return 6;
-    if (model >= 1300) return 5.7;
-    if (model >= 1200) return 5.5;
-    if (model >= 1000) return 5;
+    if (
+      model >= 2500
+    ) {
+      return 9.4;
+    }
+
+    if (
+      model >= 2400
+    ) {
+      return 9;
+    }
+
+    if (
+      model >= 2300
+    ) {
+      return 8.7;
+    }
+
+    if (
+      model >= 2200
+    ) {
+      return 8.5;
+    }
+
+    if (
+      model >= 2100
+    ) {
+      return 8;
+    }
+
+    if (
+      model >= 2000
+    ) {
+      return 7.4;
+    }
+
+    if (
+      model >= 1400
+    ) {
+      return 6;
+    }
+
+    if (
+      model >= 1300
+    ) {
+      return 5.7;
+    }
+
+    if (
+      model >= 1200
+    ) {
+      return 5.5;
+    }
+
+    if (
+      model >= 1000
+    ) {
+      return 5;
+    }
   }
 
   // ----------------------------------------------------
@@ -1240,28 +1770,82 @@ function getProcessorScore(
       /helio\s+([a-z])?(\d+)/i,
     );
 
-  if (helio) {
+  if (
+    helio
+  ) {
     const prefix =
       normalizeText(
-        helio[1] ?? "",
+        helio[1] ??
+          "",
       );
 
     const model =
-      safeNumber(helio[2]);
+      safeNumber(
+        helio[2],
+      );
 
-    if (prefix === "g") {
-      if (model >= 200) return 7;
-      if (model >= 100) return 6.5;
-      if (model >= 90) return 5.8;
-      if (model >= 80) return 5.3;
-      if (model >= 70) return 5;
-      if (model >= 60) return 4.7;
-      if (model >= 50) return 4.4;
+    if (
+      prefix ===
+      "g"
+    ) {
+      if (
+        model >= 200
+      ) {
+        return 7;
+      }
+
+      if (
+        model >= 100
+      ) {
+        return 6.5;
+      }
+
+      if (
+        model >= 90
+      ) {
+        return 5.8;
+      }
+
+      if (
+        model >= 80
+      ) {
+        return 5.3;
+      }
+
+      if (
+        model >= 70
+      ) {
+        return 5;
+      }
+
+      if (
+        model >= 60
+      ) {
+        return 4.7;
+      }
+
+      if (
+        model >= 50
+      ) {
+        return 4.4;
+      }
     }
 
-    if (prefix === "p") {
-      if (model >= 100) return 5;
-      if (model >= 90) return 4.5;
+    if (
+      prefix ===
+      "p"
+    ) {
+      if (
+        model >= 100
+      ) {
+        return 5;
+      }
+
+      if (
+        model >= 90
+      ) {
+        return 4.5;
+      }
 
       return 4;
     }
@@ -1276,14 +1860,37 @@ function getProcessorScore(
       /tensor\s+g?(\d+)/i,
     );
 
-  if (tensor) {
+  if (
+    tensor
+  ) {
     const generation =
-      safeNumber(tensor[1]);
+      safeNumber(
+        tensor[1],
+      );
 
-    if (generation >= 5) return 9;
-    if (generation === 4) return 8.5;
-    if (generation === 3) return 8;
-    if (generation === 2) return 7.2;
+    if (
+      generation >= 5
+    ) {
+      return 9;
+    }
+
+    if (
+      generation === 4
+    ) {
+      return 8.5;
+    }
+
+    if (
+      generation === 3
+    ) {
+      return 8;
+    }
+
+    if (
+      generation === 2
+    ) {
+      return 7.2;
+    }
 
     return 6.5;
   }
@@ -1297,19 +1904,47 @@ function getProcessorScore(
       /kirin\s+(\d{3,4})/i,
     );
 
-  if (kirin) {
+  if (
+    kirin
+  ) {
     const model =
-      safeNumber(kirin[1]);
+      safeNumber(
+        kirin[1],
+      );
 
-    if (model >= 9000) return 9.2;
-    if (model >= 8000) return 8.2;
-    if (model >= 7000) return 6.8;
-    if (model >= 6000) return 5.8;
-    if (model >= 5000) return 5;
+    if (
+      model >= 9000
+    ) {
+      return 9.2;
+    }
+
+    if (
+      model >= 8000
+    ) {
+      return 8.2;
+    }
+
+    if (
+      model >= 7000
+    ) {
+      return 6.8;
+    }
+
+    if (
+      model >= 6000
+    ) {
+      return 5.8;
+    }
+
+    if (
+      model >= 5000
+    ) {
+      return 5;
+    }
   }
 
   // ----------------------------------------------------
-  // Apple A-series
+  // Apple A-Series
   // ----------------------------------------------------
 
   const apple =
@@ -1317,32 +1952,87 @@ function getProcessorScore(
       /\ba(\d+)\b/i,
     );
 
-  if (apple) {
+  if (
+    apple
+  ) {
     const generation =
-      safeNumber(apple[1]);
+      safeNumber(
+        apple[1],
+      );
 
-    if (generation >= 19) return 10;
-    if (generation === 18) return 9.8;
-    if (generation === 17) return 9.5;
-    if (generation === 16) return 9.2;
-    if (generation === 15) return 8.8;
-    if (generation === 14) return 8.4;
-    if (generation === 13) return 8;
-    if (generation === 12) return 7.6;
-    if (generation === 11) return 7.2;
-    if (generation === 10) return 6.8;
+    if (
+      generation >= 19
+    ) {
+      return 10;
+    }
+
+    if (
+      generation === 18
+    ) {
+      return 9.8;
+    }
+
+    if (
+      generation === 17
+    ) {
+      return 9.5;
+    }
+
+    if (
+      generation === 16
+    ) {
+      return 9.2;
+    }
+
+    if (
+      generation === 15
+    ) {
+      return 8.8;
+    }
+
+    if (
+      generation === 14
+    ) {
+      return 8.4;
+    }
+
+    if (
+      generation === 13
+    ) {
+      return 8;
+    }
+
+    if (
+      generation === 12
+    ) {
+      return 7.6;
+    }
+
+    if (
+      generation === 11
+    ) {
+      return 7.2;
+    }
+
+    if (
+      generation === 10
+    ) {
+      return 6.8;
+    }
   }
 
   // ----------------------------------------------------
-  // Unisoc
+  // Unisoc / Spreadtrum
   // ----------------------------------------------------
 
   const unisoc =
     normalized.match(
-      /unisoc\s+([a-z]\d+)/i,
+      /\b(?:unisoc|spreadtrum)\s+([a-z]?\d+)/i,
     );
 
-  if (unisoc) {
+  if (
+    unisoc
+  ) {
     const model =
       unisoc[1];
 
@@ -1354,17 +2044,39 @@ function getProcessorScore(
         ),
       );
 
-    if (/t\d+/i.test(model)) {
-      if (number >= 900) return 6;
-      if (number >= 800) return 5.5;
-      if (number >= 700) return 5;
-      if (number >= 600) return 4.5;
+    if (
+      /t\d+/i.test(
+        model,
+      )
+    ) {
+      if (
+        number >= 900
+      ) {
+        return 6;
+      }
+
+      if (
+        number >= 800
+      ) {
+        return 5.5;
+      }
+
+      if (
+        number >= 700
+      ) {
+        return 5;
+      }
+
+      if (
+        number >= 600
+      ) {
+        return 4.5;
+      }
     }
   }
 
   return 0;
 }
-
 
 // ======================================================
 // RAM
@@ -1374,12 +2086,20 @@ function resolveRamGb(
   product: Product,
   text: string,
 ): ResolvedSignal {
+  /*
+   * Canonical structured RAM wins over text.
+   *
+   * This is critical because the test suite and the production
+   * database both rely on normalized product.specs.
+   */
   const explicit =
     parseRamGb(
       product.specs?.ram,
     );
 
-  if (explicit > 0) {
+  if (
+    explicit > 0
+  ) {
     return {
       value: normalize(
         explicit,
@@ -1389,20 +2109,25 @@ function resolveRamGb(
     };
   }
 
-  const explicitMatch =
+  /*
+   * Explicit labelled text.
+   */
+  const labelledMatch =
     text.match(
-      /(\d+(?:\.\d+)?)\s*,?\s*gb\s*(?:ram|memory)\b/i,
+      /\b(?:ram|memory|system memory|installed memory|ram size|memory size)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*(?:gb|gib)\b/i,
     );
 
-  if (explicitMatch) {
+  if (
+    labelledMatch
+  ) {
     const value =
       safeNumber(
-        explicitMatch[1],
+        labelledMatch[1],
       );
 
     if (
-      value > 0 &&
-      value <= 256
+      value >= 1 &&
+      value <= 64
     ) {
       return {
         value: normalize(
@@ -1415,44 +2140,57 @@ function resolveRamGb(
   }
 
   /*
-   * When the product text contains both RAM and
-   * storage capacities, use the smaller capacity
-   * as RAM.
-   *
-   * Example:
-   *
-   * "8GB RAM, 256GB Storage"
-   *
-   * -> 8GB RAM
+   * 4GB+128GB
+   * 128GB+4GB
+   * 8GB/256GB
+   * 256GB/8GB
    */
-  const capacityMatches =
-    [
-      ...text.matchAll(
-        /(\d+(?:\.\d+)?)\s*,?\s*gb\b/gi,
-      ),
-    ];
+  const paired =
+    text.match(
+      /\b(\d+(?:\.\d+)?)\s*(gb|gib)\s*(?:ram\s*)?(?:\+|\/|\|)\s*(\d+(?:\.\d+)?)\s*(gb|gib|tb)\b/i,
+    );
 
   if (
-    capacityMatches.length >= 2
+    paired
   ) {
     const first =
-      safeNumber(
-        capacityMatches[0]?.[1],
+      normalizeCapacityToGb(
+        safeNumber(
+          paired[1],
+        ),
+        paired[2],
       );
 
     const second =
-      safeNumber(
-        capacityMatches[1]?.[1],
+      normalizeCapacityToGb(
+        safeNumber(
+          paired[3],
+        ),
+        paired[4],
+      );
+
+    const ram =
+      Math.min(
+        first,
+        second,
+      );
+
+    const storage =
+      Math.max(
+        first,
+        second,
       );
 
     if (
-      first > 0 &&
-      first <= 256 &&
-      second > first
+      ram >= 1 &&
+      ram <= 64 &&
+      storage >= 16 &&
+      storage <= 16384 &&
+      storage > ram
     ) {
       return {
         value: normalize(
-          first,
+          ram,
           RAM_REFERENCE_GB,
         ),
         available: true,
@@ -1460,25 +2198,122 @@ function resolveRamGb(
     }
   }
 
+  /*
+   * Amazon malformed representation:
+   *
+   * 12, GB, 256
+   */
+  const compact =
+    text.match(
+      /\b(\d{1,2})\s*,\s*gb\s*,\s*(\d{2,5})\b/i,
+    );
+
   if (
-    capacityMatches.length === 1
+    compact
   ) {
-    const value =
+    const ram =
       safeNumber(
-        capacityMatches[0]?.[1],
+        compact[1],
+      );
+
+    const storage =
+      safeNumber(
+        compact[2],
       );
 
     if (
-      value > 0 &&
-      value <= 256
+      ram >= 1 &&
+      ram <= 64 &&
+      storage >= 16 &&
+      storage > ram
     ) {
       return {
         value: normalize(
-          value,
+          ram,
           RAM_REFERENCE_GB,
         ),
         available: true,
       };
+    }
+  }
+
+  /*
+   * Adjacent capacities.
+   *
+   * A single 64GB/128GB value is never interpreted as RAM.
+   */
+  const capacities =
+    [
+      ...text.matchAll(
+        /\b(\d+(?:\.\d+)?)\s*(gb|gib|tb)\b/gi,
+      ),
+    ].map(
+      (
+        match,
+      ) => ({
+        value:
+          normalizeCapacityToGb(
+            safeNumber(
+              match[1],
+            ),
+            match[2],
+          ),
+      }),
+    );
+
+  if (
+    capacities.length >=
+    2
+  ) {
+    for (
+      let index = 0;
+      index <
+        capacities.length -
+          1;
+      index += 1
+    ) {
+      const first =
+        capacities[index];
+
+      const second =
+        capacities[
+          index + 1
+        ];
+
+      if (
+        !first ||
+        !second
+      ) {
+        continue;
+      }
+
+      const ram =
+        Math.min(
+          first.value,
+          second.value,
+        );
+
+      const storage =
+        Math.max(
+          first.value,
+          second.value,
+        );
+
+      if (
+        ram >= 1 &&
+        ram <= 64 &&
+        storage >= 16 &&
+        storage <= 16384 &&
+        storage > ram
+      ) {
+        return {
+          value: normalize(
+            ram,
+            RAM_REFERENCE_GB,
+          ),
+          available: true,
+        };
+      }
     }
   }
 
@@ -1488,25 +2323,48 @@ function resolveRamGb(
   };
 }
 
-
 // ======================================================
 // RAM Parser
 // ======================================================
+
+function normalizeCapacityToGb(
+  value: number,
+  unit: string,
+): number {
+  if (
+    !Number.isFinite(
+      value,
+    ) ||
+    value <= 0
+  ) {
+    return 0;
+  }
+
+  return unit.toLowerCase() ===
+    "tb"
+    ? value * 1024
+    : value;
+}
 
 function parseRamGb(
   value: unknown,
 ): number {
   if (
-    typeof value === "number"
+    typeof value ===
+    "number"
   ) {
-    return Number.isFinite(value) &&
-      value >= 0
+    return Number.isFinite(
+      value,
+    ) &&
+      value >= 1 &&
+      value <= 64
       ? value
       : 0;
   }
 
   if (
-    typeof value !== "string"
+    typeof value !==
+    "string"
   ) {
     return 0;
   }
@@ -1514,39 +2372,82 @@ function parseRamGb(
   const normalized =
     value
       .toLowerCase()
-      .replace(/,/g, "")
+      .replace(
+        /,/g,
+        "",
+      )
       .trim();
 
-  if (!normalized) {
+  if (
+    !normalized
+  ) {
     return 0;
   }
 
-  const plusMatch =
+  const labelled =
     normalized.match(
-      /(\d+(?:\.\d+)?)\s*gb\s*\+\s*(\d+(?:\.\d+)?)\s*gb/,
+      /\b(?:ram|memory)\s*[:=\-]?\s*(\d+(?:\.\d+)?)\s*gb\b/i,
     );
 
-  if (plusMatch) {
-    return (
+  if (
+    labelled
+  ) {
+    const ram =
       safeNumber(
-        plusMatch[1],
-      ) +
-      safeNumber(
-        plusMatch[2],
-      )
-    );
+        labelled[1],
+      );
+
+    return ram >= 1 &&
+      ram <= 64
+      ? ram
+      : 0;
   }
 
-  const match =
+  const paired =
     normalized.match(
-      /(\d+(?:\.\d+)?)\s*gb\b/,
+      /\b(\d+(?:\.\d+)?)\s*gb\s*(?:\+|\/|\|)\s*(\d+(?:\.\d+)?)\s*(gb|tb)\b/i,
     );
 
-  return match
-    ? safeNumber(match[1])
-    : safeNumber(normalized);
-}
+  if (
+    paired
+  ) {
+    const first =
+      normalizeCapacityToGb(
+        safeNumber(
+          paired[1],
+        ),
+        "GB",
+      );
 
+    const second =
+      normalizeCapacityToGb(
+        safeNumber(
+          paired[2],
+        ),
+        paired[3],
+      );
+
+    const ram =
+      Math.min(
+        first,
+        second,
+      );
+
+    const storage =
+      Math.max(
+        first,
+        second,
+      );
+
+    return ram >= 1 &&
+      ram <= 64 &&
+      storage > ram
+      ? ram
+      : 0;
+  }
+
+  return 0;
+}
 
 // ======================================================
 // Battery
@@ -1556,26 +2457,44 @@ function resolveBatteryMah(
   product: Product,
   text: string,
 ): ResolvedSignal {
+  /*
+   * Canonical structured battery wins over generic title text.
+   */
   const explicit =
     safeNumber(
-      product.specs?.battery,
+      product.specs
+        ?.battery,
     );
 
-  if (explicit > 0) {
+  if (
+    explicit >= 2000 &&
+    explicit <= 30000
+  ) {
     return {
-      value: normalizeBattery(
-        explicit,
-      ),
+      value:
+        normalizeBattery(
+          explicit,
+        ),
       available: true,
     };
   }
 
+  /*
+   * Amazon variants:
+   *
+   * 5000mAh
+   * 7000mAhA
+   * 6580mAh Si/C
+   * 6500mAhSi/C
+   */
   const match =
     text.match(
-      /(\d{3,5})\s*mAh\b/i,
+      /\b(\d{3,5})\s*mAh(?:[A-Za-z])?\b/i,
     );
 
-  if (match) {
+  if (
+    match
+  ) {
     const value =
       safeNumber(
         match[1],
@@ -1586,9 +2505,10 @@ function resolveBatteryMah(
       value <= 20000
     ) {
       return {
-        value: normalizeBattery(
-          value,
-        ),
+        value:
+          normalizeBattery(
+            value,
+          ),
         available: true,
       };
     }
@@ -1600,7 +2520,6 @@ function resolveBatteryMah(
   };
 }
 
-
 // ======================================================
 // Battery Normalization
 // ======================================================
@@ -1609,48 +2528,43 @@ function normalizeBattery(
   value: number,
 ): number {
   if (
-    !Number.isFinite(value) ||
+    !Number.isFinite(
+      value,
+    ) ||
     value <= 0
   ) {
     return 0;
   }
 
-  /*
-   * Battery is intentionally more linear than before.
-   *
-   * Old behavior compressed high-capacity batteries,
-   * which meant:
-   *
-   * 5000mAh
-   * 6000mAh
-   * 6300mAh
-   *
-   * could become frustratingly close.
-   *
-   * For a battery-focused query, a 6300mAh phone
-   * should visibly outperform a 5000mAh phone.
-   */
-  const floor = 2500;
+  const floor =
+    2500;
 
   return clamp(
-    (value - floor) /
-      (BATTERY_REFERENCE_MAH - floor),
+    (
+      value -
+      floor
+    ) /
+      (
+        BATTERY_REFERENCE_MAH -
+        floor
+      ),
     0,
     1,
   );
 }
-
 
 function denormalizeBattery(
   value: number,
 ): number {
   return (
     value *
-      (BATTERY_REFERENCE_MAH - 2500) +
+      (
+        BATTERY_REFERENCE_MAH -
+        2500
+      ) +
     2500
   );
 }
-
 
 // ======================================================
 // Camera
@@ -1660,46 +2574,69 @@ function resolveCameraMp(
   product: Product,
   text: string,
 ): ResolvedSignal {
+  /*
+   * Canonical structured camera wins over text fallback.
+   */
   const explicit =
     safeNumber(
-      product.specs?.cameraMp,
+      product.specs
+        ?.cameraMp,
     );
 
-  if (explicit > 0) {
+  if (
+    explicit >= 2 &&
+    explicit <= 500
+  ) {
     return {
-      value: normalizeCamera(
-        explicit,
-      ),
+      value:
+        normalizeCamera(
+          explicit,
+        ),
       available: true,
     };
   }
 
+  /*
+   * Support:
+   * 50MP
+   * 108 MP
+   * 200MP
+   * 200MasterPixel
+   * 64 Master Pixel
+   */
   const matches =
     [
       ...text.matchAll(
-        /(\d+(?:\.\d+)?)\s*mp\b/gi,
+        /\b(\d+(?:\.\d+)?)\s*(?:mp|megapixel|master\s*pixel)\b/gi,
       ),
     ];
 
   const values =
     matches
       .map(
-        (match) =>
+        (
+          match,
+        ) =>
           safeNumber(
             match[1],
           ),
       )
       .filter(
         (value) =>
-          value > 0 &&
+          value >= 2 &&
           value <= 500,
       );
 
-  if (values.length > 0) {
+  if (
+    values.length > 0
+  ) {
     return {
-      value: normalizeCamera(
-        Math.max(...values),
-      ),
+      value:
+        normalizeCamera(
+          Math.max(
+            ...values,
+          ),
+        ),
       available: true,
     };
   }
@@ -1710,40 +2647,43 @@ function resolveCameraMp(
   };
 }
 
+// ======================================================
+// Camera Normalization
+// ======================================================
 
 function normalizeCamera(
   value: number,
 ): number {
   if (
-    !Number.isFinite(value) ||
+    !Number.isFinite(
+      value,
+    ) ||
     value <= 0
   ) {
     return 0;
   }
 
-  /*
-   * Camera megapixels use diminishing returns.
-   *
-   * 50MP -> good
-   * 108MP -> very good
-   * 200MP -> excellent
-   *
-   * But 400MP should not automatically be worth
-   * twice a 200MP camera.
-   */
-  const floor = 8;
+  const floor =
+    8;
 
-  if (value <= floor) {
+  if (
+    value <= floor
+  ) {
     return clamp(
-      value / floor * 0.20,
+      (
+        value /
+        floor
+      ) *
+        0.2,
       0,
-      0.20,
+      0.2,
     );
   }
 
   const relative =
     Math.log1p(
-      value - floor,
+      value -
+        floor,
     ) /
     Math.log1p(
       CAMERA_REFERENCE_MP -
@@ -1751,13 +2691,13 @@ function normalizeCamera(
     );
 
   return clamp(
-    0.20 +
-      relative * 0.80,
+    0.2 +
+      relative *
+        0.8,
     0,
     1,
   );
 }
-
 
 // ======================================================
 // Rating
@@ -1767,7 +2707,9 @@ function resolveRating(
   value: unknown,
 ): ResolvedSignal {
   const rating =
-    safeNumber(value);
+    safeNumber(
+      value,
+    );
 
   if (
     rating > 0 &&
@@ -1788,7 +2730,6 @@ function resolveRating(
   };
 }
 
-
 // ======================================================
 // Generic Normalization
 // ======================================================
@@ -1798,7 +2739,9 @@ function normalize(
   reference: number,
 ): number {
   if (
-    !Number.isFinite(value) ||
+    !Number.isFinite(
+      value,
+    ) ||
     value <= 0 ||
     reference <= 0
   ) {
@@ -1806,12 +2749,12 @@ function normalize(
   }
 
   return clamp(
-    value / reference,
+    value /
+      reference,
     0,
     1,
   );
 }
-
 
 // ======================================================
 // Processor Extraction
@@ -1821,19 +2764,61 @@ function extractProcessorName(
   text: string,
 ): string {
   for (
-    const pattern of PROCESSOR_PATTERNS
+    const pattern of
+      PROCESSOR_PATTERNS
   ) {
     const match =
-      text.match(pattern);
+      text.match(
+        pattern,
+      );
 
-    if (match?.[0]) {
-      return match[0];
+    if (
+      !match?.[0]
+    ) {
+      continue;
+    }
+
+    let candidate =
+      match[0]
+        .replace(
+          /[®™]/g,
+          "",
+        )
+        .replace(
+          /\s+/g,
+          " ",
+        )
+        .trim();
+
+    candidate =
+      candidate
+        .replace(
+          /\s+\d{1,4}(?:\.\d+)?\s*(?:mp|megapixel|master\s*pixel)\b[\s\S]*$/i,
+          "",
+        )
+        .replace(
+          /\s+\d{4,5}\s*mAh(?:[A-Za-z])?\b[\s\S]*$/i,
+          "",
+        )
+        .replace(
+          /\s+\d{1,2}\s*(?:gb|gib)\s*ram\b[\s\S]*$/i,
+          "",
+        )
+        .replace(
+          /\s+\d{1,5}(?:\.\d+)?\s*(?:gb|gib|tb)\s*(?:storage|rom)\b[\s\S]*$/i,
+          "",
+        )
+        .trim();
+
+    if (
+      candidate
+    ) {
+      return candidate;
     }
   }
 
   return "";
 }
-
 
 // ======================================================
 // Searchable Product Text
@@ -1844,13 +2829,27 @@ function buildSearchableText(
 ): string {
   return [
     product.name,
-    product.description,
-    ...(product.highlights ?? []),
-    ...(product.tags ?? []),
 
-    typeof product.specs?.chipset ===
+    product.description,
+
+    ...(product.highlights ??
+      []),
+
+    ...(product.tags ??
+      []),
+
+    typeof product.specs
+      ?.chipset ===
     "string"
-      ? product.specs.chipset
+      ? product.specs
+          .chipset
+      : "",
+
+    typeof product.specs
+      ?.processor ===
+    "string"
+      ? product.specs
+          .processor
       : "",
   ]
     .filter(
@@ -1873,7 +2872,6 @@ function buildSearchableText(
     .trim();
 }
 
-
 // ======================================================
 // Intent Normalization
 // ======================================================
@@ -1884,7 +2882,9 @@ function normalizeIntent(
     | WeightedIntent[],
 ): WeightedIntent[] {
   if (
-    !Array.isArray(intent) ||
+    !Array.isArray(
+      intent,
+    ) ||
     intent.length === 0
   ) {
     return [
@@ -1910,7 +2910,10 @@ function normalizeIntent(
         ),
       ];
 
-    if (unique.length === 0) {
+    if (
+      unique.length ===
+      0
+    ) {
       return [
         {
           type: "balanced",
@@ -1920,10 +2923,13 @@ function normalizeIntent(
     }
 
     const weight =
-      1 / unique.length;
+      1 /
+      unique.length;
 
     return unique.map(
-      (type) => ({
+      (
+        type,
+      ) => ({
         type,
         weight,
       }),
@@ -1959,7 +2965,8 @@ function normalizeIntent(
         merged.get(
           item.type,
         ) ?? 0
-      ) + item.weight,
+      ) +
+        item.weight,
     );
   }
 
@@ -1970,11 +2977,14 @@ function normalizeIntent(
       (
         sum,
         value,
-      ) => sum + value,
+      ) =>
+        sum + value,
       0,
     );
 
-  if (total <= 0) {
+  if (
+    total <= 0
+  ) {
     return [
       {
         type: "balanced",
@@ -1992,11 +3002,11 @@ function normalizeIntent(
     ]) => ({
       type,
       weight:
-        weight / total,
+        weight /
+        total,
     }),
   );
 }
-
 
 // ======================================================
 // Intent Type Guard
@@ -2006,13 +3016,16 @@ function isIntentType(
   value: unknown,
 ): value is IntentType {
   return (
-    value === "gaming" ||
-    value === "camera" ||
-    value === "battery" ||
-    value === "balanced"
+    value ===
+      "gaming" ||
+    value ===
+      "camera" ||
+    value ===
+      "battery" ||
+    value ===
+      "balanced"
   );
 }
-
 
 // ======================================================
 // Tags
@@ -2022,7 +3035,9 @@ function normalizeTags(
   values: unknown,
 ): string[] {
   if (
-    !Array.isArray(values)
+    !Array.isArray(
+      values,
+    )
   ) {
     return [];
   }
@@ -2044,7 +3059,6 @@ function normalizeTags(
     ),
   ];
 }
-
 
 // ======================================================
 // Text Normalization
@@ -2068,7 +3082,6 @@ function normalizeText(
       " ",
     );
 }
-
 
 // ======================================================
 // Safe Number
@@ -2103,12 +3116,16 @@ function safeNumber(
         "",
       );
 
-  if (!normalized) {
+  if (
+    !normalized
+  ) {
     return 0;
   }
 
   const direct =
-    Number(normalized);
+    Number(
+      normalized,
+    );
 
   if (
     Number.isFinite(
@@ -2123,12 +3140,16 @@ function safeNumber(
       /[-+]?\d+(?:\.\d+)?/,
     );
 
-  if (!match?.[0]) {
+  if (
+    !match?.[0]
+  ) {
     return 0;
   }
 
   const parsed =
-    Number(match[0]);
+    Number(
+      match[0],
+    );
 
   return Number.isFinite(
     parsed,
@@ -2136,7 +3157,6 @@ function safeNumber(
     ? parsed
     : 0;
 }
-
 
 // ======================================================
 // Percentage
@@ -2154,7 +3174,6 @@ function toPercentage(
   );
 }
 
-
 // ======================================================
 // Clamp
 // ======================================================
@@ -2165,7 +3184,9 @@ function clamp(
   max: number,
 ): number {
   if (
-    !Number.isFinite(value)
+    !Number.isFinite(
+      value,
+    )
   ) {
     return min;
   }

@@ -1,75 +1,175 @@
+import Link from "next/link"
+import { ArrowUpRight, Sparkles } from "lucide-react"
+
 export default function Footer() {
   return (
-    <footer className="w-full bg-[#1c2725] text-white mt-24">
-      <div className="max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-4 gap-10">
+    <footer className="w-full bg-[#111217] text-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Main footer */}
+        <div className="grid gap-14 py-16 sm:py-20 lg:grid-cols-[1.15fr_0.85fr_0.85fr_1.1fr] lg:gap-12 lg:py-24">
+          {/* Brand */}
+          <div className="max-w-md">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.04em] text-white transition-opacity hover:opacity-75"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#5b5ce2]">
+                <span className="h-2 w-2 rounded-full bg-white" />
+              </span>
 
-        {/* BRAND */}
-        <div>
-          <h2 className="text-xl font-semibold tracking-widest mb-4">
-            SHOPIO
-          </h2>
-          <p className="text-sm text-gray-300 leading-relaxed">
-            AI-powered shopping assistant that helps you pick the best product
-            instead of wasting hours comparing.
-          </p>
-        </div>
+              Shopio
+            </Link>
 
-        {/* PRODUCT */}
-        <div>
-          <h3 className="text-sm font-semibold text-yellow-400 mb-4">
-            PRODUCT
-          </h3>
-          <ul className="space-y-2 text-sm text-gray-300">
-            <li><a href="#">Search</a></li>
-            <li><a href="#">Recommendations</a></li>
-            <li><a href="#">AI Engine</a></li>
-          </ul>
-        </div>
+            <p className="mt-6 max-w-sm text-sm leading-7 text-white/50 sm:text-base">
+              AI-powered product intelligence that helps you spend less time
+              comparing and more time making the right decision.
+            </p>
 
-        {/* COMPANY */}
-        <div>
-          <h3 className="text-sm font-semibold text-yellow-400 mb-4">
-            COMPANY
-          </h3>
-          <ul className="space-y-2 text-sm text-gray-300">
-            <li><a href="#">About</a></li>
-            <li><a href="#">Contact us</a></li>
-            <li><a href="#">Careers</a></li>
-          </ul>
-        </div>
+            <div className="mt-7 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-white/55">
+              <Sparkles
+                size={13}
+                className="text-indigo-300"
+                aria-hidden="true"
+              />
+              Search less. Decide better.
+            </div>
+          </div>
 
-        {/* NEWSLETTER */}
-        <div>
-          <h3 className="text-sm font-semibold text-yellow-400 mb-4">
-            NEWSLETTER
-          </h3>
-          <p className="text-sm text-gray-300 mb-3">
-            Get product updates & AI insights.
-          </p>
+          {/* Product */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+              Product
+            </h3>
 
-          <div className="flex">
-            <input
-              type="email"
-              placeholder="Your email"
-              className="w-full px-3 py-2 text-sm rounded-l bg-white text-black outline-none"
-            />
-            <button className="bg-yellow-500 px-4 py-2 text-sm text-black font-medium rounded-r">
-              Join
-            </button>
+            <ul className="mt-6 space-y-3.5 text-sm text-white/55">
+              <li>
+                <a
+                  href="#"
+                  className="transition-colors hover:text-white"
+                >
+                  Search
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="#"
+                  className="transition-colors hover:text-white"
+                >
+                  Recommendations
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="#"
+                  className="transition-colors hover:text-white"
+                >
+                  AI Engine
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+              Company
+            </h3>
+
+            <ul className="mt-6 space-y-3.5 text-sm text-white/55">
+              <li>
+                <a
+                  href="#"
+                  className="transition-colors hover:text-white"
+                >
+                  About
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="#"
+                  className="transition-colors hover:text-white"
+                >
+                  Contact us
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="#"
+                  className="transition-colors hover:text-white"
+                >
+                  Careers
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Newsletter */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+              Stay in the loop
+            </h3>
+
+            <p className="mt-6 max-w-sm text-sm leading-6 text-white/50">
+              Get product updates, decision-making insights, and new Shopio
+              features.
+            </p>
+
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="email"
+                  placeholder="Your email"
+                  aria-label="Email address"
+                  className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30"
+                />
+
+                <button
+                  type="button"
+                  className="group inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-[#171717] transition-all duration-200 hover:bg-[#f1f1f3]"
+                >
+                  Join
+                  <ArrowUpRight
+                    size={14}
+                    className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    aria-hidden="true"
+                  />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-      </div>
+        {/* Bottom bar */}
+        <div className="flex flex-col gap-4 border-t border-white/10 py-6 text-xs text-white/35 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} Shopio. All rights reserved.
+          </p>
 
-      {/* BOTTOM BAR */}
-      <div className="border-t border-white/10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between text-sm text-gray-300">
-          <p>© {new Date().getFullYear()} Shopio. All rights reserved.</p>
+          <div className="flex flex-wrap items-center gap-5">
+            <a
+              href="#"
+              className="transition-colors hover:text-white/70"
+            >
+              Privacy
+            </a>
 
-          <div className="flex gap-6 mt-3 md:mt-0">
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Twitter</a>
+            <a
+              href="#"
+              className="transition-colors hover:text-white/70"
+            >
+              Terms
+            </a>
+
+            <a
+              href="#"
+              className="transition-colors hover:text-white/70"
+            >
+              Twitter
+            </a>
           </div>
         </div>
       </div>

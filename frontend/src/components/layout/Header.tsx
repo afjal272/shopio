@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Search, Heart, X } from "lucide-react"
+import { Search, Heart, X, ArrowRight } from "lucide-react"
 
 export default function Header() {
   const [query, setQuery] = useState("")
@@ -15,77 +15,93 @@ export default function Header() {
     if (!query.trim()) return
 
     router.push(`/search?q=${encodeURIComponent(query)}`)
-
     setOpen(false)
   }
 
   return (
-    <header className="w-full bg-white/95 backdrop-blur sticky top-0 z-50 border-b border-gray-100 md:border-none">
-      <div className="max-w-6xl mx-auto px-3 md:px-6 py-3 md:py-4 flex items-center justify-between">
-
+    <header className="sticky top-0 z-50 w-full border-b border-[#eceef2] bg-white/85 backdrop-blur-xl">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link
           href="/"
-          className="text-lg md:text-xl font-bold tracking-tight"
+          className="shrink-0 text-[21px] font-semibold tracking-[-0.04em] text-[#262626] transition-opacity hover:opacity-75"
         >
           Shopio
         </Link>
 
-        {/* Nav */}
-        <nav className="hidden md:flex items-center gap-6 text-sm text-gray-600">
-          <a href="#" className="hover:text-black transition">
+        {/* Center Navigation */}
+        <nav className="hidden items-center gap-8 md:flex">
+          <a
+            href="#features"
+            className="text-sm font-medium text-[#69707b] transition-colors duration-200 hover:text-[#262626]"
+          >
             Features
           </a>
 
-          <a href="#" className="hover:text-black transition">
+          <a
+            href="#how-it-works"
+            className="text-sm font-medium text-[#69707b] transition-colors duration-200 hover:text-[#262626]"
+          >
             How it works
           </a>
 
-          <a href="#" className="hover:text-black transition">
-            Contact
+          <a
+            href="#trust"
+            className="text-sm font-medium text-[#69707b] transition-colors duration-200 hover:text-[#262626]"
+          >
+            Why Shopio
           </a>
         </nav>
 
         {/* Right Side */}
-        <div className="flex items-center gap-1 md:gap-3">
-
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           {/* Search */}
           <div className="flex items-center">
             {open ? (
-              <div className="flex items-center border rounded-lg overflow-hidden">
-
+              <div className="flex h-10 items-center overflow-hidden rounded-xl border border-[#dfe2e8] bg-white shadow-[0_6px_20px_rgba(15,23,42,0.06)]">
                 <input
                   autoFocus
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search products..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && handleSearch()
-                  }
-                  className="px-3 py-1.5 text-sm w-24 md:w-40 focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch()
+                    }
+                  }}
+                  className="w-36 bg-transparent px-3 text-sm text-[#262626] outline-none placeholder:text-[#9aa0aa] sm:w-48"
                 />
 
                 <button
+                  type="button"
                   onClick={handleSearch}
-                  className="bg-black text-white px-3 py-1.5 text-sm"
+                  className="flex h-full items-center gap-1.5 bg-[#171717] px-3.5 text-xs font-medium text-white transition-colors duration-200 hover:bg-black"
                 >
-                  Go
+                  Search
+                  <ArrowRight size={13} />
                 </button>
 
                 <button
-                  onClick={() => setOpen(false)}
-                  className="px-2 text-gray-500"
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    setQuery("")
+                  }}
+                  className="px-3 text-[#8a8f98] transition-colors hover:text-[#262626]"
+                  aria-label="Close search"
                 >
                   <X size={16} />
                 </button>
               </div>
             ) : (
               <button
+                type="button"
                 onClick={() => setOpen(true)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-[#555b66] transition-colors duration-200 hover:bg-[#f5f6f8] hover:text-[#262626]"
+                aria-label="Open search"
               >
-                <Search size={18} />
+                <Search size={19} strokeWidth={1.8} />
               </button>
             )}
           </div>
@@ -93,19 +109,19 @@ export default function Header() {
           {/* Wishlist */}
           <Link
             href="/wishlist"
-            className="p-2 rounded-lg hover:bg-gray-100 transition"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[#555b66] transition-colors duration-200 hover:bg-[#f5f6f8] hover:text-[#262626]"
+            aria-label="Wishlist"
           >
-            <Heart size={18} />
+            <Heart size={19} strokeWidth={1.8} />
           </Link>
 
           {/* Login */}
           <Link
             href="/login"
-            className="bg-black text-white px-3 md:px-4 py-2 rounded-lg text-sm"
+            className="ml-1 inline-flex h-10 items-center justify-center rounded-xl bg-[#171717] px-4 text-sm font-medium text-white transition-all duration-200 hover:bg-black hover:shadow-[0_6px_18px_rgba(15,23,42,0.12)]"
           >
             Login
           </Link>
-
         </div>
       </div>
     </header>

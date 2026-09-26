@@ -56,27 +56,224 @@ type Diagnostic = {
 };
 
 // ======================================================
-// Field Patterns
+// Source Evidence Patterns
+// ======================================================
+//
+// These patterns intentionally look for USABLE specification
+// evidence, not generic words.
+//
+// Example:
+//   "Long Battery Life"       -> absent
+//   "7000mAhA"                -> failed if mapper misses it
+//   "Triple Camera"           -> absent
+//   "200MPCamera"             -> failed if mapper misses it
+//   "Powerful Snapdragon"     -> absent
+//   "Snapdragon 8 Gen 5"      -> failed if mapper misses it
+//
+// This prevents the validator from treating vague marketing
+// language as an extraction failure.
 // ======================================================
 
-const fieldPatterns: Record<
+const fieldEvidencePatterns: Record<
   Field,
-  RegExp
+  readonly RegExp[]
 > = {
-  ram:
-    /\b(?:ram|memory|\d{1,2}\s*(?:gb|gib)\s*(?:ram|memory)|\d{1,2}\s*,\s*gb)\b/i,
+  ram: [
+    /*
+     * Explicit RAM label:
+     * RAM: 8GB
+     * Memory: 12GB
+     * System Memory: 16GB
+     */
+    /\b(?:ram|memory|system\s+memory|installed\s+memory|ram\s+size|memory\s+size)\s*[:=\-]?\s*\d{1,2}(?:\.\d+)?\s*(?:gb|gib)\b/i,
 
-  storage:
-    /\b(?:storage|rom|internal memory|\d{1,5}\s*(?:gb|gib|tb)\s*(?:storage|rom)?)\b/i,
+    /*
+     * Value before label:
+     * 8GB RAM
+     * 12GB Memory
+     * 16GB Unified Memory
+     */
+    /\b\d{1,2}(?:\.\d+)?\s*(?:gb|gib)\s*(?:ram|memory|unified\s+memory)\b/i,
 
-  battery:
-    /\b(?:battery|\d{4,5}\s*(?:mAh|milliamp))/i,
+    /*
+     * Compact memory/storage:
+     * 6+128GB
+     * 8/256GB
+     */
+    /\b\d{1,2}\s*(?:\+|\/|\|)\s*\d{2,5}(?:\.\d+)?\s*(?:gb|gib|tb)\b/i,
 
-  processor:
-    /\b(?:processor|cpu|chipset|soc|snapdragon|dimensity|helio|exynos|tensor|bionic|kirin|unisoc|spreadtrum|mediatek|apple\s+a\d+|octa[- ]?core|hexa[- ]?core|quad[- ]?core|deca[- ]?core|dual[- ]?core)\b/i,
+    /*
+     * Explicit two-capacity compact notation:
+     * 8GB+128GB
+     * 128GB+8GB
+     */
+    /\b\d{1,5}(?:\.\d+)?\s*(?:gb|gib|tb)\s*(?:\+|\/|\|)\s*\d{1,5}(?:\.\d+)?\s*(?:gb|gib|tb)\b/i,
 
-  camera:
-    /\b(?:camera|selfie|rear|front|\d{1,4}\s*(?:MP|megapixel))\b/i,
+    /*
+     * Amazon-style:
+     * 12, GB, 256
+     */
+    /\b\d{1,2}\s*,\s*gb\s*,\s*\d{2,5}\b/i,
+  ],
+
+  storage: [
+    /*
+     * Explicit storage labels:
+     * Storage: 256GB
+     * ROM: 128GB
+     * Internal Storage: 1TB
+     */
+    /\b(?:storage|rom|internal\s+memory|internal\s+storage|built[\s-]?in\s+storage|storage\s+capacity|memory\s+capacity)\s*[:=\-]?\s*\d{1,5}(?:\.\d+)?\s*(?:gb|gib|tb)\b/i,
+
+    /*
+     * Value before storage label:
+     * 256GB Storage
+     * 128GB ROM
+     * 1TB Internal Storage
+     */
+    /\b\d{1,5}(?:\.\d+)?\s*(?:gb|gib|tb)\s*(?:storage|rom|internal\s+storage|internal\s+memory)\b/i,
+
+    /*
+     * RAM + Storage:
+     * 8GB RAM 256GB
+     * 8GB RAM 256GB Storage
+     */
+    /\b\d{1,2}(?:\.\d+)?\s*(?:gb|gib)\s+ram\s+(\d{1,5}(?:\.\d+)?)\s*(?:gb|gib|tb)\b/i,
+
+    /*
+     * Compact:
+     * 8+256GB
+     * 8/256GB
+     */
+    /\b\d{1,2}\s*(?:\+|\/|\|)\s*\d{2,5}(?:\.\d+)?\s*(?:gb|gib|tb)\b/i,
+
+    /*
+     * Explicit dual-capacity notation:
+     * 8GB+256GB
+     * 256GB+8GB
+     */
+    /\b\d{1,5}(?:\.\d+)?\s*(?:gb|gib|tb)\s*(?:\+|\/|\|)\s*\d{1,5}(?:\.\d+)?\s*(?:gb|gib|tb)\b/i,
+
+    /*
+     * Standalone standard storage sizes.
+     *
+     * Restricted to real storage capacities so that
+     * "8GB RAM" is not incorrectly counted as storage evidence.
+     */
+    /\b(?:16|32|64|128|256|512|1024|2048|4096|8192|16384)\s*(?:gb|gib|tb)\b/i,
+  ],
+
+  battery: [
+    /*
+     * Explicit:
+     * Battery: 5000mAh
+     * Battery Capacity: 7000mAh
+     * Rated Capacity: 6580mAh
+     */
+    /\b(?:battery|battery\s+capacity|battery\s+size|rated\s+capacity)\s*[:=\-]?\s*\d{1,2}(?:,\d{3}){1,2}|\b(?:battery|battery\s+capacity|battery\s+size|rated\s+capacity)\s*[:=\-]?\s*\d{4,5}\s*(?:mah|milliamp(?:-?hours?))\b/i,
+
+    /*
+     * Standalone:
+     * 5000mAh
+     * 7000mAhA
+     * 6580mAhSi/C
+     */
+    /\b\d{1,2}(?:,\d{3}){1,2}\s*(?:mah|milliamp(?:-?hours?))(?:[a-z\/\s-]*)?/i,
+
+    /\b\d{4,5}\s*(?:mah|milliamp(?:-?hours?))(?:[a-z\/\s-]*)?/i,
+  ],
+
+  processor: [
+    /*
+     * Qualcomm Snapdragon:
+     * Snapdragon 8 Gen 3
+     * Snapdragon 8 Elite
+     * Snapdragon 6s Gen 4
+     * Snapdragon 7+ Gen 3
+     */
+    /\bsnapdragon\s+\d+[a-z0-9+.-]*(?:\s+gen\s*\d+)?(?:\s+(?:elite|pro|plus|ultra|prime))?(?:\s+for\s+[a-z]+)?\b/i,
+
+    /*
+     * Qualcomm shorthand:
+     * SD4 Gen2
+     */
+    /\bsd\d+\s*gen\s*\d+\b/i,
+
+    /*
+     * Snapdragon-style shorthand without the brand:
+     * 6s Gen 4
+     * 6s Gen 3
+     */
+    /\b\d+s\s+gen\s+\d+\b/i,
+
+    /*
+     * MediaTek Dimensity:
+     */
+    /\bdimensity\s+\d+[a-z0-9+.-]*(?:\s+(?:ultra|max|pro|plus|apex|extreme))?(?:\s+for\s+(?:gaming|mobile))?\b/i,
+
+    /*
+     * MediaTek D-series:
+     * MediaTek D8400 MAX
+     * MediaTek D8300
+     */
+    /\bmediatek\s+d\d+[a-z0-9+.-]*(?:\s+(?:max|ultra|pro|plus|apex|extreme))?\b/i,
+
+    /*
+     * MediaTek numeric:
+     * MediaTek 7300-Max
+     */
+    /\bmediatek\s+\d+[a-z0-9+.-]*(?:[-\s](?:max|ultra|pro|plus|apex|extreme))?\b/i,
+
+    /*
+     * Helio:
+     */
+    /\b(?:mediatek\s+)?helio\s+[a-z]?\d+[a-z0-9+.-]*\b/i,
+
+    /*
+     * Samsung Exynos:
+     */
+    /\bexynos\s+\d+[a-z0-9+.-]*\b/i,
+
+    /*
+     * Google Tensor:
+     */
+    /\btensor\s+g\d+(?:\s+(?:pro|tensor))?\b/i,
+
+    /*
+     * Apple A-series:
+     * A19 Pro Chip
+     * Apple A19 Pro
+     */
+    /\b(?:apple\s+)?a\d+(?:\s+(?:bionic|pro|fusion))?\s+(?:chip|processor)\b/i,
+
+    /\bapple\s+a\d+(?:\s+(?:bionic|pro|fusion))?\b/i,
+
+    /*
+     * Huawei Kirin:
+     */
+    /\bkirin\s+\d+[a-z0-9+.-]*\b/i,
+
+    /*
+     * Unisoc / Spreadtrum:
+     */
+    /\b(?:unisoc|spreadtrum)\s+[a-z0-9-]+\b/i,
+
+    /*
+     * Generic processor model explicitly named:
+     * Processor 7 Gen 3
+     */
+    /\bprocessor\s*[:=\-]?\s*(?:\d+[a-z0-9+.-]*|[a-z]+\d+[a-z0-9+.-]*)\b/i,
+  ],
+
+  camera: [
+    /*
+     * Explicit megapixel values:
+     * 50MP
+     * 200MP
+     * 12.5MP
+     */
+    /\b\d{1,4}(?:\.\d+)?\s*(?:mp|megapixel|master\s*pixel)(?:\b|(?=[a-z]))/i,
+  ],
 };
 
 // ======================================================
@@ -86,22 +283,26 @@ const fieldPatterns: Record<
 function hasValue(
   value: unknown,
 ): boolean {
-  return (
-    (
-      typeof value ===
-        "number" &&
-      Number.isFinite(
-        value,
-      ) &&
+  if (
+    typeof value ===
+      "number"
+  ) {
+    return (
+      Number.isFinite(value) &&
       value > 0
-    ) ||
-    (
-      typeof value ===
-        "string" &&
+    );
+  }
+
+  if (
+    typeof value ===
+      "string"
+  ) {
+    return (
       value.trim().length > 0
-    ) ||
-    value === true
-  );
+    );
+  }
+
+  return value === true;
 }
 
 function sourceText(
@@ -114,9 +315,13 @@ function sourceText(
     ...product.highlights,
   ]
     .filter(
-      (value) =>
+      (
+        value,
+      ) =>
+        typeof value ===
+          "string" &&
         value.trim().length >
-        0,
+          0,
     )
     .join(" | ");
 }
@@ -153,6 +358,18 @@ function fieldValue(
   }
 }
 
+function hasSourceEvidence(
+  field: Field,
+  text: string,
+): boolean {
+  return fieldEvidencePatterns[
+    field
+  ].some(
+    (pattern) =>
+      pattern.test(text),
+  );
+}
+
 function classify(
   field: Field,
   product: Product,
@@ -161,6 +378,10 @@ function classify(
     unknown
   >,
 ): Status {
+  /*
+   * First priority:
+   * canonical normalized extraction succeeded.
+   */
   if (
     hasValue(
       fieldValue(
@@ -172,13 +393,27 @@ function classify(
     return "extracted";
   }
 
-  return fieldPatterns[
-    field
-  ].test(
-    sourceText(product),
-  )
-    ? "failed"
-    : "absent";
+  /*
+   * Second priority:
+   * source contains enough concrete evidence that the
+   * canonical extractor should have produced a value.
+   *
+   * This is a genuine extraction failure.
+   */
+  if (
+    hasSourceEvidence(
+      field,
+      sourceText(product),
+    )
+  ) {
+    return "failed";
+  }
+
+  /*
+   * No concrete specification evidence exists in the
+   * persisted source fields.
+   */
+  return "absent";
 }
 
 function percentage(
@@ -218,10 +453,16 @@ function formatDiagnosticValue(
   value: unknown,
 ): string {
   try {
-    return JSON.stringify(
-      value,
-      null,
-      2,
+    const serialized =
+      JSON.stringify(
+        value,
+        null,
+        2,
+      );
+
+    return (
+      serialized ??
+      String(value)
     );
   } catch {
     return String(value);
@@ -275,17 +516,26 @@ async function main(): Promise<void> {
     camera: [],
   };
 
+  /*
+   * Completeness is calculated from canonical extraction,
+   * not the existing DB values.
+   *
+   * This is important because legacy/stale DB values must
+   * never make the normalized source appear complete.
+   */
   let complete = 0;
 
   for (
     const product of products
   ) {
     /*
-     * Validate against the authoritative textual source.
+     * IMPORTANT:
      *
-     * Existing DB specs are deliberately NOT passed into the
-     * normalization step. Otherwise stale values could hide
-     * extraction failures.
+     * Existing DB specs are intentionally NOT supplied to
+     * normalizeProductSpecs().
+     *
+     * This validates what the canonical extractor can recover
+     * from the persisted source fields alone.
      */
     const extracted =
       normalizeProductSpecs({
@@ -355,23 +605,46 @@ async function main(): Promise<void> {
       }
     }
 
+    /*
+     * A product is considered to have complete core
+     * specifications only when ALL five canonical fields
+     * were extracted from the source:
+     *
+     * RAM
+     * Storage
+     * Battery
+     * Processor
+     * Camera
+     */
     if (
       hasValue(
         fieldValue(
           "ram",
-          current,
+          extracted,
+        ),
+      ) &&
+      hasValue(
+        fieldValue(
+          "storage",
+          extracted,
         ),
       ) &&
       hasValue(
         fieldValue(
           "battery",
-          current,
+          extracted,
         ),
       ) &&
       hasValue(
         fieldValue(
           "processor",
-          current,
+          extracted,
+        ),
+      ) &&
+      hasValue(
+        fieldValue(
+          "camera",
+          extracted,
         ),
       )
     ) {
@@ -519,7 +792,8 @@ function printFailureDiagnostics(
       samples[field];
 
     if (
-      entries.length === 0
+      entries.length ===
+      0
     ) {
       continue;
     }
@@ -539,7 +813,7 @@ function printFailureDiagnostics(
     );
 
     console.log(
-      `Showing up to ${FAILURE_SAMPLE_LIMIT} source-present but extraction-failed products.`,
+      `Showing up to ${FAILURE_SAMPLE_LIMIT} products where the persisted source contains concrete ${field} evidence but canonical extraction returned no value.`,
     );
 
     for (
@@ -615,8 +889,7 @@ main()
           : error,
       );
 
-      process.exitCode =
-        1;
+      process.exitCode = 1;
     },
   )
   .finally(
