@@ -36,8 +36,12 @@ const allowedOrigins = new Set(
   [
     FRONTEND_URL,
 
-    "http://localhost:3000",
+    // Production frontend
+    "https://beforechoice.in",
+    "https://www.beforechoice.in",
 
+    // Local development
+    "http://localhost:3000",
     "http://127.0.0.1:3000",
   ]
     .map(normalizeOrigin)
@@ -59,7 +63,6 @@ app.use(
       origin,
       callback
     ) => {
-
       // ----------------------------------------------
       // Non-browser / same-origin requests
       // ----------------------------------------------
@@ -184,7 +187,6 @@ app.use(
     res: Response,
     _next: NextFunction
   ) => {
-
     console.error(
       "SERVER ERROR:",
       err
@@ -253,7 +255,6 @@ app.listen(
 function normalizeOrigin(
   origin: string
 ): string | null {
-
   const normalized =
     origin.trim();
 
