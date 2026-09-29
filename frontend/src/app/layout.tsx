@@ -20,12 +20,66 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://beforechoice.in"),
+
   title: {
-    default: "BeforeChoice AI",
-    template: "%s | BeforeChoice AI",
+    default: "BeforeChoice",
+    template: "%s | BeforeChoice",
   },
+
   description:
-    "AI-powered product intelligence that helps you compare products and make better buying decisions.",
+    "BeforeChoice is an AI-powered product intelligence platform that helps you compare products and make better buying decisions.",
+
+  applicationName: "BeforeChoice",
+
+  authors: [
+    {
+      name: "BeforeChoice",
+      url: "https://beforechoice.in",
+    },
+  ],
+
+  creator: "BeforeChoice",
+  publisher: "BeforeChoice",
+
+  keywords: [
+    "BeforeChoice",
+    "AI product comparison",
+    "product intelligence",
+    "product recommendations",
+    "buying decisions",
+    "compare products",
+    "AI shopping assistant",
+  ],
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+
+  openGraph: {
+    type: "website",
+    url: "https://beforechoice.in",
+    siteName: "BeforeChoice",
+    title: "BeforeChoice",
+    description:
+      "AI-powered product intelligence that helps you compare products and make better buying decisions.",
+    locale: "en_IN",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "BeforeChoice",
+    description:
+      "AI-powered product intelligence that helps you compare products and make better buying decisions.",
+  },
 }
 
 export default function RootLayout({
@@ -56,7 +110,10 @@ export default function RootLayout({
           }}
         />
 
-        {/* Google Analytics 4 */}
+        {/* ==================================================
+            Google Analytics 4
+        ================================================== */}
+
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-Q3JQ2RWYDF"
           strategy="afterInteractive"
