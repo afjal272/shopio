@@ -46,7 +46,6 @@ export const metadata: Metadata = {
   category: "shopping",
 
   keywords: [
-    // Brand
     "BeforeChoice",
     "Before Choice",
     "BeforeChoice AI",
@@ -54,7 +53,6 @@ export const metadata: Metadata = {
     "BeforeChoice product comparison",
     "Before Choice product comparison",
 
-    // Core product discovery
     "best products",
     "best product",
     "best products to buy",
@@ -76,7 +74,6 @@ export const metadata: Metadata = {
     "AI buying assistant",
     "product intelligence",
 
-    // Phones
     "best phone",
     "best phones",
     "best smartphone",
@@ -95,7 +92,6 @@ export const metadata: Metadata = {
     "smartphone comparison",
     "mobile comparison",
 
-    // Price-based phone searches
     "best phone under 10000",
     "best phone under 15000",
     "best phone under 20000",
@@ -111,7 +107,6 @@ export const metadata: Metadata = {
     "best smartphone under 40000",
     "best smartphone under 50000",
 
-    // Gaming
     "best gaming phone",
     "best gaming phones",
     "best phone for gaming",
@@ -126,7 +121,6 @@ export const metadata: Metadata = {
     "best gaming phone under 40000",
     "best gaming phone under 50000",
 
-    // Camera
     "best camera phone",
     "best camera phones",
     "best camera smartphone",
@@ -141,7 +135,6 @@ export const metadata: Metadata = {
     "best camera phone under 30000",
     "best camera phone under 50000",
 
-    // Battery
     "best battery phone",
     "best battery phones",
     "best phone for battery life",
@@ -150,7 +143,6 @@ export const metadata: Metadata = {
     "best phone with good battery",
     "best phone with long battery life",
 
-    // Performance
     "best performance phone",
     "best performance smartphone",
     "best phone for performance",
@@ -162,7 +154,6 @@ export const metadata: Metadata = {
     "best Snapdragon phone",
     "best Android phone",
 
-    // Display
     "best AMOLED phone",
     "best AMOLED smartphone",
     "best OLED phone",
@@ -172,13 +163,11 @@ export const metadata: Metadata = {
     "best display phone",
     "best phone with good display",
 
-    // Charging / 5G
     "best fast charging phone",
     "best fast charging smartphone",
     "best 5G phone",
     "best 5G smartphone",
 
-    // Use cases
     "best phone for students",
     "best smartphone for students",
     "best phone for college students",
@@ -200,7 +189,6 @@ export const metadata: Metadata = {
     "best compact smartphone",
     "best large screen phone",
 
-    // Comparisons
     "iPhone comparison",
     "Samsung comparison",
     "Pixel comparison",
@@ -283,6 +271,17 @@ export default function RootLayout({
           toastOptions={{
             className: "font-sans",
           }}
+        />
+
+        {/* ==================================================
+            Google AdSense
+        ================================================== */}
+
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4880966813939651"
+          strategy="beforeInteractive"
+          crossOrigin="anonymous"
         />
 
         {/* ==================================================
