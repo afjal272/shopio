@@ -23,12 +23,13 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://beforechoice.in"),
 
   title: {
-    default: "BeforeChoice",
+    default:
+      "BeforeChoice | AI Product Comparison, Best Products & Buying Decisions",
     template: "%s | BeforeChoice",
   },
 
   description:
-    "BeforeChoice is an AI-powered product intelligence platform that helps you compare products and make better buying decisions.",
+    "BeforeChoice (Before Choice) is an AI-powered product intelligence platform that helps you compare products, find the best products for your needs, and make better buying decisions.",
 
   applicationName: "BeforeChoice",
 
@@ -42,15 +43,183 @@ export const metadata: Metadata = {
   creator: "BeforeChoice",
   publisher: "BeforeChoice",
 
+  category: "shopping",
+
   keywords: [
+    // Brand
     "BeforeChoice",
-    "AI product comparison",
-    "product intelligence",
-    "product recommendations",
-    "buying decisions",
+    "Before Choice",
+    "BeforeChoice AI",
+    "Before Choice AI",
+    "BeforeChoice product comparison",
+    "Before Choice product comparison",
+
+    // Core product discovery
+    "best products",
+    "best product",
+    "best products to buy",
+    "best product to buy",
+    "what should I buy",
+    "which product should I buy",
+    "what to buy",
+    "product comparison",
     "compare products",
+    "product recommendations",
+    "best product recommendations",
+    "buying guide",
+    "buying decision",
+    "buying decisions",
+    "better buying decisions",
+    "product decision engine",
+    "AI product comparison",
     "AI shopping assistant",
+    "AI buying assistant",
+    "product intelligence",
+
+    // Phones
+    "best phone",
+    "best phones",
+    "best smartphone",
+    "best smartphones",
+    "best mobile phone",
+    "best mobile",
+    "best phone in India",
+    "best phones in India",
+    "best smartphone in India",
+    "best smartphones in India",
+    "best phone to buy",
+    "best smartphone to buy",
+    "which phone should I buy",
+    "which smartphone should I buy",
+    "phone comparison",
+    "smartphone comparison",
+    "mobile comparison",
+
+    // Price-based phone searches
+    "best phone under 10000",
+    "best phone under 15000",
+    "best phone under 20000",
+    "best phone under 25000",
+    "best phone under 30000",
+    "best phone under 40000",
+    "best phone under 50000",
+    "best smartphone under 10000",
+    "best smartphone under 15000",
+    "best smartphone under 20000",
+    "best smartphone under 25000",
+    "best smartphone under 30000",
+    "best smartphone under 40000",
+    "best smartphone under 50000",
+
+    // Gaming
+    "best gaming phone",
+    "best gaming phones",
+    "best phone for gaming",
+    "best phones for gaming",
+    "best gaming smartphone",
+    "best gaming smartphone in India",
+    "best gaming phone under 10000",
+    "best gaming phone under 15000",
+    "best gaming phone under 20000",
+    "best gaming phone under 25000",
+    "best gaming phone under 30000",
+    "best gaming phone under 40000",
+    "best gaming phone under 50000",
+
+    // Camera
+    "best camera phone",
+    "best camera phones",
+    "best camera smartphone",
+    "best camera smartphones",
+    "best phone for photography",
+    "best smartphone for photography",
+    "best phone for video",
+    "best smartphone for video",
+    "best camera phone under 15000",
+    "best camera phone under 20000",
+    "best camera phone under 25000",
+    "best camera phone under 30000",
+    "best camera phone under 50000",
+
+    // Battery
+    "best battery phone",
+    "best battery phones",
+    "best phone for battery life",
+    "best smartphone for battery life",
+    "best battery smartphone",
+    "best phone with good battery",
+    "best phone with long battery life",
+
+    // Performance
+    "best performance phone",
+    "best performance smartphone",
+    "best phone for performance",
+    "best smartphone for performance",
+    "best phone for multitasking",
+    "best smartphone for multitasking",
+    "best processor phone",
+    "best processor smartphone",
+    "best Snapdragon phone",
+    "best Android phone",
+
+    // Display
+    "best AMOLED phone",
+    "best AMOLED smartphone",
+    "best OLED phone",
+    "best OLED smartphone",
+    "best 120Hz phone",
+    "best 120Hz smartphone",
+    "best display phone",
+    "best phone with good display",
+
+    // Charging / 5G
+    "best fast charging phone",
+    "best fast charging smartphone",
+    "best 5G phone",
+    "best 5G smartphone",
+
+    // Use cases
+    "best phone for students",
+    "best smartphone for students",
+    "best phone for college students",
+    "best phone for work",
+    "best smartphone for work",
+    "best phone for business",
+    "best smartphone for business",
+    "best phone for daily use",
+    "best smartphone for daily use",
+    "best phone for content creation",
+    "best smartphone for content creation",
+    "best phone for creators",
+    "best smartphone for creators",
+    "best phone for AI",
+    "best smartphone for AI",
+    "best phone for long term use",
+    "best smartphone for long term use",
+    "best compact phone",
+    "best compact smartphone",
+    "best large screen phone",
+
+    // Comparisons
+    "iPhone comparison",
+    "Samsung comparison",
+    "Pixel comparison",
+    "iPhone vs Samsung",
+    "iPhone vs Pixel",
+    "Samsung vs Pixel",
+    "phone comparison",
+    "smartphone comparison",
+    "which phone is better",
+    "which smartphone is better",
+    "which is better iPhone or Samsung",
+    "which phone should I buy",
+    "phone A vs phone B",
+    "smartphone A vs smartphone B",
   ],
+
+  alternates: {
+    canonical: "https://beforechoice.in/",
+  },
 
   robots: {
     index: true,
@@ -64,21 +233,27 @@ export const metadata: Metadata = {
     },
   },
 
+  icons: {
+    icon: "/favicon.ico",
+  },
+
   openGraph: {
     type: "website",
-    url: "https://beforechoice.in",
+    url: "https://beforechoice.in/",
     siteName: "BeforeChoice",
-    title: "BeforeChoice",
+    title:
+      "BeforeChoice | AI Product Comparison, Best Products & Buying Decisions",
     description:
-      "AI-powered product intelligence that helps you compare products and make better buying decisions.",
+      "BeforeChoice (Before Choice) helps you compare products, discover the best options for your needs, and make better buying decisions.",
     locale: "en_IN",
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "BeforeChoice",
+    title:
+      "BeforeChoice | AI Product Comparison, Best Products & Buying Decisions",
     description:
-      "AI-powered product intelligence that helps you compare products and make better buying decisions.",
+      "BeforeChoice (Before Choice) helps you compare products and find the right product for your needs.",
   },
 }
 
@@ -123,8 +298,8 @@ export default function RootLayout({
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){window.dataLayer.push(arguments);}
-            gtag('js', new Date());
 
+            gtag('js', new Date());
             gtag('config', 'G-Q3JQ2RWYDF');
           `}
         </Script>

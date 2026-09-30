@@ -1,47 +1,177 @@
+import type { Metadata } from "next"
 import type { Product } from "@/types/search"
 
-export default async function ProductPage({
-  params,
-}: {
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+
+const SITE_URL = "https://beforechoice.in"
+
+type ProductPageProps = {
   params: Promise<{ id: string }>
-}) {
-  const { id } = await params
+}
 
-  const BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
-
-  if (!id) {
-    return <div className="p-6 text-center">Invalid product ID</div>
-  }
-
-  let product: Product | null = null
-  let errorMessage: string | null = null
-
+async function getProduct(id: string): Promise<Product | null> {
   try {
     const res = await fetch(`${BASE_URL}/api/products/${id}`, {
       cache: "no-store",
     })
 
     if (!res.ok) {
-      errorMessage = "Product not found"
-    } else {
-      const json = await res.json()
-      product = json.data
+      return null
     }
-  } catch (err) {
-    console.error(err)
-    errorMessage = "Server error"
+
+    const json = await res.json()
+
+    return json.data ?? null
+  } catch (error) {
+    console.error("Failed to fetch product:", error)
+    return null
+  }
+}
+
+/* =========================================================
+   Dynamic SEO Metadata
+========================================================= */
+
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
+  const { id } = await params
+
+  if (!id) {
+    return {
+      title: "Product Not Found | BeforeChoice",
+      description: "The requested product could not be found.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
   }
 
-  if (errorMessage) {
-    return <div className="p-6 text-center">{errorMessage}</div>
-  }
+  const product = await getProduct(id)
 
   if (!product) {
-    return <div className="p-6 text-center">No product data</div>
+    return {
+      title: "Product Not Found | BeforeChoice",
+      description: "The requested product could not be found.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
   }
 
-  // ⭐ derived flags
+  const productName = product.name || "Product"
+  const price = product.price
+    ? `₹${Number(product.price).toLocaleString("en-IN")}`
+    : ""
+
+  const title = `${productName} | Price, Specs & Comparison | BeforeChoice`
+
+  const description =
+    `${productName}${price ? ` at ${price}` : ""}. ` +
+    `Compare specifications, performance, battery, rating and key features on BeforeChoice before you buy.`
+
+  const canonicalUrl = `${SITE_URL}/product/${encodeURIComponent(id)}`
+
+  const productImage =
+    product.images?.[0] || `${SITE_URL}/placeholder.png`
+
+  return {
+    title,
+
+    description,
+
+    keywords: [
+      productName,
+      `${productName} price`,
+      `${productName} specifications`,
+      `${productName} specs`,
+      `${productName} review`,
+      `${productName} comparison`,
+      `${productName} features`,
+      `${productName} battery`,
+      `${productName} performance`,
+      `buy ${productName}`,
+      `compare ${productName}`,
+      "product comparison",
+      "best product",
+      "BeforeChoice",
+      "Before Choice",
+    ],
+
+    alternates: {
+      canonical: canonicalUrl,
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
+
+    openGraph: {
+      type: "website",
+      url: canonicalUrl,
+      siteName: "BeforeChoice",
+      title,
+      description,
+      locale: "en_IN",
+      images: [
+        {
+          url: productImage,
+          alt: productName,
+        },
+      ],
+    },
+
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [productImage],
+    },
+  }
+}
+
+/* =========================================================
+   Product Page
+========================================================= */
+
+export default async function ProductPage({
+  params,
+}: ProductPageProps) {
+  const { id } = await params
+
+  if (!id) {
+    return (
+      <div className="p-6 text-center">
+        Invalid product ID
+      </div>
+    )
+  }
+
+  const product = await getProduct(id)
+
+  if (!product) {
+    return (
+      <div className="p-6 text-center">
+        Product not found
+      </div>
+    )
+  }
+
+  // ========================================================
+  // Derived values
+  // ========================================================
+
   const ram = product.specs?.ram ?? 0
   const battery = product.specs?.battery ?? 0
   const rating = product.rating ?? 0
@@ -50,31 +180,93 @@ export default async function ProductPage({
   const isStrongBattery = battery >= 4500
   const isGoodRam = ram >= 8
 
-  return (
-    <div className="max-w-6xl mx-auto p-6 grid md:grid-cols-2 gap-10">
+  const productName = product.name || "Product"
 
-      {/* IMAGE */}
-      <div className="bg-gray-100 rounded-xl p-6 flex items-center justify-center h-[550px]">
+  const productImage =
+    product.images?.[0] || `${SITE_URL}/placeholder.png`
+
+  const productUrl =
+    `${SITE_URL}/product/${encodeURIComponent(id)}`
+
+  // ========================================================
+  // Product Structured Data
+  // ========================================================
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+
+    "@id": `${productUrl}#product`,
+
+    name: productName,
+
+    url: productUrl,
+
+    description:
+      `${productName}. Compare price, specifications, ` +
+      `performance, battery and features on BeforeChoice.`,
+
+    image: [productImage],
+
+    offers: product.price
+      ? {
+          "@type": "Offer",
+          url: productUrl,
+          priceCurrency: "INR",
+          price: Number(product.price),
+          availability: "https://schema.org/InStock",
+        }
+      : undefined,
+  }
+
+  return (
+    <div className="mx-auto grid max-w-6xl gap-10 p-6 md:grid-cols-2">
+
+      {/* ==================================================
+          Product Structured Data
+      ================================================== */}
+
+      <script
+        id="beforechoice-product-structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
+      />
+
+      {/* ==================================================
+          IMAGE
+      ================================================== */}
+
+      <div className="flex h-[550px] items-center justify-center rounded-xl bg-gray-100 p-6">
         <img
-          src={product.images?.[0] || "/placeholder.png"}
-          alt={product.name}
+          src={productImage}
+          alt={`${productName} product image`}
           className="h-full w-full object-contain"
         />
       </div>
 
-      {/* DETAILS */}
+      {/* ==================================================
+          DETAILS
+      ================================================== */}
+
       <div>
 
         {/* TITLE */}
-        <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+
+        <h1 className="mb-2 text-3xl font-bold">
+          {productName}
+        </h1>
 
         {/* PRICE */}
-        <p className="text-2xl font-semibold text-green-600 mb-3">
-          ₹{product.price}
+
+        <p className="mb-3 text-2xl font-semibold text-green-600">
+          ₹{Number(product.price || 0).toLocaleString("en-IN")}
         </p>
 
         {/* RATING */}
-        <div className="flex items-center gap-2 mb-4">
+
+        <div className="mb-4 flex items-center gap-2">
           <div className="flex">
             {Array.from({ length: 5 }).map((_, i) => (
               <span key={i}>
@@ -82,54 +274,107 @@ export default async function ProductPage({
               </span>
             ))}
           </div>
+
           <span className="text-sm text-gray-600">
             ({rating || "N/A"})
           </span>
         </div>
 
         {/* SPECS */}
-        <div className="border rounded-xl p-4 mb-6 space-y-2 text-sm">
-          <p>⚡ RAM: {ram || "N/A"} GB</p>
-          <p>🔋 Battery: {battery || "N/A"} mAh</p>
-          <p>🚀 Performance: {product.specs?.processorScore ?? "N/A"}</p>
-          <p>⭐ Rating: {rating || "N/A"}</p>
+
+        <div className="mb-6 space-y-2 rounded-xl border p-4 text-sm">
+          <p>
+            ⚡ RAM: {ram || "N/A"} GB
+          </p>
+
+          <p>
+            🔋 Battery: {battery || "N/A"} mAh
+          </p>
+
+          <p>
+            🚀 Performance:{" "}
+            {product.specs?.processorScore ?? "N/A"}
+          </p>
+
+          <p>
+            ⭐ Rating: {rating || "N/A"}
+          </p>
         </div>
 
         {/* WHY GOOD */}
+
         <div className="mb-6">
-          <h2 className="font-semibold mb-2">Why it’s good</h2>
-          <ul className="text-sm space-y-1 text-green-600">
-            {isHighRating && <li>✔ Trusted by users (high rating)</li>}
-            {isStrongBattery && <li>✔ Long battery backup</li>}
-            {isGoodRam && <li>✔ Smooth multitasking</li>}
+          <h2 className="mb-2 font-semibold">
+            Why it’s good
+          </h2>
+
+          <ul className="space-y-1 text-sm text-green-600">
+            {isHighRating && (
+              <li>
+                ✔ Trusted by users (high rating)
+              </li>
+            )}
+
+            {isStrongBattery && (
+              <li>
+                ✔ Long battery backup
+              </li>
+            )}
+
+            {isGoodRam && (
+              <li>
+                ✔ Smooth multitasking
+              </li>
+            )}
           </ul>
         </div>
 
         {/* WEAKNESSES */}
+
         <div className="mb-6">
-          <h2 className="font-semibold mb-2">Things to consider</h2>
-          <ul className="text-sm space-y-1 text-red-500">
+          <h2 className="mb-2 font-semibold">
+            Things to consider
+          </h2>
 
-            {ram < 8 && <li>⚠ Not ideal for heavy multitasking</li>}
-            {battery < 4500 && <li>⚠ Battery not the best</li>}
-            {rating < 4 && <li>⚠ Average user rating</li>}
+          <ul className="space-y-1 text-sm text-red-500">
+            {ram < 8 && (
+              <li>
+                ⚠ Not ideal for heavy multitasking
+              </li>
+            )}
 
-            {/* SAFE fallback */}
+            {battery < 4500 && (
+              <li>
+                ⚠ Battery may not be ideal for heavy use
+              </li>
+            )}
+
+            {rating < 4 && (
+              <li>
+                ⚠ Average user rating
+              </li>
+            )}
+
             {!(
               ram < 8 ||
               battery < 4500 ||
               rating < 4
             ) && (
-              <li>⚠ No major weaknesses, but depends on your use case</li>
+              <li>
+                ⚠ No major weaknesses, but suitability depends on your use case
+              </li>
             )}
-
           </ul>
         </div>
 
         {/* WHO SHOULD BUY */}
+
         <div className="mb-6">
-          <h2 className="font-semibold mb-2">Who should buy</h2>
-          <ul className="text-sm space-y-1">
+          <h2 className="mb-2 font-semibold">
+            Who should buy
+          </h2>
+
+          <ul className="space-y-1 text-sm">
             <li>✔ Daily users</li>
             <li>✔ Students</li>
             <li>✔ Budget-conscious buyers</li>
@@ -137,7 +382,8 @@ export default async function ProductPage({
         </div>
 
         {/* CTA */}
-        <button className="w-full bg-black text-white py-3 rounded-xl font-medium hover:opacity-90 transition">
+
+        <button className="w-full rounded-xl bg-black py-3 font-medium text-white transition hover:opacity-90">
           Buy Now
         </button>
 
