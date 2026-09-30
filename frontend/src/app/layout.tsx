@@ -43,6 +43,13 @@ export const metadata: Metadata = {
   creator: "BeforeChoice",
   publisher: "BeforeChoice",
 
+  /* ==================================================
+     Google AdSense Verification
+  ================================================== */
+  other: {
+    "google-adsense-account": "ca-pub-4880966813939651",
+  },
+
   category: "shopping",
 
   keywords: [
