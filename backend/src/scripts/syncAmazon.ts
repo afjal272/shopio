@@ -15,7 +15,7 @@ const DEFAULT_COUNTRY = "IN";
 
 const DEFAULT_START_PAGE = 1;
 
-const DEFAULT_MAX_PAGES = 10;
+const DEFAULT_MAX_PAGES = 20;
 
 // ======================================================
 // Environment Validation
