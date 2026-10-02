@@ -64,6 +64,11 @@ export class ProductService {
 
   /**
    * Fetch a single product by its database identifier.
+   *
+   * The Decision Engine mapper is still used for the canonical
+   * product fields. Marketplace offers are then preserved
+   * separately so consumers such as the product detail page
+   * can access marketplace URLs and external identifiers.
    */
   async getProductById(
     id: string
@@ -84,7 +89,53 @@ export class ProductService {
       return null;
     }
 
-    return mapProduct(product);
+    const mappedProduct =
+      mapProduct(product);
+
+    return {
+      ...mappedProduct,
+
+      offers:
+        product.offers.map(
+          (offer) => ({
+            id:
+              offer.id,
+
+            marketplace:
+              offer.marketplace,
+
+            externalId:
+              offer.externalId,
+
+            title:
+              offer.title,
+
+            price:
+              offer.price,
+
+            originalPrice:
+              offer.originalPrice,
+
+            currency:
+              offer.currency,
+
+            productUrl:
+              offer.productUrl,
+
+            imageUrl:
+              offer.imageUrl,
+
+            availability:
+              offer.availability,
+
+            rating:
+              offer.rating,
+
+            reviewsCount:
+              offer.reviewsCount,
+          })
+        ),
+    };
   }
 
   // ====================================================
