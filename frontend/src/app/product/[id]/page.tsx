@@ -6,6 +6,9 @@ const BASE_URL =
 
 const SITE_URL = "https://beforechoice.in"
 
+const AMAZON_AFFILIATE_TAG =
+  process.env.AMAZON_AFFILIATE_TAG?.trim() || ""
+
 type ProductPageProps = {
   params: Promise<{ id: string }>
 }
@@ -26,6 +29,58 @@ async function getProduct(id: string): Promise<Product | null> {
   } catch (error) {
     console.error("Failed to fetch product:", error)
     return null
+  }
+}
+
+/* =========================================================
+   Amazon Affiliate URL
+========================================================= */
+
+function buildAmazonAffiliateUrl(
+  product: Product
+): string | null {
+  const amazonOffer = product.offers?.find(
+    (offer) =>
+      offer.marketplace?.toUpperCase() === "AMAZON" &&
+      Boolean(offer.productUrl) &&
+      Boolean(offer.externalId)
+  )
+
+  if (!amazonOffer) {
+    return null
+  }
+
+  const originalUrl = amazonOffer.productUrl?.trim()
+
+  if (!originalUrl) {
+    return null
+  }
+
+  try {
+    const url = new URL(originalUrl)
+
+    /*
+     * The original Amazon product URL is already provided by
+     * the Amazon integration. We only attach the Associates
+     * tracking tag here.
+     *
+     * Example:
+     * https://www.amazon.in/dp/B0XXXXXXXX?tag=beforechoice2-21
+     */
+    if (AMAZON_AFFILIATE_TAG) {
+      url.searchParams.set(
+        "tag",
+        AMAZON_AFFILIATE_TAG
+      )
+    }
+
+    return url.toString()
+  } catch {
+    /*
+     * Keep the product usable even if an unexpected malformed
+     * URL comes from the upstream marketplace response.
+     */
+    return originalUrl
   }
 }
 
@@ -63,20 +118,24 @@ export async function generateMetadata({
   }
 
   const productName = product.name || "Product"
+
   const price = product.price
     ? `₹${Number(product.price).toLocaleString("en-IN")}`
     : ""
 
-  const title = `${productName} | Price, Specs & Comparison | BeforeChoice`
+  const title =
+    `${productName} | Price, Specs & Comparison | BeforeChoice`
 
   const description =
     `${productName}${price ? ` at ${price}` : ""}. ` +
     `Compare specifications, performance, battery, rating and key features on BeforeChoice before you buy.`
 
-  const canonicalUrl = `${SITE_URL}/product/${encodeURIComponent(id)}`
+  const canonicalUrl =
+    `${SITE_URL}/product/${encodeURIComponent(id)}`
 
   const productImage =
-    product.images?.[0] || `${SITE_URL}/placeholder.png`
+    product.images?.[0] ||
+    `${SITE_URL}/placeholder.png`
 
   return {
     title,
@@ -183,10 +242,14 @@ export default async function ProductPage({
   const productName = product.name || "Product"
 
   const productImage =
-    product.images?.[0] || `${SITE_URL}/placeholder.png`
+    product.images?.[0] ||
+    `${SITE_URL}/placeholder.png`
 
   const productUrl =
     `${SITE_URL}/product/${encodeURIComponent(id)}`
+
+  const amazonAffiliateUrl =
+    buildAmazonAffiliateUrl(product)
 
   // ========================================================
   // Product Structured Data
@@ -214,7 +277,8 @@ export default async function ProductPage({
           url: productUrl,
           priceCurrency: "INR",
           price: Number(product.price),
-          availability: "https://schema.org/InStock",
+          availability:
+            "https://schema.org/InStock",
         }
       : undefined,
   }
@@ -230,7 +294,8 @@ export default async function ProductPage({
         id="beforechoice-product-structured-data"
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
+          __html:
+            JSON.stringify(structuredData),
         }}
       />
 
@@ -261,16 +326,24 @@ export default async function ProductPage({
         {/* PRICE */}
 
         <p className="mb-3 text-2xl font-semibold text-green-600">
-          ₹{Number(product.price || 0).toLocaleString("en-IN")}
+          ₹
+          {Number(
+            product.price || 0
+          ).toLocaleString("en-IN")}
         </p>
 
         {/* RATING */}
 
         <div className="mb-4 flex items-center gap-2">
           <div className="flex">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {Array.from({
+              length: 5,
+            }).map((_, i) => (
               <span key={i}>
-                {i < Math.round(rating) ? "⭐" : "☆"}
+                {i <
+                Math.round(rating)
+                  ? "⭐"
+                  : "☆"}
               </span>
             ))}
           </div>
@@ -284,20 +357,25 @@ export default async function ProductPage({
 
         <div className="mb-6 space-y-2 rounded-xl border p-4 text-sm">
           <p>
-            ⚡ RAM: {ram || "N/A"} GB
+            ⚡ RAM:{" "}
+            {ram || "N/A"} GB
           </p>
 
           <p>
-            🔋 Battery: {battery || "N/A"} mAh
+            🔋 Battery:{" "}
+            {battery || "N/A"} mAh
           </p>
 
           <p>
             🚀 Performance:{" "}
-            {product.specs?.processorScore ?? "N/A"}
+            {product.specs
+              ?.processorScore ??
+              "N/A"}
           </p>
 
           <p>
-            ⭐ Rating: {rating || "N/A"}
+            ⭐ Rating:{" "}
+            {rating || "N/A"}
           </p>
         </div>
 
@@ -311,7 +389,8 @@ export default async function ProductPage({
           <ul className="space-y-1 text-sm text-green-600">
             {isHighRating && (
               <li>
-                ✔ Trusted by users (high rating)
+                ✔ Trusted by users
+                (high rating)
               </li>
             )}
 
@@ -375,17 +454,45 @@ export default async function ProductPage({
           </h2>
 
           <ul className="space-y-1 text-sm">
-            <li>✔ Daily users</li>
-            <li>✔ Students</li>
-            <li>✔ Budget-conscious buyers</li>
+            <li>
+              ✔ Daily users
+            </li>
+            <li>
+              ✔ Students
+            </li>
+            <li>
+              ✔ Budget-conscious buyers
+            </li>
           </ul>
         </div>
 
         {/* CTA */}
 
-        <button className="w-full rounded-xl bg-black py-3 font-medium text-white transition hover:opacity-90">
-          Buy Now
-        </button>
+        {amazonAffiliateUrl ? (
+          <a
+            href={amazonAffiliateUrl}
+            target="_blank"
+            rel="nofollow sponsored noopener"
+            className="block w-full rounded-xl bg-black py-3 text-center font-medium text-white transition hover:opacity-90"
+          >
+            Buy Now
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="w-full cursor-not-allowed rounded-xl bg-gray-400 py-3 font-medium text-white"
+            title="Amazon offer is currently unavailable"
+          >
+            Buy Now
+          </button>
+        )}
+
+        {/* AMAZON DISCLOSURE */}
+
+        <p className="mt-2 text-center text-xs text-gray-500">
+          As an Amazon Associate I earn from qualifying purchases.
+        </p>
 
       </div>
     </div>

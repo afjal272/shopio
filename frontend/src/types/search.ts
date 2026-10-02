@@ -156,6 +156,43 @@ export type Specs = {
 };
 
 // ======================================================
+// Product Offer
+// ======================================================
+
+/**
+ * Marketplace offer attached to a canonical product.
+ *
+ * For Amazon:
+ *   externalId = Amazon ASIN
+ *   productUrl = original Amazon product URL
+ */
+export type ProductOffer = {
+  id: string;
+
+  marketplace: string;
+
+  externalId: string;
+
+  title: string;
+
+  price: number;
+
+  originalPrice?: number | null;
+
+  currency: string;
+
+  productUrl: string;
+
+  imageUrl?: string | null;
+
+  availability?: string | null;
+
+  rating?: number | null;
+
+  reviewsCount?: number | null;
+};
+
+// ======================================================
 // Product Search Result
 // ======================================================
 
@@ -199,6 +236,11 @@ export type ProductItem = {
   rating?: number;
 
   reviewsCount?: number;
+
+  /**
+   * Marketplace offers associated with this product.
+   */
+  offers?: ProductOffer[];
 };
 
 // ======================================================
