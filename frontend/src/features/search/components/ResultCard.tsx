@@ -1,12 +1,17 @@
 "use client"
 
+
+
 import Image from "next/image"
+
 import { useRouter } from "next/navigation"
+
 import {
   BatteryCharging,
   Check,
   ChevronRight,
   Cpu,
+  ExternalLink,
   Heart,
   HardDrive,
   Image as ImageIcon,
@@ -16,13 +21,19 @@ import {
   Star,
   Zap,
 } from "lucide-react"
+
 import {
   useCallback,
   useSyncExternalStore,
 } from "react"
+
 import { toast } from "sonner"
 
+
+
 import { ProductItem } from "@/types/search"
+
+
 
 type Props = {
   item: ProductItem
@@ -32,41 +43,63 @@ type Props = {
   onSelect?: () => void
 }
 
+
+
 type Specification = {
   key: string
   label: string
   value: string
 }
 
+
+
 const SAVED_PRODUCTS_KEY = "saved_products"
 const COMPARE_IDS_KEY = "compare_ids"
+
+
 
 const SAVED_PRODUCTS_EVENT =
   "BeforeChoice:saved-products"
 
+
+
 const COMPARE_IDS_EVENT =
   "BeforeChoice:compare-ids"
 
+
+
 const MAX_COMPARE_PRODUCTS = 4
 const DEFAULT_IMAGE = "/placeholder.png"
+
+
 
 function readIdList(key: string): string[] {
   if (typeof window === "undefined") {
     return []
   }
 
+
+
   try {
     const raw = window.localStorage.getItem(key)
+
+
 
     if (!raw) {
       return []
     }
 
+
+
     const parsed: unknown = JSON.parse(raw)
+
+
 
     if (!Array.isArray(parsed)) {
       return []
     }
+
+
 
     return Array.from(
       new Set(
@@ -80,6 +113,8 @@ function readIdList(key: string): string[] {
   }
 }
 
+
+
 function writeIdList(
   key: string,
   ids: string[]
@@ -87,6 +122,8 @@ function writeIdList(
   if (typeof window === "undefined") {
     return
   }
+
+
 
   try {
     window.localStorage.setItem(
@@ -98,6 +135,8 @@ function writeIdList(
   }
 }
 
+
+
 function emitLocalStorageEvent(
   eventName: string
 ): void {
@@ -105,8 +144,12 @@ function emitLocalStorageEvent(
     return
   }
 
+
+
   window.dispatchEvent(new Event(eventName))
 }
+
+
 
 function subscribeToEvent(
   eventName: string,
@@ -116,23 +159,33 @@ function subscribeToEvent(
     return () => {}
   }
 
+
+
   const handleStorage = () => callback()
+
+
 
   window.addEventListener(
     "storage",
     handleStorage
   )
 
+
+
   window.addEventListener(
     eventName,
     handleStorage
   )
+
+
 
   return () => {
     window.removeEventListener(
       "storage",
       handleStorage
     )
+
+
 
     window.removeEventListener(
       eventName,
@@ -141,16 +194,22 @@ function subscribeToEvent(
   }
 }
 
+
+
 function formatNumber(value: number): string {
   return new Intl.NumberFormat(
     "en-IN"
   ).format(value)
 }
 
+
+
 function formatPrice(
   value: unknown
 ): string | null {
   const numeric = Number(value)
+
+
 
   if (
     !Number.isFinite(numeric) ||
@@ -159,8 +218,12 @@ function formatPrice(
     return null
   }
 
+
+
   return `₹${formatNumber(numeric)}`
 }
+
+
 
 function formatStorage(
   storage: number
@@ -172,8 +235,12 @@ function formatStorage(
     return `${storage / 1024}TB`
   }
 
+
+
   return `${storage}GB`
 }
+
+
 
 function formatBattery(
   battery: number
@@ -181,11 +248,15 @@ function formatBattery(
   return `${formatNumber(battery)}mAh`
 }
 
+
+
 function formatCamera(
   megapixels: number
 ): string {
   return `${megapixels}MP`
 }
+
+
 
 function formatDisplaySize(
   size: number
@@ -193,20 +264,28 @@ function formatDisplaySize(
   return `${size}"`
 }
 
+
+
 function formatRating(
   value: number
 ): string {
   return `${value.toFixed(1)}★`
 }
 
+
+
 function safePercentage(
   value: unknown
 ): number | null {
   const numeric = Number(value)
 
+
+
   if (!Number.isFinite(numeric)) {
     return null
   }
+
+
 
   return Math.max(
     0,
@@ -216,6 +295,8 @@ function safePercentage(
     )
   )
 }
+
+
 
 function getScoreTone(score: number) {
   if (score >= 85) {
@@ -228,6 +309,8 @@ function getScoreTone(score: number) {
     }
   }
 
+
+
   if (score >= 70) {
     return {
       text: "text-amber-700",
@@ -238,6 +321,8 @@ function getScoreTone(score: number) {
     }
   }
 
+
+
   return {
     text: "text-[#6b7280]",
     bg: "bg-[#f5f6f8]",
@@ -246,6 +331,8 @@ function getScoreTone(score: number) {
     label: "Lower match",
   }
 }
+
+
 
 export default function ResultCard({
   item,
@@ -256,13 +343,23 @@ export default function ResultCard({
 }: Props) {
   const router = useRouter()
 
+
+
   const id = String(item.id)
 
+
+
   /* ====================================================
+
      SCORE
+
   ==================================================== */
 
+
+
   const rawScore = Number(item.score)
+
+
 
   const safeScore = Number.isFinite(rawScore)
     ? Math.max(
@@ -274,19 +371,33 @@ export default function ResultCard({
       )
     : 0
 
+
+
   const scoreTone =
     getScoreTone(safeScore)
 
+
+
   /* ====================================================
+
      PRICE
+
   ==================================================== */
+
+
 
   const formattedPrice =
     formatPrice(item.price)
 
+
+
   /* ====================================================
+
      WISHLIST
+
   ==================================================== */
+
+
 
   const subscribeSaved = useCallback(
     (callback: () => void) =>
@@ -297,6 +408,8 @@ export default function ResultCard({
     []
   )
 
+
+
   const getSavedSnapshot = useCallback(
     () =>
       readIdList(
@@ -305,15 +418,23 @@ export default function ResultCard({
     [id]
   )
 
+
+
   const saved = useSyncExternalStore(
     subscribeSaved,
     getSavedSnapshot,
     () => false
   )
 
+
+
   /* ====================================================
+
      COMPARE
+
   ==================================================== */
+
+
 
   const subscribeCompared =
     useCallback(
@@ -325,6 +446,8 @@ export default function ResultCard({
       []
     )
 
+
+
   const getComparedSnapshot =
     useCallback(
       () =>
@@ -334,6 +457,8 @@ export default function ResultCard({
       [id]
     )
 
+
+
   const compared =
     useSyncExternalStore(
       subscribeCompared,
@@ -341,17 +466,27 @@ export default function ResultCard({
       () => false
     )
 
+
+
   /* ====================================================
+
      SAVE
+
   ==================================================== */
+
+
 
   const toggleSave = useCallback(() => {
     const stored = readIdList(
       SAVED_PRODUCTS_KEY
     )
 
+
+
     const exists =
       stored.includes(id)
+
+
 
     const updated = exists
       ? stored.filter(
@@ -360,14 +495,20 @@ export default function ResultCard({
         )
       : [...stored, id]
 
+
+
     writeIdList(
       SAVED_PRODUCTS_KEY,
       updated
     )
 
+
+
     emitLocalStorageEvent(
       SAVED_PRODUCTS_EVENT
     )
+
+
 
     toast.success(
       exists
@@ -376,17 +517,27 @@ export default function ResultCard({
     )
   }, [id])
 
+
+
   /* ====================================================
+
      COMPARE
+
   ==================================================== */
+
+
 
   const toggleCompare = useCallback(() => {
     const stored = readIdList(
       COMPARE_IDS_KEY
     )
 
+
+
     const exists =
       stored.includes(id)
+
+
 
     if (exists) {
       writeIdList(
@@ -397,16 +548,24 @@ export default function ResultCard({
         )
       )
 
+
+
       emitLocalStorageEvent(
         COMPARE_IDS_EVENT
       )
+
+
 
       toast.success(
         "Removed from comparison"
       )
 
+
+
       return
     }
+
+
 
     if (
       stored.length >=
@@ -416,26 +575,40 @@ export default function ResultCard({
         `You can compare up to ${MAX_COMPARE_PRODUCTS} products only`
       )
 
+
+
       return
     }
+
+
 
     writeIdList(
       COMPARE_IDS_KEY,
       [...stored, id]
     )
 
+
+
     emitLocalStorageEvent(
       COMPARE_IDS_EVENT
     )
+
+
 
     toast.success(
       "Added to comparison"
     )
   }, [id])
 
+
+
   /* ====================================================
+
      NAVIGATION
+
   ==================================================== */
+
+
 
   const openProduct = useCallback(() => {
     router.push(
@@ -443,14 +616,48 @@ export default function ResultCard({
     )
   }, [id, router])
 
+
+
+  const affiliateUrl =
+    item.affiliateUrl?.trim() || null
+
+
+
+  const buyNow = useCallback(() => {
+    if (!affiliateUrl) {
+      toast.error(
+        "Purchase link is unavailable for this product."
+      )
+
+      return
+    }
+
+
+
+    window.open(
+      affiliateUrl,
+      "_blank",
+      "noopener,noreferrer"
+    )
+  }, [affiliateUrl])
+
+
+
   /* ====================================================
+
      SPECIFICATIONS
+
   ==================================================== */
+
+
 
   const specs = item.specs
 
+
+
   const actualSpecifications:
     Specification[] = [
+
     specs?.ram != null
       ? {
           key: "ram",
@@ -460,6 +667,8 @@ export default function ResultCard({
           )}GB`,
         }
       : null,
+
+
 
     specs?.storage != null
       ? {
@@ -471,6 +680,8 @@ export default function ResultCard({
             ),
         }
       : null,
+
+
 
     specs?.processor
       ? {
@@ -493,6 +704,8 @@ export default function ResultCard({
             }
           : null,
 
+
+
     specs?.battery != null
       ? {
           key: "battery",
@@ -504,6 +717,8 @@ export default function ResultCard({
         }
       : null,
 
+
+
     specs?.cameraMp != null
       ? {
           key: "camera",
@@ -514,6 +729,8 @@ export default function ResultCard({
             ),
         }
       : null,
+
+
 
     item.rating != null &&
     Number.isFinite(
@@ -529,6 +746,8 @@ export default function ResultCard({
         }
       : null,
 
+
+
     specs?.displaySize != null
       ? {
           key: "display",
@@ -540,6 +759,8 @@ export default function ResultCard({
         }
       : null,
 
+
+
     specs?.refreshRate != null
       ? {
           key: "refresh-rate",
@@ -550,6 +771,8 @@ export default function ResultCard({
         }
       : null,
 
+
+
     specs?.chargingSpeed != null
       ? {
           key: "charging-speed",
@@ -559,6 +782,7 @@ export default function ResultCard({
           )}W`,
         }
       : null,
+
   ].filter(
     (
       entry
@@ -566,40 +790,44 @@ export default function ResultCard({
       entry !== null
   )
 
+
+
   const breakdown =
     item.breakdown
 
+
+
   /* ====================================================
+
      CARD
+
   ==================================================== */
+
+
 
   return (
     <article
       onClick={openProduct}
       className={[
-        "group relative w-full",
-        highlight
-          ? "bg-transparent"
-          : "overflow-hidden rounded-[26px] border border-[#e5e7eb] bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]",
-        "cursor-pointer transition-all duration-300",
-        "hover:-translate-y-0.5 hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]",
-        selected || compared
-          ? "ring-2 ring-[#5b5ce2]/15"
-          : "",
-      ].join(" ")}
+  "group relative w-full overflow-hidden rounded-[26px] border border-[#e5e7eb] bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]",
+  "cursor-pointer transition-shadow duration-300",
+  "hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]",
+  selected || compared
+    ? "ring-2 ring-[#5b5ce2]/15"
+    : "",
+].join(" ")}
     >
       {/* ==================================================
           MAIN CONTENT
       ================================================== */}
 
+
+
       <div
-        className={
-          highlight
-            ? "px-0 pb-0"
-            : "p-5 sm:p-6"
-        }
+        className="p-5 sm:p-6"
       >
         {/* Top row */}
+
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             {highlight ? (
@@ -612,12 +840,16 @@ export default function ResultCard({
               </span>
             ) : null}
 
+
+
             {compared && (
               <span className="rounded-full bg-[#f3f4ff] px-3 py-1.5 text-[11px] font-medium text-[#5559c9]">
                 Comparing
               </span>
             )}
           </div>
+
+
 
           <div
             className={`rounded-full border px-3 py-1.5 ${scoreTone.bg} ${scoreTone.border}`}
@@ -628,6 +860,8 @@ export default function ResultCard({
               {safeScore}
             </span>
 
+
+
             <span
               className={`ml-1 text-[11px] font-medium ${scoreTone.text}`}
             >
@@ -636,9 +870,14 @@ export default function ResultCard({
           </div>
         </div>
 
+
+
         {/* Main layout */}
+
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
           {/* IMAGE */}
+
+
 
           <div
             className="relative self-start"
@@ -651,6 +890,8 @@ export default function ResultCard({
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(91,92,226,0.06),transparent_62%)]"
               />
+
+
 
               <div className="relative h-[205px] w-[205px]">
                 <Image
@@ -671,10 +912,15 @@ export default function ResultCard({
             </div>
           </div>
 
+
+
           {/* CONTENT */}
+
+
 
           <div className="min-w-0">
             {/* Product name / price */}
+
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
@@ -683,12 +929,16 @@ export default function ResultCard({
                       "Untitled product"}
                   </h2>
 
+
+
                   {formattedPrice && (
                     <p className="mt-2 text-xl font-semibold tracking-tight text-[#262626]">
                       {formattedPrice}
                     </p>
                   )}
                 </div>
+
+
 
                 <div className="flex shrink-0 items-center gap-2">
                   {item.confidence !==
@@ -709,11 +959,15 @@ export default function ResultCard({
                         %
                       </p>
 
+
+
                       <p className="text-[10px] uppercase tracking-[0.08em] text-[#9aa0aa]">
                         confidence
                       </p>
                     </div>
                   )}
+
+
 
                   {item.rating !=
                     null && (
@@ -723,6 +977,8 @@ export default function ResultCard({
                         className="fill-amber-400 text-amber-400"
                         aria-hidden="true"
                       />
+
+
 
                       <span className="text-sm font-semibold text-amber-800">
                         {Number(
@@ -734,12 +990,17 @@ export default function ResultCard({
                 </div>
               </div>
 
+
+
               {/* Match */}
+
               <div className="pt-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-[#7a808a]">
                     Match quality
                   </span>
+
+
 
                   <span
                     className={`font-semibold ${scoreTone.text}`}
@@ -747,6 +1008,8 @@ export default function ResultCard({
                     {scoreTone.label}
                   </span>
                 </div>
+
+
 
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eceef2]">
                   <div
@@ -758,14 +1021,20 @@ export default function ResultCard({
                 </div>
               </div>
 
+
+
               {/* Explanation */}
+
               {item.explanation && (
                 <p className="line-clamp-3 text-sm leading-7 text-[#656b76]">
                   {item.explanation}
                 </p>
               )}
 
+
+
               {/* Tags */}
+
               {item.tags &&
                 item.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -783,7 +1052,10 @@ export default function ResultCard({
                   </div>
                 )}
 
+
+
               {/* Specs */}
+
               {actualSpecifications.length >
                 0 && (
                 <div className="mt-1">
@@ -816,6 +1088,8 @@ export default function ResultCard({
                                           ? Zap
                                           : Star
 
+
+
                           return (
                             <div
                               key={key}
@@ -829,10 +1103,14 @@ export default function ResultCard({
                                   aria-hidden="true"
                                 />
 
+
+
                                 <span className="truncate text-[11px] text-[#969ca6]">
                                   {label}
                                 </span>
                               </div>
+
+
 
                               <p
                                 className="mt-1.5 truncate text-sm font-semibold text-[#34373d]"
@@ -848,7 +1126,10 @@ export default function ResultCard({
                 </div>
               )}
 
+
+
               {/* Ranking signals */}
+
               {breakdown && (
                 <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-[#edf0f3] pt-4 text-[11px] text-[#8a8f98]">
                   {breakdown.processor !=
@@ -861,6 +1142,8 @@ export default function ResultCard({
                     </span>
                   )}
 
+
+
                   {breakdown.battery !=
                     null && (
                     <span>
@@ -870,6 +1153,8 @@ export default function ResultCard({
                       )}
                     </span>
                   )}
+
+
 
                   {breakdown.rating !=
                     null && (
@@ -886,7 +1171,10 @@ export default function ResultCard({
           </div>
         </div>
 
+
+
         {/* Actions */}
+
         <div
           className="mt-6 flex flex-col gap-3 border-t border-[#e9ebef] pt-5 sm:flex-row sm:items-center sm:justify-between"
           onClick={(event) =>
@@ -918,6 +1206,8 @@ export default function ResultCard({
               />
             </button>
 
+
+
             <button
               type="button"
               onClick={() => {
@@ -943,25 +1233,57 @@ export default function ResultCard({
                 />
               )}
 
+
+
               {compared
                 ? "Added to compare"
                 : "Compare"}
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={openProduct}
-            className="group inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#171717] px-5 text-sm font-medium text-white transition hover:bg-black hover:shadow-md active:scale-[0.98]"
-          >
-            View product
 
-            <ChevronRight
-              size={16}
-              className="transition-transform group-hover:translate-x-0.5"
-              aria-hidden="true"
-            />
-          </button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={buyNow}
+              disabled={!affiliateUrl}
+              title={
+                affiliateUrl
+                  ? "Buy on Amazon"
+                  : "Purchase link unavailable"
+              }
+              className="group inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#5b5ce2] px-5 text-sm font-medium text-white transition hover:bg-[#4f50cf] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#5b5ce2] disabled:hover:shadow-none"
+            >
+              Buy Now
+
+
+
+              <ExternalLink
+                size={15}
+                className="transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </button>
+
+
+
+            <button
+              type="button"
+              onClick={openProduct}
+              className="group inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#171717] px-5 text-sm font-medium text-white transition hover:bg-black hover:shadow-md active:scale-[0.98]"
+            >
+              View product
+
+
+
+              <ChevronRight
+                size={16}
+                className="transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </button>
+          </div>
         </div>
       </div>
     </article>

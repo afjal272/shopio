@@ -1,17 +1,28 @@
 import type { Metadata } from "next"
+
 import type { Product } from "@/types/search"
+
+
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
+
+
 const SITE_URL = "https://beforechoice.in"
+
+
 
 const AMAZON_AFFILIATE_TAG =
   process.env.AMAZON_AFFILIATE_TAG?.trim() || ""
 
+
+
 type ProductPageProps = {
   params: Promise<{ id: string }>
 }
+
+
 
 async function getProduct(id: string): Promise<Product | null> {
   try {
@@ -19,11 +30,17 @@ async function getProduct(id: string): Promise<Product | null> {
       cache: "no-store",
     })
 
+
+
     if (!res.ok) {
       return null
     }
 
+
+
     const json = await res.json()
+
+
 
     return json.data ?? null
   } catch (error) {
@@ -32,9 +49,13 @@ async function getProduct(id: string): Promise<Product | null> {
   }
 }
 
+
+
 /* =========================================================
    Amazon Affiliate URL
 ========================================================= */
+
+
 
 function buildAmazonAffiliateUrl(
   product: Product
@@ -46,18 +67,29 @@ function buildAmazonAffiliateUrl(
       Boolean(offer.externalId)
   )
 
+
+
   if (!amazonOffer) {
     return null
   }
 
-  const originalUrl = amazonOffer.productUrl?.trim()
+
+
+  const originalUrl =
+    amazonOffer.productUrl?.trim()
+
+
 
   if (!originalUrl) {
     return null
   }
 
+
+
   try {
     const url = new URL(originalUrl)
+
+
 
     /*
      * The original Amazon product URL is already provided by
@@ -74,6 +106,8 @@ function buildAmazonAffiliateUrl(
       )
     }
 
+
+
     return url.toString()
   } catch {
     /*
@@ -84,14 +118,20 @@ function buildAmazonAffiliateUrl(
   }
 }
 
+
+
 /* =========================================================
    Dynamic SEO Metadata
 ========================================================= */
+
+
 
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { id } = await params
+
+
 
   if (!id) {
     return {
@@ -104,7 +144,11 @@ export async function generateMetadata({
     }
   }
 
+
+
   const product = await getProduct(id)
+
+
 
   if (!product) {
     return {
@@ -117,30 +161,48 @@ export async function generateMetadata({
     }
   }
 
+
+
   const productName = product.name || "Product"
+
+
 
   const price = product.price
     ? `₹${Number(product.price).toLocaleString("en-IN")}`
     : ""
 
+
+
   const title =
     `${productName} | Price, Specs & Comparison | BeforeChoice`
+
+
 
   const description =
     `${productName}${price ? ` at ${price}` : ""}. ` +
     `Compare specifications, performance, battery, rating and key features on BeforeChoice before you buy.`
 
+
+
   const canonicalUrl =
     `${SITE_URL}/product/${encodeURIComponent(id)}`
+
+
 
   const productImage =
     product.images?.[0] ||
     `${SITE_URL}/placeholder.png`
 
+
+
   return {
     title,
 
+
+
     description,
+
+
 
     keywords: [
       productName,
@@ -160,9 +222,13 @@ export async function generateMetadata({
       "Before Choice",
     ],
 
+
+
     alternates: {
       canonical: canonicalUrl,
     },
+
+
 
     robots: {
       index: true,
@@ -175,6 +241,8 @@ export async function generateMetadata({
         "max-video-preview": -1,
       },
     },
+
+
 
     openGraph: {
       type: "website",
@@ -191,6 +259,8 @@ export async function generateMetadata({
       ],
     },
 
+
+
     twitter: {
       card: "summary_large_image",
       title,
@@ -200,14 +270,20 @@ export async function generateMetadata({
   }
 }
 
+
+
 /* =========================================================
    Product Page
 ========================================================= */
+
+
 
 export default async function ProductPage({
   params,
 }: ProductPageProps) {
   const { id } = await params
+
+
 
   if (!id) {
     return (
@@ -217,7 +293,11 @@ export default async function ProductPage({
     )
   }
 
+
+
   const product = await getProduct(id)
+
+
 
   if (!product) {
     return (
@@ -227,49 +307,79 @@ export default async function ProductPage({
     )
   }
 
+
+
   // ========================================================
   // Derived values
   // ========================================================
+
+
 
   const ram = product.specs?.ram ?? 0
   const battery = product.specs?.battery ?? 0
   const rating = product.rating ?? 0
 
+
+
   const isHighRating = rating >= 4
   const isStrongBattery = battery >= 4500
   const isGoodRam = ram >= 8
 
+
+
   const productName = product.name || "Product"
+
+
 
   const productImage =
     product.images?.[0] ||
     `${SITE_URL}/placeholder.png`
 
+
+
   const productUrl =
     `${SITE_URL}/product/${encodeURIComponent(id)}`
 
+
+
   const amazonAffiliateUrl =
     buildAmazonAffiliateUrl(product)
+
+
 
   // ========================================================
   // Product Structured Data
   // ========================================================
 
+
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Product",
 
+
+
     "@id": `${productUrl}#product`,
+
+
 
     name: productName,
 
+
+
     url: productUrl,
+
+
 
     description:
       `${productName}. Compare price, specifications, ` +
       `performance, battery and features on BeforeChoice.`,
 
+
+
     image: [productImage],
+
+
 
     offers: product.price
       ? {
@@ -283,12 +393,15 @@ export default async function ProductPage({
       : undefined,
   }
 
+
+
   return (
     <div className="mx-auto grid max-w-6xl gap-10 p-6 md:grid-cols-2">
-
       {/* ==================================================
           Product Structured Data
       ================================================== */}
+
+
 
       <script
         id="beforechoice-product-structured-data"
@@ -299,9 +412,13 @@ export default async function ProductPage({
         }}
       />
 
+
+
       {/* ==================================================
           IMAGE
       ================================================== */}
+
+
 
       <div className="flex h-[550px] items-center justify-center rounded-xl bg-gray-100 p-6">
         <img
@@ -311,19 +428,28 @@ export default async function ProductPage({
         />
       </div>
 
+
+
       {/* ==================================================
           DETAILS
       ================================================== */}
 
-      <div>
 
+
+      <div>
         {/* TITLE */}
+
+
 
         <h1 className="mb-2 text-3xl font-bold">
           {productName}
         </h1>
 
+
+
         {/* PRICE */}
+
+
 
         <p className="mb-3 text-2xl font-semibold text-green-600">
           ₹
@@ -332,7 +458,11 @@ export default async function ProductPage({
           ).toLocaleString("en-IN")}
         </p>
 
+
+
         {/* RATING */}
+
+
 
         <div className="mb-4 flex items-center gap-2">
           <div className="flex">
@@ -348,12 +478,18 @@ export default async function ProductPage({
             ))}
           </div>
 
+
+
           <span className="text-sm text-gray-600">
             ({rating || "N/A"})
           </span>
         </div>
 
+
+
         {/* SPECS */}
+
+
 
         <div className="mb-6 space-y-2 rounded-xl border p-4 text-sm">
           <p>
@@ -361,10 +497,14 @@ export default async function ProductPage({
             {ram || "N/A"} GB
           </p>
 
+
+
           <p>
             🔋 Battery:{" "}
             {battery || "N/A"} mAh
           </p>
+
+
 
           <p>
             🚀 Performance:{" "}
@@ -373,18 +513,26 @@ export default async function ProductPage({
               "N/A"}
           </p>
 
+
+
           <p>
             ⭐ Rating:{" "}
             {rating || "N/A"}
           </p>
         </div>
 
+
+
         {/* WHY GOOD */}
+
+
 
         <div className="mb-6">
           <h2 className="mb-2 font-semibold">
             Why it’s good
           </h2>
+
+
 
           <ul className="space-y-1 text-sm text-green-600">
             {isHighRating && (
@@ -394,11 +542,15 @@ export default async function ProductPage({
               </li>
             )}
 
+
+
             {isStrongBattery && (
               <li>
                 ✔ Long battery backup
               </li>
             )}
+
+
 
             {isGoodRam && (
               <li>
@@ -408,12 +560,18 @@ export default async function ProductPage({
           </ul>
         </div>
 
+
+
         {/* WEAKNESSES */}
+
+
 
         <div className="mb-6">
           <h2 className="mb-2 font-semibold">
             Things to consider
           </h2>
+
+
 
           <ul className="space-y-1 text-sm text-red-500">
             {ram < 8 && (
@@ -422,17 +580,23 @@ export default async function ProductPage({
               </li>
             )}
 
+
+
             {battery < 4500 && (
               <li>
                 ⚠ Battery may not be ideal for heavy use
               </li>
             )}
 
+
+
             {rating < 4 && (
               <li>
                 ⚠ Average user rating
               </li>
             )}
+
+
 
             {!(
               ram < 8 ||
@@ -446,27 +610,39 @@ export default async function ProductPage({
           </ul>
         </div>
 
+
+
         {/* WHO SHOULD BUY */}
+
+
 
         <div className="mb-6">
           <h2 className="mb-2 font-semibold">
             Who should buy
           </h2>
 
+
+
           <ul className="space-y-1 text-sm">
             <li>
               ✔ Daily users
             </li>
+
             <li>
               ✔ Students
             </li>
+
             <li>
               ✔ Budget-conscious buyers
             </li>
           </ul>
         </div>
 
+
+
         {/* CTA */}
+
+
 
         {amazonAffiliateUrl ? (
           <a
@@ -488,12 +664,15 @@ export default async function ProductPage({
           </button>
         )}
 
+
+
         {/* AMAZON DISCLOSURE */}
+
+
 
         <p className="mt-2 text-center text-xs text-gray-500">
           As an Amazon Associate I earn from qualifying purchases.
         </p>
-
       </div>
     </div>
   )

@@ -29,6 +29,19 @@ type PrismaProductWithOffers = Prisma.ProductGetPayload<{
  */
 const MAX_OFFER_AGE_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Backend affiliate tag used for Amazon purchase links.
+ *
+ * Production/local environment may provide:
+ * AMAZON_AFFILIATE_TAG=beforechoice2-21
+ *
+ * The fallback keeps local development working even when
+ * the environment variable has not been added yet.
+ */
+const AMAZON_AFFILIATE_TAG =
+  process.env.AMAZON_AFFILIATE_TAG?.trim() ||
+  "beforechoice2-21";
+
 // ======================================================
 // Public Mapper
 // ======================================================
@@ -75,7 +88,74 @@ export function mapProduct(
     ),
 
     specs: normalizeSpecs(product.specs),
+
+    /**
+     * Affiliate purchase URL generated from
+     * the Amazon marketplace offer.
+     */
+    affiliateUrl: buildAmazonAffiliateUrl(product),
   };
+}
+
+// ======================================================
+// Amazon Affiliate URL
+// ======================================================
+
+function buildAmazonAffiliateUrl(
+  product: PrismaProductWithOffers
+): string | undefined {
+  const amazonOffer = product.offers.find(
+    (offer) => {
+      if (
+        String(offer.marketplace).toUpperCase() !==
+        "AMAZON"
+      ) {
+        return false;
+      }
+
+      return (
+        typeof offer.productUrl === "string" &&
+        offer.productUrl.trim().length > 0
+      );
+    }
+  );
+
+  if (!amazonOffer?.productUrl) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(
+      amazonOffer.productUrl
+    );
+
+    const hostname =
+      url.hostname.toLowerCase();
+
+    /**
+     * Only generate affiliate URLs for
+     * Amazon India URLs.
+     */
+    const isAmazonIndia =
+      hostname === "amazon.in" ||
+      hostname.endsWith(".amazon.in");
+
+    if (!isAmazonIndia) {
+      return undefined;
+    }
+
+    /**
+     * Replace or add the Amazon Associates tag.
+     */
+    url.searchParams.set(
+      "tag",
+      AMAZON_AFFILIATE_TAG
+    );
+
+    return url.toString();
+  } catch {
+    return undefined;
+  }
 }
 
 // ======================================================

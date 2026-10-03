@@ -72,6 +72,13 @@ export function buildOutput(
       ? {
           ...optimizeProduct(best),
 
+          /**
+           * Preserve marketplace affiliate URL
+           * after optimizer transformation.
+           */
+          affiliateUrl:
+            best.affiliateUrl,
+
           explanation:
             bestReasoning?.explanation,
 
@@ -90,6 +97,13 @@ export function buildOutput(
     recommendations.map(
       (product, index) => ({
         ...optimizeProduct(product),
+
+        /**
+         * Preserve marketplace affiliate URL
+         * after optimizer transformation.
+         */
+        affiliateUrl:
+          product.affiliateUrl,
 
         explanation:
           recommendationReasoning[index]

@@ -192,6 +192,18 @@ export interface Product {
 
   specs: ProductSpecs
 
+  // =====================================
+  // Marketplace purchase URL
+  // =====================================
+
+  /**
+   * Affiliate purchase URL generated from
+   * the marketplace offer.
+   *
+   * Used by frontend Buy Now actions.
+   */
+  affiliateUrl?: string
+
   // Engine-generated values
 
   score?: number
